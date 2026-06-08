@@ -62,7 +62,7 @@ export default function LandingPage() {
         <div className="flex-1 flex justify-center animate-fade-in animate-delay-1" style={{ position: 'relative' }}>
           <div style={{ position: 'absolute', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(79,70,229,0.2) 0%, transparent 70%)', zIndex: -1 }}></div>
           <img 
-            src="/hero_mockup.png" 
+            src="/hero_mockup.jpg" 
             alt="SafalEvent RSVP Mockup" 
             style={{
               width: '100%', 
