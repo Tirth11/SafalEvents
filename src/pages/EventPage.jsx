@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, HelpCircle, MessageSquare, ArrowRight, X, CheckCircle, Smile, Plus, ArrowLeft, Send, Check, Timer } from 'lucide-react';
+import { Calendar, MapPin, Users, HelpCircle, MessageSquare, ArrowRight, X, CheckCircle, Smile, Plus, ArrowLeft, Send, Check, Timer, Share2, Pin } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -20,7 +20,7 @@ export default function EventPage() {
 
   // RSVP Drawer states
   const [showDrawer, setShowDrawer] = useState(false);
-  const [drawerStep, setDrawerStep] = useState(1); // 1: auth, 2: details
+  const [drawerStep, setDrawerStep] = useState(1); // 1: auth, 2: details, 3: checkout, 4: confirmation
   const [rsvpForm, setRsvpForm] = useState({
     emailOrPhone: '',
     otp: '',
@@ -39,6 +39,17 @@ export default function EventPage() {
   const [rsvpSession, setRsvpSession] = useState(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [rsvpOtp, setRsvpOtp] = useState('');
+
+  // Payment Checkout States
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
+  const [processingPayment, setProcessingPayment] = useState(false);
+
+  // Sharing States
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Resend Cooldown Effect
   useEffect(() => {
@@ -100,6 +111,12 @@ export default function EventPage() {
 
   useEffect(() => {
     loadEventData();
+    if (window.location.search.includes('rsvp=true')) {
+      const timer = setTimeout(() => {
+        handleOpenRsvpDrawer();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
   }, [eventId]);
 
   if (!event) {
@@ -120,7 +137,7 @@ export default function EventPage() {
   const deadlinePassed = event.rsvpDeadline ? new Date() > new Date(event.rsvpDeadline) : false;
   const isRsvpClosed = event.rsvpStatus === 'Closed' || deadlinePassed;
 
-  const handleOpenRsvpDrawer = () => {
+  function handleOpenRsvpDrawer() {
     const user = mockStore.getCurrentUser();
     if (user && user.email && user.role === 'guest') {
       const names = user.name.split(' ');
@@ -230,17 +247,45 @@ export default function EventPage() {
 
     const finalStatus = (event.approvalRequired && rsvpForm.status === 'going') ? 'waitlist' : rsvpForm.status;
 
-    mockStore.addRSVP(event.id, {
-      name: `${firstName} ${lastName}`,
-      email: email,
-      phone: phone,
-      status: finalStatus,
-      guestCount: rsvpForm.guestCount || 1,
-      answers: rsvpForm.answers
-    });
+    if (event.enablePayments && finalStatus === 'going') {
+      setDrawerStep(3);
+    } else {
+      mockStore.addRSVP(event.id, {
+        name: `${firstName} ${lastName}`,
+        email: email,
+        phone: phone,
+        status: finalStatus,
+        guestCount: rsvpForm.guestCount || 1,
+        answers: rsvpForm.answers
+      });
+      setDrawerStep(4);
+      loadEventData();
+    }
+  };
 
-    setShowDrawer(false);
-    loadEventData();
+  const handleProcessPayment = () => {
+    if (!cardNumber || !cardExpiry || !cardCvc) {
+      setCheckoutError('Please enter all credit card fields.');
+      return;
+    }
+    setCheckoutError('');
+    setProcessingPayment(true);
+
+    setTimeout(() => {
+      // Complete mock checkout payment
+      mockStore.addRSVP(event.id, {
+        name: `${firstName} ${lastName}`,
+        email: email,
+        phone: phone,
+        status: 'going',
+        guestCount: rsvpForm.guestCount || 1,
+        answers: rsvpForm.answers
+      });
+
+      setProcessingPayment(false);
+      setDrawerStep(4);
+      loadEventData();
+    }, 1200);
   };
 
   // Poll voting
@@ -297,7 +342,7 @@ export default function EventPage() {
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.7) 0%, rgba(0,0,0,0) 80%)', zIndex: 1 }}></div>
           <div style={{ zIndex: 2 }}>
             <h1 style={{ color: 'white', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', textShadow: '0 2px 4px rgba(0,0,0,0.4)' }}>{event.title}</h1>
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem' }}>Hosted by Alex Rivera</p>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem' }}>Hosted by <Link to="/host/Alex Rivera" style={{ color: 'white', textDecoration: 'underline', fontWeight: 600 }}>Alex Rivera</Link></p>
           </div>
         </div>
 
@@ -601,35 +646,16 @@ export default function EventPage() {
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>Direct Phone: +1 (555) 999-8888</span>
             </Card>
 
-            {/* Share Event Card */}
-            <Card style={{ padding: 'var(--spacing-sm)' }}>
+             {/* Share Event Card */}
+            <Card style={{ padding: 'var(--spacing-sm)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '10px' }}>Share This Event</span>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link copied!'); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                >
-                  Copy Link
-                </button>
-                <button
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(event.title + ': ' + window.location.href)}`, '_blank')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#25D366', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                >
-                  WhatsApp
-                </button>
-                <button
-                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#1DA1F2', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                >
-                  Twitter
-                </button>
-                <button
-                  onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#1877F2', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                >
-                  Facebook
-                </button>
-              </div>
+              <Button
+                onClick={() => setShowShareModal(true)}
+                variant="outline"
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.85rem' }}
+              >
+                <Share2 size={16} /> Open Share Link & OG Preview
+              </Button>
             </Card>
 
           </div>
@@ -804,9 +830,237 @@ export default function EventPage() {
               </form>
             )}
 
+            {drawerStep === 3 && (
+              <div className="flex flex-col gap-md" style={{ textAlign: 'left' }}>
+                <h4 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>Ticket Checkout</h4>
+                <div style={{ padding: '12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Ticket Price:</span>
+                    <strong>${event.ticketPrice}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>Quantity:</span>
+                    <strong>{rsvpForm.guestCount || 1} tickets</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: '6px', fontWeight: 700 }}>
+                    <span>Total Amount:</span>
+                    <span style={{ color: '#16a34a' }}>${(rsvpForm.guestCount || 1) * event.ticketPrice} USD</span>
+                  </div>
+                </div>
+
+                {checkoutError && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid #ef4444', color: '#ef4444', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem' }}>
+                    {checkoutError}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-sm">
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Card Number</label>
+                    <input
+                      type="text"
+                      placeholder="4111 2222 3333 4444 (Mock Card)"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').substring(0, 16))}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.9rem', outline: 'none' }}
+                    />
+                  </div>
+                  <div className="grid-2">
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Expiry Date</label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.9rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>CVC Security</label>
+                      <input
+                        type="password"
+                        placeholder="CVC"
+                        value={cardCvc}
+                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').substring(0, 3))}
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.9rem', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleProcessPayment}
+                  disabled={processingPayment}
+                  variant="primary"
+                  style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}
+                >
+                  {processingPayment ? 'Processing Secure Checkout...' : `Pay & Confirm RSVP ($${(rsvpForm.guestCount || 1) * event.ticketPrice})`}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setDrawerStep(2)}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.8rem', alignSelf: 'center', marginTop: '6px' }}
+                >
+                  Back to Details
+                </button>
+              </div>
+            )}
+
+            {drawerStep === 4 && (
+              <div className="text-center flex flex-col items-center gap-md" style={{ padding: '12px 0' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: 'rgba(34,197,94,0.1)',
+                  color: '#16a34a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '2rem',
+                  fontWeight: 700,
+                  margin: '0 auto'
+                }}>
+                  ✓
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>RSVP Confirmed!</h4>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '6px', lineHeight: '1.4' }}>
+                    You have successfully registered for "{event.title}". An email ticket invoice and details have been sent to <strong>{email}</strong>.
+                  </p>
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--color-border)', width: '100%', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Add to Calendar</p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <a
+                      href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${event.date.replace(/-/g,'')}T${(event.time||'180000').replace(':','')}00/${event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(event.location)}&details=${encodeURIComponent(event.description)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(0,113,227,0.08)', color: 'var(--color-primary)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      Google
+                    </a>
+                    <a
+                      href={`data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0ASUMMARY:${encodeURIComponent(event.title)}%0ALOCATION:${encodeURIComponent(event.location)}%0ADESCRIPTION:${encodeURIComponent(event.description)}%0ADTSTART:${event.date.replace(/-/g,'')}T${(event.time||'18:00').replace(':','')}00%0ADTEND:${event.date.replace(/-/g,'')}T220000%0AEND:VEVENT%0AEND:VCALENDAR`}
+                      download={`${event.title.replace(/\s+/g,'-')}.ics`}
+                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(249,115,22,0.08)', color: 'var(--color-accent)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      iCal / .ics
+                    </a>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setShowDrawer(false)}
+                  variant="primary"
+                  style={{ width: '100%', padding: '12px', marginTop: '12px' }}
+                >
+                  Close & View Event
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}
+
+      {showShareModal && event && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2000,
+              padding: '20px'
+            }}>
+              <Card className="glass-surface animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: 'var(--spacing-md)', borderRadius: '24px', textAlign: 'left', background: 'white', boxShadow: 'var(--shadow-lg)' }}>
+                <div className="flex justify-between items-center" style={{ marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px' }}>
+                  <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>Share Gathering</h3>
+                  <button onClick={() => setShowShareModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={20} /></button>
+                </div>
+
+                <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '12px' }}>Copy the invitation link below to share with your friends:</p>
+                
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={window.location.href}
+                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem', background: '#f5f5f7', color: 'var(--color-text-muted)', outline: 'none' }}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      setLinkCopied(true);
+                      setTimeout(() => setLinkCopied(false), 2000);
+                    }}
+                    style={{ padding: '10px 16px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                  >
+                    {linkCopied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'space-around' }}>
+                  <button
+                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(event.title + ': ' + window.location.href)}`, '_blank')}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}
+                  >
+                    <span style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#25D366', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>W</span>
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}
+                  >
+                    <span style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#1DA1F2', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>T</span>
+                    Twitter
+                  </button>
+                  <button
+                    onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}
+                  >
+                    <span style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#1877F2', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>F</span>
+                    Facebook
+                  </button>
+                </div>
+
+                {/* OG Interactive Preview */}
+                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                  <h5 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>Rich link preview (Open Graph)</h5>
+                  
+                  <div style={{ background: '#e5ddd5', borderRadius: '12px', padding: '12px', border: '1px solid #cbd5e1', maxWidth: '340px', margin: '0 auto' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'white', borderRadius: '8px', padding: '8px', borderLeft: '4px solid #00a884', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'start' }}>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: '0.65rem', color: '#8696a0', display: 'block' }}>safalevents.com</span>
+                          <strong style={{ fontSize: '0.8rem', color: '#111b21', display: 'block', margin: '2px 0' }}>{event.title}</strong>
+                          <p style={{ fontSize: '0.7rem', color: '#667781', margin: 0, lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {event.description || 'Join us for this exciting gathering!'}
+                          </p>
+                        </div>
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '4px',
+                          background: event.cover ? `url(${event.cover}) center/cover` : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                          flexShrink: 0
+                        }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </Card>
+            </div>
+          )}
 
       </div>
     </PageShell>

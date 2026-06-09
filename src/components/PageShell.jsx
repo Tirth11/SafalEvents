@@ -1,15 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { LogOut, ArrowRight, LayoutDashboard, Menu, X, Compass, LogIn, Sparkles } from 'lucide-react';
+import { LogOut, ArrowRight, LayoutDashboard, Menu, X, Compass, LogIn, Sparkles, Bell, UserPlus, CheckCircle, CreditCard } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 
 export default function PageShell({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    setCurrentUser(mockStore.getCurrentUser());
+    const user = mockStore.getCurrentUser();
+    setCurrentUser(user);
+    
+    if (user && user.role === 'host') {
+      setNotifications(mockStore.getHostNotifications());
+      // Poll every 10 seconds to show dynamic updates
+      const interval = setInterval(() => {
+        setNotifications(mockStore.getHostNotifications());
+      }, 10000);
+      return () => clearInterval(interval);
+    }
   }, []);
+
+  const handleMarkAllRead = () => {
+    mockStore.markHostNotificationsRead();
+    setNotifications(mockStore.getHostNotifications());
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleLogout = () => {
     mockStore.setCurrentUser({ role: null, name: '', email: '', phone: '' });
@@ -35,6 +54,129 @@ export default function PageShell({ children }) {
 
             {currentUser && currentUser.role ? (
               <>
+                {currentUser.role === 'host' && (
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                      type="button"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-text)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px',
+                        borderRadius: '50%',
+                        position: 'relative',
+                        transition: 'background-color 0.2s',
+                      }}
+                    >
+                      <Bell size={18} />
+                      {unreadCount > 0 && (
+                        <span style={{
+                          position: 'absolute',
+                          top: '2px',
+                          right: '2px',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: '#ef4444',
+                          border: '2px solid white'
+                        }}></span>
+                      )}
+                    </button>
+
+                    {showNotifDropdown && (
+                      <div className="glass-surface" style={{
+                        position: 'absolute',
+                        top: '100%',
+                        right: 0,
+                        width: '320px',
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '16px',
+                        boxShadow: 'var(--shadow-soft)',
+                        marginTop: '12px',
+                        zIndex: 1000,
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        textAlign: 'left'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Activity Alerts</span>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={handleMarkAllRead}
+                              style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                            >
+                              Mark all read
+                            </button>
+                          )}
+                        </div>
+
+                        <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {notifications.length > 0 ? (
+                            notifications.map(notif => (
+                              <div
+                                key={notif.id}
+                                style={{
+                                  display: 'flex',
+                                  gap: '8px',
+                                  padding: '8px',
+                                  borderRadius: '8px',
+                                  background: notif.read ? 'transparent' : 'rgba(0,113,227,0.05)',
+                                  fontSize: '0.8rem',
+                                  transition: 'background-color 0.2s',
+                                  alignItems: 'flex-start',
+                                  position: 'relative'
+                                }}
+                              >
+                                <div style={{
+                                  padding: '4px',
+                                  borderRadius: '50%',
+                                  background: notif.type === 'rsvp' ? 'rgba(0,113,227,0.1)' : notif.type === 'payment' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                                  color: notif.type === 'rsvp' ? 'var(--color-primary)' : notif.type === 'payment' ? '#16a34a' : '#ca8a04',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginTop: '2px'
+                                }}>
+                                  {notif.type === 'rsvp' ? <UserPlus size={14} /> : notif.type === 'payment' ? <CreditCard size={14} /> : <CheckCircle size={14} />}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{notif.title}</div>
+                                  <div style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: '2px', lineHeight: '1.3' }}>{notif.message}</div>
+                                  <div style={{ color: 'var(--color-text-muted)', fontSize: '0.65rem', marginTop: '4px' }}>
+                                    {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                </div>
+                                {!notif.read && (
+                                  <span style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    background: 'var(--color-primary)',
+                                    alignSelf: 'center'
+                                  }}></span>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '16px', fontSize: '0.8rem' }}>
+                              No alerts yet.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <Link to="/dashboard" className="dashboard-pill">
                   <LayoutDashboard size={14} /> My Dashboard
                 </Link>

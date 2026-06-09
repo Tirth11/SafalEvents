@@ -2,23 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X,
-  Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw, BarChart, ToggleLeft,
-  Compass, Star, CreditCard, Bell, Shield, CheckSquare, FileText
+  Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
+  Compass, Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
+  UserCheck, AlertCircle, Copy, Share2, ArrowRight
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
-import { mockStore } from '../utils/mockStore';
+import { mockStore, defaultTemplates } from '../utils/mockStore';
 
 export default function HostDashboard({ onLogout }) {
   const navigate = useNavigate();
-  const [activeSidebar, setActiveSidebar] = useState('events'); // events, audience, analytics, settings
-  const [activeTab, setActiveTab] = useState('upcoming'); // upcoming, past, drafts
+  
+  // Navigation: dashboard, events, earnings, messages, audience, settings
+  const [activeSidebar, setActiveSidebar] = useState('dashboard');
+  
+  // My Events sub-tab: live, today, thisWeek, upcoming, past, drafts
+  const [activeEventTab, setActiveEventTab] = useState('thisWeek');
   
   // State for events, RSVPs, global stats
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(null); // Managed event ID
-  const [selectedEventTab, setSelectedEventTab] = useState('overview'); // overview, guests, polls, comments, edit, notifications
+  const [selectedEventTab, setSelectedEventTab] = useState('overview'); // overview, guests, polls, comments, edit, notifications, invitations, checkin, payments, staff
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('rsvp'); // rsvp, reminder, feedback
   const [previewMode, setPreviewMode] = useState('email'); // email or sms
   const [viewLogDetail, setViewLogDetail] = useState(null);
@@ -40,6 +45,83 @@ export default function HostDashboard({ onLogout }) {
   const [manualInviteSent, setManualInviteSent] = useState(false);
   const [checkinInput, setCheckinInput] = useState('');
   const [checkinResult, setCheckinResult] = useState(null);
+
+  // New Host portal features
+  const [stripeConnected, setStripeConnected] = useState(false);
+  const [bankForm, setBankForm] = useState({ holderName: '', routingNumber: '', accountNumber: '', bankName: '' });
+  const [activeStaffList, setActiveStaffList] = useState([
+    { name: 'Alex Rivera (Host)', role: 'Host', email: 'alex@safalevent.com', status: 'Active' },
+    { name: 'Marcus Chen', role: 'Co-Manager', email: 'marcus@safalevent.com', status: 'Active' },
+    { name: 'Sarah Jenkins', role: 'Check-in Staff', email: 'sarah@safalevent.com', status: 'Active' }
+  ]);
+  const [inviteStaffForm, setInviteStaffForm] = useState({ name: '', email: '', role: 'Check-in Staff' });
+  const [activeScannerStaff, setActiveScannerStaff] = useState('Alex Rivera (Host)');
+  const [autoReplyRules, setAutoReplyRules] = useState([
+    { id: 'rule_1', trigger: 'On Guest RSVP', condition: 'If Status is Waitlist', action: 'Send Waitlist email (rsvp_waitlist)', active: true },
+    { id: 'rule_2', trigger: 'On QR Check-in', condition: 'If Checked In is True', action: 'Send Welcoming text alert', active: true }
+  ]);
+  const [newRule, setNewRule] = useState({ trigger: 'On Guest RSVP', condition: 'If Status is Going', action: 'Send Confirmation email (rsvp)' });
+  const [seriesType, setSeriesType] = useState('None'); // None, Weekly, Monthly
+  const [showSeriesConfirmModal, setShowSeriesConfirmModal] = useState(false);
+  const [payoutHistory, setPayoutHistory] = useState([
+    { id: 'po_1', date: '2026-06-01', amount: 450.00, status: 'Paid', bank: 'Chase Bank (...1234)' },
+    { id: 'po_2', date: '2026-06-08', amount: 320.00, status: 'Processing', bank: 'Chase Bank (...1234)' }
+  ]);
+
+  // Available Payout Balance
+  const [availableBalance, setAvailableBalance] = useState(4250);
+  const [transferring, setTransferring] = useState(false);
+
+  // Calendar Date selection for This Week at a Glance
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+
+  // Guest List checkboxes
+  const [selectedGuestIds, setSelectedGuestIds] = useState([]);
+  
+  // Conversations Inbox Simulator
+  const [conversations, setConversations] = useState([
+    {
+      id: 'c1',
+      guestName: 'Sarah Johnson',
+      guestEmail: 'sarah@example.com',
+      eventTitle: 'Summer Rooftop Mixer',
+      avatar: 'SJ',
+      messages: [
+        { sender: 'guest', text: 'Hi! Can I bring my 2-year-old?', time: '6:12 PM' },
+        { sender: 'host', text: 'Hi Sarah! Yes, children are absolutely welcome. We have a dedicated play area setup.', time: '6:15 PM' },
+        { sender: 'guest', text: 'Hi, thank you! Also, is there food options for vegetarians?', time: '6:30 PM' }
+      ],
+      unread: true,
+      flagged: false
+    },
+    {
+      id: 'c2',
+      guestName: 'Mike Thompson',
+      guestEmail: 'mike@example.com',
+      eventTitle: 'Tech Startup Meetup',
+      avatar: 'MT',
+      messages: [
+        { sender: 'guest', text: 'Is parking free at the Venture Hub HQ building?', time: '4:30 PM' }
+      ],
+      unread: true,
+      flagged: true
+    },
+    {
+      id: 'c3',
+      guestName: 'Priya Patel',
+      guestEmail: 'priya@example.com',
+      eventTitle: 'Community Yoga Session',
+      avatar: 'PP',
+      messages: [
+        { sender: 'guest', text: 'Hi Alex, will there be spare mats? I forgot mine.', time: 'Yesterday' },
+        { sender: 'host', text: 'Hi Priya! Yes, we have about 10 spare mats available on a first-come basis.', time: 'Yesterday' }
+      ],
+      unread: false,
+      flagged: false
+    }
+  ]);
+  const [activeConversationId, setActiveConversationId] = useState('c1');
+  const [replyText, setReplyText] = useState('');
 
   // Edit Event state
   const [editEventForm, setEditEventForm] = useState({
@@ -94,11 +176,20 @@ export default function HostDashboard({ onLogout }) {
 
   useEffect(() => {
     loadDashboardData();
+    const currentUser = mockStore.getCurrentUser();
+    if (currentUser && currentUser.email) {
+      const bank = mockStore.getBankAccount(currentUser.email);
+      if (bank) {
+        setBankForm(bank);
+        setStripeConnected(true);
+      }
+    }
   }, []);
 
   // Compute metrics
   const totalEvents = events.length;
-  const upcomingEventsCount = events.filter(e => e.status === 'Published' && new Date(e.date) >= new Date()).length;
+  const upcomingEvents = events.filter(e => e.status === 'Published' && new Date(e.date) >= new Date());
+  const upcomingEventsCount = upcomingEvents.length;
   
   // Calculate total RSVPs across all events
   let totalRsvps = 0;
@@ -139,6 +230,7 @@ export default function HostDashboard({ onLogout }) {
   const handleManageEvent = (eventId) => {
     setSelectedEventId(eventId);
     setSelectedEventTab('overview');
+    setActiveSidebar('events');
     const evt = mockStore.getEventById(eventId);
     if (evt) {
       setEditEventForm({
@@ -163,6 +255,7 @@ export default function HostDashboard({ onLogout }) {
         guestConfirmation: evt.guestConfirmation !== undefined ? evt.guestConfirmation : true,
         reminderSchedule: evt.reminderSchedule || '24h',
         hostAlerts: evt.hostAlerts !== undefined ? evt.hostAlerts : true,
+        dailyDigestEnabled: evt.dailyDigestEnabled !== undefined ? evt.dailyDigestEnabled : false,
         allowComments: evt.allowComments !== undefined ? evt.allowComments : true,
         allowPhotoUploads: evt.allowPhotoUploads !== undefined ? evt.allowPhotoUploads : false,
         enablePayments: evt.enablePayments !== undefined ? evt.enablePayments : false,
@@ -179,10 +272,9 @@ export default function HostDashboard({ onLogout }) {
         reminder2Enabled: evt.reminder2Enabled !== undefined ? evt.reminder2Enabled : false,
         reminder2Offset: evt.reminder2Offset !== undefined ? evt.reminder2Offset : 3,
         feedbackDelay: evt.feedbackDelay !== undefined ? evt.feedbackDelay : 3,
-        templates: evt.templates || {
-          rsvp: { subject: "", body: "" },
-          reminder: { subject: "", body: "" },
-          feedback: { subject: "", body: "" }
+        templates: {
+          ...defaultTemplates,
+          ...evt.templates
         }
       });
     }
@@ -205,6 +297,101 @@ export default function HostDashboard({ onLogout }) {
     }
   };
 
+  const handleVerifyCheckin = (passId) => {
+    const rsvp = managedEventRsvps.find(r => r.id === passId.trim());
+    if (!rsvp) {
+      setCheckinResult({ type: 'error', message: `Pass ID "${passId}" not found for this event.` });
+      return;
+    }
+    if (rsvp.status === 'waitlist') {
+      setCheckinResult({ type: 'error', rsvp, message: 'Guest is currently waitlisted. Entry denied.' });
+      return;
+    }
+    if (rsvp.status === 'declined') {
+      setCheckinResult({ type: 'error', rsvp, message: 'Guest RSVP has been declined. Entry denied.' });
+      return;
+    }
+    if (rsvp.checkedIn) {
+      setCheckinResult({ type: 'warning', rsvp, message: 'Warning: Pass has already been scanned. Duplicate entry detected!' });
+      return;
+    }
+    
+    // Success Check-in
+    mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }, activeScannerStaff);
+    loadDashboardData();
+    setCheckinResult({
+      type: 'success',
+      rsvp: { ...rsvp, checkedIn: true },
+      message: `Entry Approved! Checked in by ${activeScannerStaff}.`
+    });
+    setCheckinInput('');
+  };
+
+  const handleSendTestMessage = (templateKey) => {
+    const dummyGuest = { id: 'test_rsvp', name: "Alice Vance", email: "alice@example.com", phone: "+1 (555) 123-4567", guestCount: 1 };
+    const templates = editEventForm.templates || {};
+    const templateSubject = templates[templateKey]?.subject || '';
+    const templateBody = templates[templateKey]?.body || '';
+    
+    const resolvedSubject = mockStore.renderTemplate(templateSubject, managedEvent, dummyGuest);
+    const resolvedBody = mockStore.renderTemplate(templateBody, managedEvent, dummyGuest);
+    
+    mockStore.addNotificationLog(selectedEventId, {
+      rsvpId: 'test_rsvp',
+      guestEmail: 'alice@example.com',
+      type: templateKey,
+      channel: previewMode === 'email' ? 'Email' : 'SMS',
+      subject: '[TEST] ' + resolvedSubject,
+      body: resolvedBody,
+      status: 'Delivered',
+      isTest: true
+    });
+    
+    loadDashboardData();
+    alert(`🧪 Test message dispatched successfully! Checked outbox logs for the recipient 'alice@example.com'.`);
+  };
+
+  const handleAddRule = (e) => {
+    e.preventDefault();
+    const ruleToAdd = {
+      id: 'rule_' + Math.random().toString(36).substr(2, 9),
+      ...newRule,
+      active: true
+    };
+    setAutoReplyRules([...autoReplyRules, ruleToAdd]);
+    setNewRule({ trigger: 'On Guest RSVP', condition: 'If Status is Going', action: 'Send Confirmation email (rsvp)' });
+  };
+
+  const handleToggleRule = (id) => {
+    setAutoReplyRules(autoReplyRules.map(r => r.id === id ? { ...r, active: !r.active } : r));
+  };
+
+  const handleDeleteRule = (id) => {
+    setAutoReplyRules(autoReplyRules.filter(r => r.id !== id));
+  };
+
+  const handleInviteStaffSubmit = (e) => {
+    e.preventDefault();
+    if (!inviteStaffForm.name || !inviteStaffForm.email) return;
+    const newStaff = {
+      name: inviteStaffForm.name,
+      email: inviteStaffForm.email,
+      role: inviteStaffForm.role,
+      status: 'Active'
+    };
+    setActiveStaffList([...activeStaffList, newStaff]);
+    setInviteStaffForm({ name: '', email: '', role: 'Check-in Staff' });
+    alert(`✉️ Invitation sent to ${newStaff.name} as ${newStaff.role}!`);
+  };
+
+  const handleRemoveStaff = (email) => {
+    if (email === 'alex@safalevent.com') {
+      alert("Cannot remove the primary host!");
+      return;
+    }
+    setActiveStaffList(activeStaffList.filter(s => s.email !== email));
+  };
+
   // Export CSV
   const handleExportCSV = (event, rsvps) => {
     const headers = 'Name,Email,Phone,Status,Checked-In,Timestamp\n';
@@ -214,6 +401,19 @@ export default function HostDashboard({ onLogout }) {
     const link = document.createElement("a");
     link.setAttribute("href", url);
     link.setAttribute("download", `guestlist_${event.title.toLowerCase().replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportFeedbackCSV = (event, feedbackItems) => {
+    const headers = 'Guest Name,Email,Rating,Review Comment,Date Submitted\n';
+    const rows = feedbackItems.map(fb => `"${fb.name}","${fb.email}",${fb.rating},"${fb.comments || ''}","${fb.submittedAt}"`).join('\n');
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `feedback_${event.title.toLowerCase().replace(/\s+/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -266,6 +466,60 @@ export default function HostDashboard({ onLogout }) {
   };
 
   // Edit Event Details Submit
+  const handleSaveEventSeries = (applyToAll) => {
+    setShowSeriesConfirmModal(false);
+    const currentEvt = mockStore.getEventById(selectedEventId);
+    if (!currentEvt) return;
+    const dateChanged = editEventForm.date !== currentEvt.date || editEventForm.time !== currentEvt.time;
+    const locationChanged = editEventForm.location !== currentEvt.location;
+
+    mockStore.updateEvent(selectedEventId, editEventForm);
+    
+    if (applyToAll && seriesType !== 'None') {
+      // Create 3 more weekly/monthly occurrences
+      const baseDate = new Date(editEventForm.date);
+      for (let i = 1; i <= 3; i++) {
+        const nextDate = new Date(baseDate);
+        if (seriesType === 'Weekly') {
+          nextDate.setDate(baseDate.getDate() + 7 * i);
+        } else if (seriesType === 'Monthly') {
+          nextDate.setMonth(baseDate.getMonth() + i);
+        }
+        
+        const dateStr = nextDate.toISOString().split('T')[0];
+        mockStore.createEvent({
+          ...editEventForm,
+          title: `${editEventForm.title} (Occurrence ${i + 1})`,
+          date: dateStr,
+          status: 'Published'
+        });
+      }
+      alert(`📅 Event series created! 4 occurrences successfully generated (${seriesType} cadence) and published.`);
+    } else {
+      const eventRsvps = mockStore.getRSVPs(selectedEventId);
+      if (dateChanged || locationChanged) {
+        const goingGuests = eventRsvps.filter(r => r.status === 'going' || r.status === 'maybe');
+        goingGuests.forEach(guest => {
+          const subject = `Event Updated: ${editEventForm.title}`;
+          const body = `Hi ${guest.name},\n\nWe wanted to let you know that the details for the event "${editEventForm.title}" have been updated.\n\nNew Details:\nDate: ${editEventForm.date}\nTime: ${editEventForm.time}\nLocation: ${editEventForm.location}\n\nManage RSVP: ${window.location.origin}/dashboard`;
+          
+          mockStore.addNotificationLog(selectedEventId, {
+            rsvpId: guest.id,
+            guestEmail: guest.email,
+            type: 'broadcast',
+            channel: 'Email',
+            subject,
+            body
+          });
+        });
+        alert('Event details updated successfully! 📧 An email update has been sent to all registered guests.');
+      } else {
+        alert('Event settings updated successfully!');
+      }
+    }
+    loadDashboardData();
+  };
+
   const handleEditEventSubmit = (e) => {
     e.preventDefault();
     const eventRsvps = mockStore.getRSVPs(selectedEventId);
@@ -277,31 +531,10 @@ export default function HostDashboard({ onLogout }) {
       return;
     }
 
-    const currentEvt = mockStore.getEventById(selectedEventId);
-    const dateChanged = editEventForm.date !== currentEvt.date || editEventForm.time !== currentEvt.time;
-    const locationChanged = editEventForm.location !== currentEvt.location;
-
-    mockStore.updateEvent(selectedEventId, editEventForm);
-    loadDashboardData();
-
-    if (dateChanged || locationChanged) {
-      const goingGuests = eventRsvps.filter(r => r.status === 'going' || r.status === 'maybe');
-      goingGuests.forEach(guest => {
-        const subject = `Event Updated: ${editEventForm.title}`;
-        const body = `Hi ${guest.name},\n\nWe wanted to let you know that the details for the event "${editEventForm.title}" have been updated.\n\nNew Details:\nDate: ${editEventForm.date}\nTime: ${editEventForm.time}\nLocation: ${editEventForm.location}\n\nManage RSVP: http://localhost:5173/dashboard`;
-        
-        mockStore.addNotificationLog(selectedEventId, {
-          rsvpId: guest.id,
-          guestEmail: guest.email,
-          type: 'broadcast',
-          channel: 'Email',
-          subject,
-          body
-        });
-      });
-      alert('Event details updated successfully! 📧 An automatic email update has been broadcast to all registered guests notifying them of the new schedule or venue.');
+    if (seriesType !== 'None') {
+      setShowSeriesConfirmModal(true);
     } else {
-      alert('Event settings updated successfully!');
+      handleSaveEventSeries(false);
     }
   };
 
@@ -316,8 +549,9 @@ export default function HostDashboard({ onLogout }) {
       reminder1Offset: editEventForm.reminder1Offset,
       reminder2Enabled: editEventForm.reminder2Enabled,
       reminder2Offset: editEventForm.reminder2Offset,
-      feedbackDelay: editEventForm.feedbackDelay,
-      templates: editEventForm.templates
+      templates: editEventForm.templates,
+      hostAlerts: editEventForm.hostAlerts,
+      dailyDigestEnabled: editEventForm.dailyDigestEnabled
     });
     loadDashboardData();
     alert('Notification settings and templates saved successfully!');
@@ -331,6 +565,7 @@ export default function HostDashboard({ onLogout }) {
         loadDashboardData();
         setSelectedEventId(cloned.id);
         setSelectedEventTab('edit');
+        setActiveSidebar('events');
       }
     }
   };
@@ -344,28 +579,186 @@ export default function HostDashboard({ onLogout }) {
     }
   };
 
-  // Get active managed event details
+  // Duplicate the last created/scheduled event in the events list
+  const handleDuplicateLastEvent = () => {
+    if (events.length === 0) {
+      alert("No events found to duplicate.");
+      return;
+    }
+    const sorted = [...events].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const lastEvent = sorted[0];
+    handleDuplicateEvent(lastEvent.id);
+  };
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Good morning';
+    if (hr < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  // Render weekly summary sub-status text
+  const getWeeklyEventsText = () => {
+    const now = new Date();
+    const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const weeklyEvents = events.filter(e => e.status === 'Published' && new Date(e.date) >= now && new Date(e.date) <= oneWeekLater);
+    if (weeklyEvents.length === 0) return "You have no events scheduled this week.";
+    
+    const nextEvent = [...weeklyEvents].sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+    return (
+      <span>
+        You have <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{weeklyEvents.length} events</span> happening this week. Next up: <strong>{nextEvent.title}</strong> starts on {nextEvent.date} at {nextEvent.time}.
+      </span>
+    );
+  };
+
+  // Monday to Sunday dates of current week
+  const getDaysOfWeek = () => {
+    const curr = new Date();
+    const first = curr.getDate() - curr.getDay() + (curr.getDay() === 0 ? -6 : 1); // get Monday
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(curr.setDate(first + i));
+      days.push(day);
+    }
+    return days;
+  };
+
+  const daysOfWeek = getDaysOfWeek();
+
+  const getEventsForDate = (date) => {
+    const dateString = date.toISOString().split('T')[0];
+    return events.filter(e => e.date === dateString);
+  };
+
+  // Filter events by deep dive tabs
+  const getEventsForTab = (tab) => {
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0];
+    
+    return events.filter(e => {
+      if (e.status === 'Draft') {
+        return tab === 'drafts';
+      }
+      
+      const evtDate = new Date(e.date + 'T' + e.time);
+      const diffTime = evtDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (tab === 'live') {
+        // Simple live condition: event is today and active around now
+        const isToday = e.date === todayString;
+        const eventHr = parseInt(e.time.split(':')[0], 10);
+        const currHr = today.getHours();
+        return isToday && currHr >= eventHr && currHr < eventHr + 4;
+      }
+      if (tab === 'today') {
+        return e.date === todayString;
+      }
+      if (tab === 'thisWeek') {
+        return e.date !== todayString && diffDays > 0 && diffDays <= 7;
+      }
+      if (tab === 'upcoming') {
+        return diffDays > 7 && diffDays <= 30;
+      }
+      if (tab === 'past') {
+        return evtDate < today && e.date !== todayString;
+      }
+      return false;
+    });
+  };
+
+  // Payout bank transfer simulation
+  const handleBankTransfer = () => {
+    if (availableBalance <= 0) {
+      alert("No funds available for payout.");
+      return;
+    }
+    setTransferring(true);
+    setTimeout(() => {
+      const newPayout = {
+        id: 'po_' + Math.random().toString(36).substr(2, 9),
+        date: new Date().toISOString().split('T')[0],
+        amount: availableBalance,
+        status: 'Processing',
+        bank: bankForm.bankName ? `${bankForm.bankName} (...${bankForm.accountNumber.slice(-4)})` : 'Chase Bank (...1234)'
+      };
+      setPayoutHistory([newPayout, ...payoutHistory]);
+      setAvailableBalance(0);
+      setTransferring(false);
+      alert(`🎉 Transfer initiated! $${availableBalance} is being sent to your bank account.`);
+    }, 1500);
+  };
+
+  // Inbox message sending handler
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+    
+    setConversations(conversations.map(c => {
+      if (c.id === activeConversationId) {
+        return {
+          ...c,
+          unread: false,
+          messages: [
+            ...c.messages,
+            { sender: 'host', text: replyText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+          ]
+        };
+      }
+      return c;
+    }));
+    setReplyText('');
+  };
+
+  // Active managed event details
   const managedEvent = selectedEventId ? mockStore.getEventById(selectedEventId) : null;
   const managedEventRsvps = selectedEventId ? mockStore.getRSVPs(selectedEventId) : [];
   const managedEventPolls = selectedEventId ? mockStore.getPolls(selectedEventId) : [];
   const managedEventComments = selectedEventId ? mockStore.getComments(selectedEventId) : [];
   const managedEventViews = selectedEventId ? mockStore.getViews(selectedEventId) : 0;
 
-  // Filter events by tab
-  const filteredEvents = events.filter(e => {
-    if (activeTab === 'upcoming') return e.status === 'Published' && new Date(e.date) >= new Date();
-    if (activeTab === 'past') return e.status === 'Completed' || (e.status === 'Published' && new Date(e.date) < new Date());
-    return e.status === 'Draft';
-  });
+  // Active conversation details
+  const activeConversation = conversations.find(c => c.id === activeConversationId);
+
+  // Bulk actions handlers
+  const handleBulkCheckIn = () => {
+    selectedGuestIds.forEach(id => {
+      mockStore.updateRSVP(selectedEventId, id, { checkedIn: true });
+    });
+    setSelectedGuestIds([]);
+    loadDashboardData();
+    alert('Selected guests checked in successfully!');
+  };
+
+  const handleBulkMessage = () => {
+    setBroadcastTarget('all');
+    setShowBroadcastModal(true);
+  };
+
+  const handleBulkExport = () => {
+    const selectedRsvps = managedEventRsvps.filter(r => selectedGuestIds.includes(r.id));
+    handleExportCSV(managedEvent, selectedRsvps);
+  };
 
   return (
     <PageShell>
       <div className="dashboard-layout">
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
-          <div className="dashboard-sidebar-title">Host Portal</div>
+          <div className="dashboard-sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.4rem' }}>👑</span> Host Portal
+          </div>
 
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+            <button 
+              onClick={() => { setActiveSidebar('dashboard'); setSelectedEventId(null); }} 
+              className={`dashboard-nav-btn ${activeSidebar === 'dashboard' ? 'active' : ''}`}
+            >
+              <Compass size={18} /> Dashboard
+            </button>
+            
             <button 
               onClick={() => { setActiveSidebar('events'); setSelectedEventId(null); }} 
               className={`dashboard-nav-btn ${activeSidebar === 'events' ? 'active' : ''}`}
@@ -374,17 +767,30 @@ export default function HostDashboard({ onLogout }) {
             </button>
             
             <button 
+              onClick={() => { setActiveSidebar('earnings'); setSelectedEventId(null); }} 
+              className={`dashboard-nav-btn ${activeSidebar === 'earnings' ? 'active' : ''}`}
+            >
+              <CreditCard size={18} /> Earnings
+            </button>
+
+            <button 
+              onClick={() => { setActiveSidebar('messages'); setSelectedEventId(null); }} 
+              className={`dashboard-nav-btn ${activeSidebar === 'messages' ? 'active' : ''}`}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div className="flex items-center gap-sm">
+                <MessageSquare size={18} /> Messages
+              </div>
+              {conversations.some(c => c.unread) && (
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff3b30' }} />
+              )}
+            </button>
+
+            <button 
               onClick={() => { setActiveSidebar('audience'); setSelectedEventId(null); }} 
               className={`dashboard-nav-btn ${activeSidebar === 'audience' ? 'active' : ''}`}
             >
               <Users size={18} /> Audience
-            </button>
-
-            <button 
-              onClick={() => { setActiveSidebar('analytics'); setSelectedEventId(null); }} 
-              className={`dashboard-nav-btn ${activeSidebar === 'analytics' ? 'active' : ''}`}
-            >
-              <BarChart2 size={18} /> Analytics
             </button>
 
             <button 
@@ -406,1685 +812,1253 @@ export default function HostDashboard({ onLogout }) {
 
         {/* Main Content Pane */}
         <main className="dashboard-main">
-        
-        {/* --- GLOBAL SIDEBAR NAVIGATION --- */}
-        {activeSidebar === 'events' && !selectedEventId && (
-          <div>
-            {/* Title banner */}
-            <div className="flex justify-between items-center" style={{ marginBottom: 'var(--spacing-xl)' }}>
+          
+          {/* ========================================================================= */}
+          {/* SECTION 1 - 3 & 6: DASHBOARD HOME PAGE                                    */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'dashboard' && (
+            <div className="flex flex-col gap-xl">
+              
+              {/* SECTION 1: WELCOME BAR */}
+              <div className="glass-surface flex justify-between items-center" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>
+                    {getGreeting()}, Alex! 👋
+                  </h1>
+                  <p className="text-muted" style={{ margin: '6px 0 0 0', fontSize: '0.95rem' }}>
+                    {getWeeklyEventsText()}
+                  </p>
+                </div>
+                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                  <Link to="/create">
+                    <Button variant="primary" className="flex items-center gap-xs">
+                      <Plus size={18} /> Create New Event
+                    </Button>
+                  </Link>
+                  <Button variant="outline" onClick={handleDuplicateLastEvent} className="flex items-center gap-xs">
+                    <Copy size={16} /> Copy Last Event
+                  </Button>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/host/alex`);
+                      alert("Host profile link copied to clipboard!");
+                    }}
+                    className="btn btn-outline"
+                    style={{ padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', color: 'var(--color-text-muted)', background: 'transparent' }}
+                  >
+                    <Share2 size={16} /> Share Profile
+                  </button>
+                </div>
+              </div>
+
+              {/* SECTION 2: STATUS OVERVIEW CARDS */}
               <div>
-                <h1 style={{ fontSize: '2.25rem', marginBottom: '4px' }}>Host Dashboard</h1>
-                <p className="text-muted">Create invitation layouts, manage attendees, and view analytics.</p>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>Quick Stats</h2>
+                <div className="grid-3" style={{ gap: '16px' }}>
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.5rem' }}>💰</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(34,197,94,0.1)', color: '#16a34a' }}>+$850 this week</span>
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Earnings</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>${availableBalance.toLocaleString()}</p>
+                    <button 
+                      onClick={() => setActiveSidebar('earnings')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      View breakdown &rarr;
+                    </button>
+                  </Card>
+
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.5rem' }}>🎟️</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>{upcomingEventsCount} Active</span>
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Active RSVPs</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalRsvps} guests</p>
+                    <button 
+                      onClick={() => setActiveSidebar('events')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      Manage guests &rarr;
+                    </button>
+                  </Card>
+
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.5rem' }}>📩</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fee2e2', color: '#ef4444' }}>3 urgent</span>
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Unread Messages</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>8 new</p>
+                    <button 
+                      onClick={() => setActiveSidebar('messages')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      Reply now &rarr;
+                    </button>
+                  </Card>
+
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.5rem' }}>⏱️</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#d97706' }}>Ends in 3h</span>
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Ending Soon</h3>
+                    <p style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 12px 0' }}>Registration Closing</p>
+                    <button 
+                      onClick={() => {
+                        const ending = events.find(e => e.rsvpStatus === 'Open');
+                        if (ending) handleManageEvent(ending.id);
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      Extend registration &rarr;
+                    </button>
+                  </Card>
+
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.5rem' }}>⭐</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#b45309' }}>Recent reviews</span>
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>New Reviews</h3>
+                    <p style={{ fontSize: '2.0rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>4.8 Rating</p>
+                    <button 
+                      onClick={() => {
+                        const feedbackEvt = events.find(e => e.status === 'Completed');
+                        if (feedbackEvt) {
+                          handleManageEvent(feedbackEvt.id);
+                          setSelectedEventTab('overview');
+                        } else {
+                          alert("No completed events with reviews found.");
+                        }
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      Read reviews &rarr;
+                    </button>
+                  </Card>
+
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.5rem' }}>🔔</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fee2e2', color: '#ef4444' }}>Diet details</span>
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Pending Tasks</h3>
+                    <p style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 12px 0' }}>3 dietary unconfirmed</p>
+                    <button 
+                      onClick={() => {
+                        const listEvt = events.find(e => e.id === '1');
+                        if (listEvt) {
+                          handleManageEvent(listEvt.id);
+                          setSelectedEventTab('guests');
+                        }
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      Resolve now &rarr;
+                    </button>
+                  </Card>
+                </div>
               </div>
-              <Link to="/create">
-                <Button variant="primary" className="flex items-center gap-xs">
-                  <Plus size={20} /> Create New Event
-                </Button>
-              </Link>
-            </div>
 
-            {/* Metric Tiles */}
-            <div className="grid-3" style={{ marginBottom: 'var(--spacing-xl)' }}>
-              <Card style={{ padding: 'var(--spacing-md)' }} className="flex justify-between items-center glass-surface">
-                <div>
-                  <h3 className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Total RSVPs</h3>
-                  <p style={{ fontSize: '2.25rem', fontWeight: 700, lineHeight: 1 }}>{totalRsvps}</p>
+              {/* SECTION 3: THIS WEEK AT A GLANCE */}
+              <div>
+                <div style={{ textAlign: 'left', marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>This Week at a Glance</h2>
+                  <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
+                    Monday, {daysOfWeek[0].toLocaleDateString([], {month: 'short', day: 'numeric'})} &mdash; Sunday, {daysOfWeek[6].toLocaleDateString([], {month: 'short', day: 'numeric'})}
+                  </p>
                 </div>
-                {/* SVG sparkline */}
-                <svg width="60" height="30" style={{ opacity: 0.7 }}>
-                  <path d="M0,25 Q15,10 30,18 T60,5" fill="none" stroke="var(--color-primary)" strokeWidth="3" />
-                </svg>
-              </Card>
-              <Card style={{ padding: 'var(--spacing-md)' }} className="flex justify-between items-center glass-surface">
-                <div>
-                  <h3 className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Upcoming Events</h3>
-                  <p style={{ fontSize: '2.25rem', fontWeight: 700, lineHeight: 1 }}>{upcomingEventsCount}</p>
-                </div>
-                <Calendar size={32} style={{ color: 'var(--color-accent)', opacity: 0.8 }} />
-              </Card>
-              <Card style={{ padding: 'var(--spacing-md)' }} className="flex justify-between items-center glass-surface">
-                <div>
-                  <h3 className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Platform Views</h3>
-                  <p style={{ fontSize: '2.25rem', fontWeight: 700, lineHeight: 1 }}>{totalViews}</p>
-                </div>
-                {/* SVG view analytics mini chart */}
-                <svg width="60" height="30" style={{ opacity: 0.7 }}>
-                  <rect x="0" y="15" width="8" height="15" rx="2" fill="var(--color-text-muted)" />
-                  <rect x="12" y="10" width="8" height="20" rx="2" fill="var(--color-text-muted)" />
-                  <rect x="24" y="20" width="8" height="10" rx="2" fill="var(--color-text-muted)" />
-                  <rect x="36" y="5" width="8" height="25" rx="2" fill="var(--color-primary)" />
-                  <rect x="48" y="0" width="8" height="30" rx="2" fill="var(--color-accent)" />
-                </svg>
-              </Card>
-            </div>
 
-            {/* Events Selector Tabbed list */}
-            <div>
-              <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: 'var(--spacing-md)' }}>
-                <button onClick={() => setActiveTab('upcoming')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '1rem', color: activeTab === 'upcoming' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'upcoming' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Upcoming</button>
-                <button onClick={() => setActiveTab('past')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '1rem', color: activeTab === 'past' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'past' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Past Events</button>
-                <button onClick={() => setActiveTab('drafts')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '1rem', color: activeTab === 'drafts' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: activeTab === 'drafts' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Drafts</button>
-              </div>
-
-              <div className="flex flex-col gap-md">
-                {filteredEvents.length > 0 ? (
-                  filteredEvents.map(event => {
-                    const rsvps = mockStore.getRSVPs(event.id);
-                    const attending = rsvps.filter(r => r.status === 'going').length;
-                    const maybe = rsvps.filter(r => r.status === 'maybe').length;
+                <div className="grid-7" style={{ gap: '10px' }}>
+                  {daysOfWeek.map((day, idx) => {
+                    const isToday = day.toDateString() === new Date().toDateString();
+                    const dayEvents = getEventsForDate(day);
+                    const hasEvents = dayEvents.length > 0;
+                    const isSelected = selectedCalendarDate?.toDateString() === day.toDateString();
                     
                     return (
-                      <Card key={event.id} className="flex justify-between items-center" style={{ padding: 'var(--spacing-md)', transition: 'transform var(--transition-fast)', cursor: 'default' }}>
-                        <div className="flex items-center gap-md" style={{ flex: 1 }}>
-                          <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-md)', background: event.cover ? `url(${event.cover}) center/cover` : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', flexShrink: 0 }}></div>
-                          <div>
-                            <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: event.status === 'Published' ? 'rgba(0,113,227,0.1)' : 'rgba(100,116,139,0.1)', color: event.status === 'Published' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>{event.status}</span>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Code: {event.id}</span>
-                            </div>
-                            <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>{event.title}</h3>
-                            <p className="text-muted" style={{ fontSize: '0.875rem' }}>{event.date} • {event.time} • {event.location.split(',')[0]}</p>
+                      <div 
+                        key={idx}
+                        onClick={() => setSelectedCalendarDate(isSelected ? null : day)}
+                        style={{
+                          background: isToday ? 'rgba(0,113,227,0.05)' : 'var(--color-surface)',
+                          border: isSelected 
+                            ? '2.5px solid var(--color-primary)' 
+                            : isToday 
+                            ? '1.5px solid var(--color-primary)' 
+                            : '1px solid var(--color-border)',
+                          borderRadius: '12px',
+                          padding: '12px 8px',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'all 0.2s ease',
+                          minHeight: '110px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          boxShadow: isSelected ? 'var(--shadow-soft)' : 'none'
+                        }}
+                        className="card-hover-lift"
+                      >
+                        <div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                            {day.toLocaleDateString([], { weekday: 'short' })}
+                          </div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isToday ? 'var(--color-primary)' : 'inherit' }}>
+                            {day.getDate()}
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-xl">
-                          <div className="text-center" style={{ minWidth: '80px' }}>
-                            <p style={{ fontSize: '1.25rem', fontWeight: 700 }}>{attending + maybe} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>/ {event.capacity}</span></p>
-                            <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>RSVPs</p>
-                          </div>
+
+                        <div>
+                          {hasEvents ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'center' }}>
+                              <span style={{ fontSize: '1.1rem' }}>🎉</span>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 6px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', borderRadius: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {dayEvents[0].title}
+                              </span>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>No events</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Date click expand drawer */}
+                {selectedCalendarDate && (
+                  <div className="glass-surface" style={{ marginTop: '16px', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'left', animation: 'fadeIn 0.2s ease-in-out' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Schedule for {selectedCalendarDate.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                      <button onClick={() => setSelectedCalendarDate(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={16} /></button>
+                    </h4>
+                    {getEventsForDate(selectedCalendarDate).length > 0 ? (
+                      <div className="flex flex-col gap-sm">
+                        {getEventsForDate(selectedCalendarDate).map(evt => {
+                          const rsvps = mockStore.getRSVPs(evt.id);
+                          const going = rsvps.filter(r => r.status === 'going').length;
+                          return (
+                            <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', items: 'center', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '10px' }}>
+                              <div>
+                                <h5 style={{ margin: '0 0 2px 0', fontSize: '1rem', fontWeight: 700 }}>{evt.title}</h5>
+                                <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
+                                  🕒 {evt.time} • 📍 {evt.location.split(',')[0]} • 👥 {going} / {evt.capacity} spots filled
+                                </p>
+                              </div>
+                              <div className="flex gap-xs">
+                                <Button variant="primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleManageEvent(evt.id)}>Edit</Button>
+                                <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/e/${evt.id}`); alert("Link copied!"); }}>Copy Link</Button>
+                                <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { handleManageEvent(evt.id); setSelectedEventTab('guests'); }}>Guests</Button>
+                                <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { handleManageEvent(evt.id); setSelectedEventTab('checkin'); }}>Check-in</Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No events scheduled for this day.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 6: RECENT ACTIVITY FEED */}
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>What's Happening</h2>
+                <Card style={{ padding: 0, overflow: 'hidden' }} className="glass-surface">
+                  <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                    
+                    {/* Activity Item 1 */}
+                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.4rem' }}>🎟️</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Sarah Johnson RSVP'd for Summer Rooftop Mixer (+2)</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Just now</div>
+                      </div>
+                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => { handleManageEvent('1'); setSelectedEventTab('guests'); }}>View details</Button>
+                    </div>
+
+                    {/* Activity Item 2 */}
+                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.4rem' }}>✉️</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>You sent message: "Parking update & venue maps" to 45 guests of Summer Rooftop Mixer</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>5 minutes ago</div>
+                      </div>
+                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => { handleManageEvent('1'); setSelectedEventTab('notifications'); }}>Outbox Logs</Button>
+                    </div>
+
+                    {/* Activity Item 3 */}
+                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.4rem' }}>💰</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Ticket Payment received: $60.00 from John Smith</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>12 minutes ago</div>
+                      </div>
+                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => setActiveSidebar('earnings')}>View in earnings</Button>
+                    </div>
+
+                    {/* Activity Item 4 */}
+                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Capacity Alert: Stand-up Comedy Night is currently at 90% capacity</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>1 hour ago</div>
+                      </div>
+                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => handleManageEvent('5')}>Boost promotion</Button>
+                    </div>
+
+                    {/* Activity Item 5 */}
+                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.4rem' }}>🌟</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>New review posted: "Amazing venue!" ⭐⭐⭐⭐⭐ from Priya M.</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>3 hours ago</div>
+                      </div>
+                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => { handleManageEvent('4'); setSelectedEventTab('overview'); }}>Read & respond</Button>
+                    </div>
+
+                  </div>
+                </Card>
+              </div>
+
+              {/* QUICK TOOLS & RESOURCES */}
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>Quick Tools & Resources</h2>
+                <div className="grid-3" style={{ gap: '16px' }}>
+                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface">
+                    <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>📖</span>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Help Center</h4>
+                    <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Learn how to customize your check-in scanner and RSVPs workflows.</p>
+                    <a href="#help" style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Browse articles &rarr;</a>
+                  </Card>
+                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface">
+                    <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>📝</span>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Auto-Reply Templates</h4>
+                    <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Set default templates for instant confirmation and reminders.</p>
+                    <a href="#templates" onClick={() => { setActiveSidebar('settings'); }} style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Edit templates &rarr;</a>
+                  </Card>
+                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface">
+                    <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>⚙️</span>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Waitlist Promotion</h4>
+                    <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Configure auto-promote settings when RSVPs get cancelled.</p>
+                    <a href="#rules" onClick={() => { handleManageEvent('2'); setSelectedEventTab('staff'); }} style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Manage rules &rarr;</a>
+                  </Card>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* SECTION 4: MY EVENTS (TABBED LIST)                                        */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'events' && !selectedEventId && (
+            <div>
+              <div className="flex justify-between items-center" style={{ marginBottom: '24px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>My Events</h1>
+                  <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Deep dive into your invitation templates, guest check-ins, and outbox logs.</p>
+                </div>
+                <Link to="/create">
+                  <Button variant="primary" className="flex items-center gap-xs">
+                    <Plus size={18} /> Create New Event
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Sub-Tabs Selector */}
+              <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '20px' }}>
+                {[
+                  { key: 'live', label: '🔴 Live Now' },
+                  { key: 'today', label: '📅 Today' },
+                  { key: 'thisWeek', label: '⏳ This Week' },
+                  { key: 'upcoming', label: '📆 Upcoming' },
+                  { key: 'past', label: '✅ Past' },
+                  { key: 'drafts', label: '📝 Drafts' }
+                ].map(t => {
+                  const evList = getEventsForTab(t.key);
+                  const count = evList.length;
+                  return (
+                    <button 
+                      key={t.key}
+                      onClick={() => setActiveEventTab(t.key)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0 0 12px 0',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        color: activeEventTab === t.key ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        borderBottom: activeEventTab === t.key ? '2.5px solid var(--color-primary)' : '2.5px solid transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      {t.label}
+                      {count > 0 && (
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          background: t.key === 'live' ? '#ff3b30' : 'rgba(0,113,227,0.1)',
+                          color: t.key === 'live' ? 'white' : 'var(--color-primary)',
+                          borderRadius: '10px'
+                        }}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Events Grid */}
+              <div className="flex flex-col gap-md">
+                {getEventsForTab(activeEventTab).length > 0 ? (
+                  getEventsForTab(activeEventTab).map(event => {
+                    const rsvps = mockStore.getRSVPs(event.id);
+                    const going = rsvps.filter(r => r.status === 'going').length;
+                    const maybe = rsvps.filter(r => r.status === 'maybe').length;
+                    const waitlistCount = rsvps.filter(r => r.status === 'waitlist').length;
+                    const totalAttending = going + maybe;
+                    const pctFull = Math.min(100, Math.round((going / (event.capacity || 1)) * 100));
+                    
+                    return (
+                      <Card key={event.id} style={{ padding: 0, overflow: 'hidden', textAlign: 'left' }} className="glass-surface">
+                        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                           
-                          <div className="flex gap-sm">
-                            <Button variant="outline" onClick={() => handleManageEvent(event.id)} style={{ padding: '8px 16px' }}>Manage</Button>
-                            {event.status === 'Published' && (
-                              <Link to={`/e/${event.id}`} target="_blank">
-                                <Button variant="ghost" style={{ padding: '8px' }}><ExternalLink size={20} /></Button>
-                              </Link>
+                          {/* Event Cover Photo */}
+                          <div style={{
+                            width: '100%',
+                            maxWidth: '280px',
+                            minHeight: '180px',
+                            background: event.cover 
+                              ? `url(${event.cover}) center/cover` 
+                              : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                            position: 'relative'
+                          }}>
+                            {activeEventTab === 'live' && (
+                              <span style={{
+                                position: 'absolute',
+                                top: '12px',
+                                left: '12px',
+                                background: '#ff3b30',
+                                color: 'white',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                padding: '4px 10px',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                animation: 'pulse 1.5s infinite'
+                              }}>
+                                🔴 LIVE NOW
+                              </span>
                             )}
+                            {event.status === 'Draft' && (
+                              <span style={{
+                                position: 'absolute',
+                                top: '12px',
+                                left: '12px',
+                                background: '#cbd5e1',
+                                color: '#475569',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                padding: '4px 10px',
+                                borderRadius: '4px'
+                              }}>
+                                📝 DRAFT
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Event Details Content */}
+                          <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
+                            <div>
+                              <div className="flex justify-between items-start" style={{ marginBottom: '6px' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                  {event.eventType || 'Event'}
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Code: {event.id}</span>
+                              </div>
+                              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 6px 0' }}>{event.title}</h3>
+                              <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>
+                                🗓️ {event.date} • 🕒 {event.time} • 📍 {event.location}
+                              </p>
+
+                              {/* Action Warnings */}
+                              {event.id === '1' && (
+                                <div style={{ marginTop: '10px', background: '#fee2e2', color: '#b91c1c', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  ⚠️ Action needed: 3 dietary restrictions unconfirmed
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div className="grid-3" style={{ gap: '12px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                              <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Going</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                                  {going} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>/ {event.capacity} cap</span>
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Revenue</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                                  ${event.ticketPrice ? (going * event.ticketPrice).toLocaleString() : 'Free'}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Rating</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                  ⭐ {event.rating || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Capacity Progress Bar */}
+                            <div>
+                              <div className="flex justify-between" style={{ fontSize: '0.75rem', marginBottom: '4px', fontWeight: 600 }}>
+                                <span>Capacity utilization</span>
+                                <span>{pctFull}% Full ({going} Confirmed {waitlistCount > 0 && `• ${waitlistCount} Waitlisted`})</span>
+                              </div>
+                              <div style={{ height: '8px', background: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', background: pctFull >= 95 ? '#ef4444' : pctFull >= 80 ? '#f59e0b' : 'var(--color-primary)', width: `${pctFull}%` }}></div>
+                              </div>
+                            </div>
+
+                            {/* Actions Buttons */}
+                            <div className="flex gap-sm" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', flexWrap: 'wrap' }}>
+                              <Button variant="primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => handleManageEvent(event.id)}>
+                                Manage Event
+                              </Button>
+                              <Button variant="outline" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => { handleManageEvent(event.id); setSelectedEventTab('guests'); }}>
+                                Guest List
+                              </Button>
+                              <Button variant="outline" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={() => { handleManageEvent(event.id); setSelectedEventTab('checkin'); }}>
+                                Check-in staff
+                              </Button>
+                              <Button variant="ghost" style={{ padding: '8px' }} title="Duplicate" onClick={() => handleDuplicateEvent(event.id)}>
+                                <RefreshCw size={16} />
+                              </Button>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`${window.location.origin}/e/${event.id}`);
+                                  alert('Event invitation link copied!');
+                                }}
+                                className="btn btn-ghost"
+                                style={{ padding: '8px', color: 'var(--color-text-muted)', background: 'transparent' }}
+                                title="Copy Link"
+                              >
+                                <ExternalLink size={18} />
+                              </button>
+                            </div>
+
                           </div>
                         </div>
                       </Card>
                     );
                   })
                 ) : (
-                  <div className="text-center text-muted" style={{ padding: 'var(--spacing-xl) 0' }}>
-                    <Calendar size={48} style={{ opacity: 0.3, margin: '0 auto var(--spacing-sm)' }} />
-                    <p>No events found in this category.</p>
+                  <div className="text-center text-muted" style={{ padding: '48px var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px' }}>
+                    <Calendar size={48} style={{ opacity: 0.3, margin: '0 auto 12px' }} />
+                    <p style={{ margin: 0 }}>No events scheduled in this status.</p>
                   </div>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* --- EVENT MANAGER DETAILED VIEW --- */}
-        {selectedEventId && managedEvent && (
-          <div>
-            {/* Breadcrumb and Header */}
-            <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-              <button 
-                onClick={() => setSelectedEventId(null)}
-                className="flex items-center gap-xs"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 600, marginBottom: 'var(--spacing-sm)' }}
-              >
-                <ChevronLeft size={16} /> Back to Events
-              </button>
-              
-              <div className="flex justify-between items-start" style={{ flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
-                <div>
-                  <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>{managedEvent.status}</span>
-                    <span className="text-muted" style={{ fontSize: '0.85rem' }}>Invite URL: localhost:5173/e/{managedEvent.id}</span>
-                  </div>
-                  <h1 style={{ fontSize: '2rem' }}>{managedEvent.title}</h1>
-                  <p className="text-muted" style={{ fontSize: '0.95rem' }}>{managedEvent.date} at {managedEvent.time} • {managedEvent.location}</p>
-                </div>
+          {/* ========================================================================= */}
+          {/* EVENT MANAGER DETAILED VIEW & TABBED PANELS                               */}
+          {/* ========================================================================= */}
+          {selectedEventId && managedEvent && activeSidebar === 'events' && (
+            <div>
+              {/* Breadcrumb and Header */}
+              <div style={{ marginBottom: '24px', textAlign: 'left' }}>
+                <button 
+                  onClick={() => setSelectedEventId(null)}
+                  className="flex items-center gap-xs"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 600, marginBottom: '12px', padding: 0 }}
+                >
+                  <ChevronLeft size={16} /> Back to Events
+                </button>
                 
-                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => handleExportCSV(managedEvent, managedEventRsvps)}
-                    className="btn btn-outline"
-                    style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Download size={16} /> Export CSV
-                  </button>
-                  <button
-                    onClick={() => setShowBroadcastModal(true)}
-                    className="btn btn-primary"
-                    style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Mail size={16} /> Message Guests
-                  </button>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/e/${managedEvent.id}`); alert('Event link copied to clipboard!'); }}
-                    className="btn btn-outline"
-                    style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    Copy Link
-                  </button>
-                  <button
-                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(managedEvent.title + ': ' + window.location.origin + '/e/' + managedEvent.id)}`, '_blank')}
-                    style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', background: '#25D366', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}
-                  >
-                    Share WhatsApp
-                  </button>
+                <div className="flex justify-between items-start" style={{ flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <div className="flex items-center gap-xs" style={{ marginBottom: '6px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>
+                        {managedEvent.status}
+                      </span>
+                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                        Invite Link: {window.location.origin}/e/{managedEvent.id}
+                      </span>
+                    </div>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>{managedEvent.title}</h1>
+                    <p className="text-muted" style={{ fontSize: '0.9rem', margin: '4px 0 0 0' }}>
+                      🗓️ {managedEvent.date} • 🕒 {managedEvent.time} • 📍 {managedEvent.location}
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => handleExportCSV(managedEvent, managedEventRsvps)}
+                      className="btn btn-outline"
+                      style={{ padding: '10px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent' }}
+                    >
+                      <Download size={15} /> Export CSV
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBroadcastTarget('all');
+                        setShowBroadcastModal(true);
+                      }}
+                      className="btn btn-primary"
+                      style={{ padding: '10px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Mail size={15} /> Message Guests
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/e/${managedEvent.id}`);
+                        alert('Invitation link copied!');
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '10px 16px', fontSize: '0.85rem', background: 'transparent' }}
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(managedEvent.title + ': ' + window.location.origin + '/e/' + managedEvent.id)}`, '_blank')}
+                      style={{ padding: '10px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', background: '#25D366', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      Share WhatsApp
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Sub-Tabs for Event Management */}
-            <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: 'var(--spacing-md)' }}>
-              <button onClick={() => setSelectedEventTab('overview')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'overview' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'overview' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Stats & Charts</button>
-              <button onClick={() => setSelectedEventTab('guests')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'guests' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'guests' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Guest List ({managedEventRsvps.length})</button>
-              <button onClick={() => setSelectedEventTab('polls')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'polls' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'polls' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Polls ({managedEventPolls.length})</button>
-              <button onClick={() => setSelectedEventTab('comments')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Comments ({managedEventComments.length})</button>
-              <button onClick={() => setSelectedEventTab('edit')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'edit' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'edit' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Details Editor</button>
-              <button onClick={() => setSelectedEventTab('notifications')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'notifications' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'notifications' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Notifications</button>
-              <button onClick={() => setSelectedEventTab('invitations')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'invitations' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'invitations' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Invitations</button>
-              <button onClick={() => setSelectedEventTab('checkin')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'checkin' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'checkin' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>QR Check-in</button>
-              <button onClick={() => setSelectedEventTab('payments')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'payments' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'payments' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Payments</button>
-            </div>
+              {/* Sub-Tabs for Event Management */}
+              <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '24px', overflowX: 'auto', paddingBottom: '1px' }}>
+                {[
+                  { key: 'overview', label: 'Stats Overview' },
+                  { key: 'guests', label: `Guest List (${managedEventRsvps.length})` },
+                  { key: 'polls', label: `Polls (${managedEventPolls.length})` },
+                  { key: 'comments', label: `Comments (${managedEventComments.length})` },
+                  { key: 'edit', label: 'Details Editor' },
+                  { key: 'notifications', label: 'Notifications Schedule' },
+                  { key: 'invitations', label: 'Manual Add' },
+                  { key: 'checkin', label: 'QR Scan Check-in' },
+                  { key: 'payments', label: 'Payments' },
+                  { key: 'staff', label: 'Staff Roles' }
+                ].map(t => (
+                  <button 
+                    key={t.key}
+                    onClick={() => setSelectedEventTab(t.key)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '0 0 12px 0',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      color: selectedEventTab === t.key ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      borderBottom: selectedEventTab === t.key ? '2px solid var(--color-primary)' : '2px solid transparent',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* --- Event Sub-Tab Content --- */}
-            {selectedEventTab === 'overview' && (
-              <div>
-                <div className="grid-3" style={{ marginBottom: 'var(--spacing-md)' }}>
-                  <Card style={{ padding: '12px' }} className="text-center">
-                    <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Going</p>
-                    <p style={{ fontSize: '2rem', fontWeight: 700, color: '#16a34a' }}>{managedEventRsvps.filter(r => r.status === 'going').length}</p>
-                  </Card>
-                  <Card style={{ padding: '12px' }} className="text-center">
-                    <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Maybe</p>
-                    <p style={{ fontSize: '2rem', fontWeight: 700, color: '#ca8a04' }}>{managedEventRsvps.filter(r => r.status === 'maybe').length}</p>
-                  </Card>
-                  <Card style={{ padding: '12px' }} className="text-center">
-                    <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Declined / Waitlist</p>
-                    <p style={{ fontSize: '2rem', fontWeight: 700, color: '#dc2626' }}>
-                      {managedEventRsvps.filter(r => r.status === 'declined').length} / {managedEventRsvps.filter(r => r.status === 'waitlist').length}
-                    </p>
-                  </Card>
+              {/* SUB-TAB: STATS OVERVIEW */}
+              {selectedEventTab === 'overview' && (
+                <div className="flex flex-col gap-lg">
+                  <div className="grid-3" style={{ gap: '16px' }}>
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                      <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Conversion Rate</h4>
+                      <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
+                        {Math.round((managedEventRsvps.length / (managedEventViews || 1)) * 100)}%
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                        {managedEventRsvps.length} RSVPs from {managedEventViews} views
+                      </p>
+                    </Card>
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                      <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Capacity Fill</h4>
+                      <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#ca8a04' }}>
+                        {Math.round((managedEventRsvps.filter(r => r.status === 'going').length / (managedEvent.capacity || 1)) * 100)}%
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                        {managedEventRsvps.filter(r => r.status === 'going').length} Confirmed vs {managedEvent.capacity} Cap
+                      </p>
+                    </Card>
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                      <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Check-in Rate</h4>
+                      <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#16a34a' }}>
+                        {Math.round((managedEventRsvps.filter(r => r.checkedIn).length / (managedEventRsvps.filter(r => r.status === 'going').length || 1)) * 100)}%
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                        {managedEventRsvps.filter(r => r.checkedIn).length} checked in of {managedEventRsvps.filter(r => r.status === 'going').length} Confirmed
+                      </p>
+                    </Card>
+                  </div>
+
+                  <div className="grid-3" style={{ gap: '16px' }}>
+                    <Card style={{ padding: '16px', textAlign: 'center' }}>
+                      <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Going</p>
+                      <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#16a34a' }}>{managedEventRsvps.filter(r => r.status === 'going').length}</p>
+                    </Card>
+                    <Card style={{ padding: '16px', textAlign: 'center' }}>
+                      <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Maybe</p>
+                      <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#ca8a04' }}>{managedEventRsvps.filter(r => r.status === 'maybe').length}</p>
+                    </Card>
+                    <Card style={{ padding: '16px', textAlign: 'center' }}>
+                      <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Waitlist</p>
+                      <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#ef4444' }}>{managedEventRsvps.filter(r => r.status === 'waitlist').length}</p>
+                    </Card>
+                  </div>
                 </div>
+              )}
 
-                <div className="grid-2">
-                  {/* Attendance Analytics SVG */}
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)' }}>RSVP Attendance Breakdown</h4>
-                    <div className="flex items-center justify-around" style={{ minHeight: '220px' }}>
-                      {/* Interactive SVG Pie/Donut Chart */}
-                      <svg width="180" height="180" viewBox="0 0 36 36">
-                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e2e8f0" strokeWidth="4"></circle>
-                        {/* Going slice */}
-                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#16a34a" strokeWidth="4.2"
-                          strokeDasharray={`${(managedEventRsvps.filter(r => r.status === 'going').length / (managedEventRsvps.length || 1)) * 100} ${100 - ((managedEventRsvps.filter(r => r.status === 'going').length / (managedEventRsvps.length || 1)) * 100)}`}
-                          strokeDashoffset="25"></circle>
-                        {/* Maybe slice */}
-                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#ca8a04" strokeWidth="4.2"
-                          strokeDasharray={`${(managedEventRsvps.filter(r => r.status === 'maybe').length / (managedEventRsvps.length || 1)) * 100} ${100 - ((managedEventRsvps.filter(r => r.status === 'maybe').length / (managedEventRsvps.length || 1)) * 100)}`}
-                          strokeDashoffset={25 - ((managedEventRsvps.filter(r => r.status === 'going').length / (managedEventRsvps.length || 1)) * 100)}></circle>
-                      </svg>
-                      
-                      <div className="flex flex-col gap-xs" style={{ fontSize: '0.875rem' }}>
-                        <span className="flex items-center gap-xs"><span style={{ width: '12px', height: '12px', background: '#16a34a', borderRadius: '50%' }}></span> Going: {managedEventRsvps.filter(r => r.status === 'going').length}</span>
-                        <span className="flex items-center gap-xs"><span style={{ width: '12px', height: '12px', background: '#ca8a04', borderRadius: '50%' }}></span> Maybe: {managedEventRsvps.filter(r => r.status === 'maybe').length}</span>
-                        <span className="flex items-center gap-xs"><span style={{ width: '12px', height: '12px', background: '#e2e8f0', borderRadius: '50%' }}></span> Others: {managedEventRsvps.filter(r => r.status !== 'going' && r.status !== 'maybe').length}</span>
-                        <span className="flex items-center gap-xs" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '4px', fontWeight: 600 }}><HelpCircle size={14} /> Views: {managedEventViews}</span>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* SVG registration velocity */}
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)' }}>RSVP Registration Timeline</h4>
-                    <div style={{ padding: '10px 0' }}>
-                      <svg width="100%" height="200" viewBox="0 0 400 150">
-                        {/* Grid lines */}
-                        <line x1="40" y1="20" x2="380" y2="20" stroke="#f1f5f9" />
-                        <line x1="40" y1="60" x2="380" y2="60" stroke="#f1f5f9" />
-                        <line x1="40" y1="100" x2="380" y2="100" stroke="#f1f5f9" />
-                        <line x1="40" y1="130" x2="380" y2="130" stroke="#cbd5e1" strokeWidth="1.5" />
-                        
-                        {/* Line chart path representing signups */}
-                        <path d="M 40 130 L 100 115 L 160 90 L 220 100 L 280 60 L 340 40 L 380 25" fill="none" stroke="var(--color-primary)" strokeWidth="3" className="chart-line" />
-                        
-                        {/* Dot indicators */}
-                        <circle cx="100" cy="115" r="4" fill="var(--color-primary)" />
-                        <circle cx="160" cy="90" r="4" fill="var(--color-primary)" />
-                        <circle cx="220" cy="100" r="4" fill="var(--color-primary)" />
-                        <circle cx="280" cy="60" r="4" fill="var(--color-primary)" />
-                        <circle cx="340" cy="40" r="4" fill="var(--color-primary)" />
-                        <circle cx="380" cy="25" r="4" fill="var(--color-accent)" />
-                        
-                        {/* Labels */}
-                        <text x="40" y="145" fontSize="10" fill="#94a3b8" textAnchor="middle">June 1</text>
-                        <text x="160" y="145" fontSize="10" fill="#94a3b8" textAnchor="middle">June 3</text>
-                        <text x="280" y="145" fontSize="10" fill="#94a3b8" textAnchor="middle">June 5</text>
-                        <text x="380" y="145" fontSize="10" fill="#94a3b8" textAnchor="middle">Today</text>
-                      </svg>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* Event Feedback Section */}
-                {(() => {
-                  const eventFeedback = mockStore.getFeedbackResponses(managedEvent.id);
-                  if (eventFeedback.length > 0) {
-                    const avgEventRating = (eventFeedback.reduce((sum, f) => sum + f.rating, 0) / eventFeedback.length).toFixed(1);
+              {/* SUB-TAB: GUEST LIST (SECTION 5) */}
+              {selectedEventTab === 'guests' && (
+                <div className="flex flex-col gap-lg">
+                  
+                  {/* Waitlist (FIFO) */}
+                  {(() => {
+                    const waitlisted = managedEventRsvps.filter(r => r.status === 'waitlist')
+                                               .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    if (waitlisted.length === 0) return null;
                     return (
-                      <div style={{ marginTop: '24px' }}>
-                        <h4 style={{ fontSize: '1.1rem', marginBottom: '12px', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <MessageSquare size={18} /> Guest Feedback & Satisfaction
-                        </h4>
-                        <div className="grid-2">
-                          <Card style={{ padding: '16px' }}>
-                            <h5 style={{ fontSize: '0.95rem', marginBottom: '12px', fontWeight: 600 }}>Ratings Breakdown</h5>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                              <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fbbf24', lineHeight: 1 }}>
-                                  {avgEventRating}
+                      <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            ⏳ Waitlist Queue (FIFO)
+                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: '#fef3c7', color: '#b45309', borderRadius: '12px' }}>
+                              {waitlisted.length} queued
+                            </span>
+                          </h4>
+                          <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>Ordered by signup date. Automatically promoted when spots open up.</p>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="premium-table">
+                            <thead>
+                              <tr>
+                                <th>Position</th>
+                                <th>Name</th>
+                                <th>Contact</th>
+                                <th>Joined</th>
+                                <th>Size</th>
+                                <th>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {waitlisted.map((rsvp, index) => (
+                                <tr key={rsvp.id}>
+                                  <td style={{ fontWeight: 800, color: 'var(--color-primary)' }}>#{index + 1}</td>
+                                  <td style={{ fontWeight: 600 }}>{rsvp.name}</td>
+                                  <td>
+                                    <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
+                                  </td>
+                                  <td>{new Date(rsvp.timestamp).toLocaleDateString()}</td>
+                                  <td>{rsvp.guestCount || 1}</td>
+                                  <td>
+                                    <div className="flex gap-xs">
+                                      <button 
+                                        onClick={() => handleApproveRSVP(managedEvent.id, rsvp.id, true)} 
+                                        style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
+                                      >
+                                        Confirm
+                                      </button>
+                                      <button 
+                                        onClick={() => handleApproveRSVP(managedEvent.id, rsvp.id, false)} 
+                                        style={{ border: 'none', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+                    );
+                  })()}
+
+                  {/* Confirmed list */}
+                  <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
+                        👥 Confirmed & Maybe Attendees
+                      </h4>
+                      
+                      {/* Bulk actions tool bar */}
+                      {selectedGuestIds.length > 0 && (
+                        <div style={{ display: 'flex', gap: '8px', background: 'var(--color-surface-hover)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{selectedGuestIds.length} Selected:</span>
+                          <button onClick={handleBulkCheckIn} style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Check-in</button>
+                          <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>
+                          <button onClick={handleBulkExport} style={{ border: 'none', background: 'rgba(71,85,105,0.1)', color: '#475569', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Export</button>
+                          <button onClick={() => setSelectedGuestIds([])} style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="premium-table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '40px', textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={selectedGuestIds.length === managedEventRsvps.filter(r => r.status !== 'waitlist').length && selectedGuestIds.length > 0}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedGuestIds(managedEventRsvps.filter(r => r.status !== 'waitlist').map(r => r.id));
+                                  } else {
+                                    setSelectedGuestIds([]);
+                                  }
+                                }}
+                              />
+                            </th>
+                            <th>Name</th>
+                            <th>Contact Details</th>
+                            <th>Status</th>
+                            <th>Check-in Status</th>
+                            <th>Custom Answers</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').map(rsvp => (
+                            <tr key={rsvp.id}>
+                              <td style={{ textAlign: 'center' }}>
+                                <input 
+                                  type="checkbox"
+                                  checked={selectedGuestIds.includes(rsvp.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedGuestIds([...selectedGuestIds, rsvp.id]);
+                                    } else {
+                                      setSelectedGuestIds(selectedGuestIds.filter(id => id !== rsvp.id));
+                                    }
+                                  }}
+                                />
+                              </td>
+                              <td style={{ fontWeight: 600 }}>
+                                {rsvp.name}
+                                {rsvp.answers?.['Any food allergies?'] && rsvp.answers['Any food allergies?'] !== 'None' && (
+                                  <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#b91c1c', padding: '1px 5px', borderRadius: '3px', marginLeft: '6px', fontWeight: 700 }} title={rsvp.answers['Any food allergies?']}>
+                                    ⚠️ DIET
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
+                              </td>
+                              <td>
+                                <span style={{
+                                  fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '12px',
+                                  background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
+                                  color: rsvp.status === 'going' ? '#16a34a' : '#ca8a04'
+                                }}>
+                                  {rsvp.status}
+                                </span>
+                              </td>
+                              <td>
+                                <div className="flex items-center gap-xs">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={rsvp.checkedIn}
+                                    onChange={() => handleToggleCheckin(managedEvent.id, rsvp.id, rsvp.checkedIn)}
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                  />
+                                  <span style={{ fontSize: '0.75rem', color: rsvp.checkedIn ? '#16a34a' : 'var(--color-text-muted)' }}>
+                                    {rsvp.checkedIn ? 'Checked in' : 'Not arrived'}
+                                  </span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', marginTop: '6px' }}>
-                                  {[1, 2, 3, 4, 5].map(star => {
-                                    const active = star <= Math.round(Number(avgEventRating));
-                                    return <Star key={star} size={12} fill={active ? '#fbbf24' : 'none'} stroke={active ? '#fbbf24' : '#cbd5e1'} />;
-                                  })}
-                                </div>
-                                <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '4px' }}>{eventFeedback.length} responses</div>
-                              </div>
-                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {[5, 4, 3, 2, 1].map(stars => {
-                                  const count = eventFeedback.filter(fb => fb.rating === stars).length;
-                                  const pct = (count / eventFeedback.length) * 100;
+                              </td>
+                              <td>
+                                {Object.keys(rsvp.answers || {}).length > 0 ? (
+                                  <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    {Object.entries(rsvp.answers).map(([q, ans]) => (
+                                      <div key={q}><strong>{q}:</strong> {ans}</div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>None</span>
+                                )}
+                              </td>
+                              <td>
+                                <button 
+                                  onClick={() => handleDeleteRSVP(managedEvent.id, rsvp.id)}
+                                  style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px' }}
+                                  title="Remove Guest"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {/* SUB-TAB: POLLS */}
+              {selectedEventTab === 'polls' && (
+                <div className="grid-2" style={{ gap: '20px' }}>
+                  <Card style={{ padding: '20px', textAlign: 'left' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Active Polls & Surveys</h4>
+                    {managedEventPolls.length > 0 ? (
+                      <div className="flex flex-col gap-md">
+                        {managedEventPolls.map(poll => {
+                          const totalVotes = poll.options.reduce((acc, curr) => acc + curr.votes, 0);
+                          return (
+                            <div key={poll.id} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+                              <h5 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '8px' }}>Q: {poll.question}</h5>
+                              <div className="flex flex-col gap-xs">
+                                {poll.options.map(opt => {
+                                  const percent = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
                                   return (
-                                    <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem' }}>
-                                      <span style={{ width: '30px', textAlign: 'right', fontWeight: 500 }}>{stars} ★</span>
-                                      <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                                        <div style={{ width: `${pct}%`, height: '100%', background: '#fbbf24' }}></div>
+                                    <div key={opt.id}>
+                                      <div className="flex justify-between" style={{ fontSize: '0.8rem', marginBottom: '2px' }}>
+                                        <span>{opt.text}</span>
+                                        <span style={{ fontWeight: 600 }}>{opt.votes} votes ({percent}%)</span>
                                       </div>
-                                      <span style={{ width: '20px', color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>{count}</span>
+                                      <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', background: 'var(--color-primary)', width: `${percent}%` }}></div>
+                                      </div>
                                     </div>
                                   );
                                 })}
                               </div>
                             </div>
-                          </Card>
-
-                          <Card style={{ padding: '16px' }}>
-                            <h5 style={{ fontSize: '0.95rem', marginBottom: '12px', fontWeight: 600 }}>Review Comments</h5>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px' }}>
-                              {eventFeedback.map(fb => (
-                                <div key={fb.id} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', fontSize: '0.8rem' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, marginBottom: '2px' }}>
-                                    <span>{fb.name}</span>
-                                    <div style={{ display: 'flex', gap: '1px' }}>
-                                      {[1, 2, 3, 4, 5].map(star => (
-                                        <Star key={star} size={8} fill={star <= fb.rating ? '#fbbf24' : 'none'} stroke={star <= fb.rating ? '#fbbf24' : '#cbd5e1'} />
-                                      ))}
-                                    </div>
-                                  </div>
-                                  {fb.comments && <p style={{ margin: '4px 0 0 0', color: '#475569', fontStyle: 'italic', fontSize: '0.75rem' }}>"{fb.comments}"</p>}
-                                </div>
-                              ))}
-                            </div>
-                          </Card>
-                        </div>
+                          );
+                        })}
                       </div>
-                    );
-                  }
-                  return (
-                    <div style={{ marginTop: '24px' }}>
-                      <h4 style={{ fontSize: '1.1rem', marginBottom: '12px', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <MessageSquare size={18} /> Guest Feedback & Satisfaction
-                      </h4>
-                      <Card style={{ padding: '24px', textAlign: 'center' }}>
-                        <p className="text-muted" style={{ fontSize: '0.875rem', margin: 0 }}>No guest feedback responses received for this event yet.</p>
-                      </Card>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+                    ) : (
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>No active polls created for this event yet.</p>
+                    )}
+                  </Card>
 
-            {selectedEventTab === 'guests' && (
-              <Card style={{ padding: 0 }} className="glass-surface">
-                <div style={{ padding: 'var(--spacing-md)', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
-                  <h4 style={{ fontSize: '1.1rem', margin: 0 }} className="flex items-center gap-xs">Guest Signups <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', borderRadius: '12px' }}>{managedEventRsvps.length} Total</span></h4>
-                </div>
-                
-                {managedEventRsvps.length > 0 ? (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table className="premium-table">
-                      <thead>
-                        <tr>
-                          <th>Guest Name</th>
-                          <th>Contact Details</th>
-                          <th>Status</th>
-                          <th>Checked In</th>
-                          <th>Custom Answers</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {managedEventRsvps.map(rsvp => (
-                          <tr key={rsvp.id}>
-                            <td style={{ fontWeight: 600 }}>{rsvp.name}</td>
-                            <td>
-                              <div style={{ fontSize: '0.85rem' }}>{rsvp.email}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
-                            </td>
-                            <td>
-                              <span style={{ 
-                                fontSize: '0.75rem', fontWeight: 600, padding: '3px 10px', borderRadius: 'var(--radius-full)',
-                                background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : rsvp.status === 'maybe' ? 'rgba(234,179,8,0.1)' : rsvp.status === 'waitlist' ? 'rgba(148,163,184,0.1)' : 'rgba(239,68,68,0.1)',
-                                color: rsvp.status === 'going' ? '#16a34a' : rsvp.status === 'maybe' ? '#ca8a04' : rsvp.status === 'waitlist' ? '#64748b' : '#ef4444'
-                              }}>
-                                {rsvp.status.toUpperCase()}
-                              </span>
-                            </td>
-                            <td>
-                              <input 
-                                type="checkbox" 
-                                checked={rsvp.checkedIn}
-                                onChange={() => handleToggleCheckin(managedEvent.id, rsvp.id, rsvp.checkedIn)}
-                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                              />
-                            </td>
-                            <td>
-                              {Object.keys(rsvp.answers || {}).length > 0 ? (
-                                <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                  {Object.keys(rsvp.answers).map(q => (
-                                    <div key={q}><strong>{q}:</strong> {rsvp.answers[q]}</div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-muted" style={{ fontSize: '0.75rem' }}>None</span>
-                              )}
-                            </td>
-                            <td>
-                              <div className="flex gap-xs">
-                                {rsvp.status === 'waitlist' && (
-                                  <>
-                                    <button 
-                                      onClick={() => handleApproveRSVP(managedEvent.id, rsvp.id, true)} 
-                                      title="Approve RSVP" 
-                                      style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
-                                    >
-                                      <Check size={14} />
-                                    </button>
-                                    <button 
-                                      onClick={() => handleApproveRSVP(managedEvent.id, rsvp.id, false)} 
-                                      title="Reject RSVP" 
-                                      style={{ border: 'none', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                  </>
-                                )}
-                                <button 
-                                  onClick={() => handleDeleteRSVP(managedEvent.id, rsvp.id)} 
-                                  title="Delete RSVP" 
-                                  style={{ border: 'none', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+                  <Card style={{ padding: '20px', textAlign: 'left' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Create Guest Poll</h4>
+                    <form onSubmit={handleCreatePollSubmit} className="flex flex-col gap-sm">
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Question</label>
+                        <input 
+                          type="text" 
+                          required 
+                          placeholder="e.g. Which drinks should we stock?" 
+                          value={newPollQuestion}
+                          onChange={(e) => setNewPollQuestion(e.target.value)}
+                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Options</label>
+                        {newPollOptions.map((opt, idx) => (
+                          <div key={idx} className="flex gap-xs items-center" style={{ marginBottom: '6px' }}>
+                            <input 
+                              type="text" 
+                              placeholder={`Option ${idx + 1}`}
+                              value={opt}
+                              onChange={(e) => {
+                                const opts = [...newPollOptions];
+                                opts[idx] = e.target.value;
+                                setNewPollOptions(opts);
+                              }}
+                              style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                            />
+                            {newPollOptions.length > 2 && (
+                              <button 
+                                type="button" 
+                                onClick={() => setNewPollOptions(newPollOptions.filter((_, i) => i !== idx))}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#dc2626' }}
+                              >
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center text-muted" style={{ padding: 'var(--spacing-xl) 0' }}>
-                    <Users size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                    <p>No RSVPs found for this event yet.</p>
-                  </div>
-                )}
-              </Card>
-            )}
+                        <button 
+                          type="button" 
+                          onClick={() => setNewPollOptions([...newPollOptions, ''])}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                        >
+                          + Add Option
+                        </button>
+                      </div>
+                      <Button variant="primary" type="submit">Publish Poll</Button>
+                    </form>
+                  </Card>
+                </div>
+              )}
 
-            {selectedEventTab === 'polls' && (
-              <div className="grid-2">
-                <Card style={{ padding: 'var(--spacing-md)' }}>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Active Polls & Survey Responses</h4>
-                  {managedEventPolls.length > 0 ? (
+              {/* SUB-TAB: COMMENTS */}
+              {selectedEventTab === 'comments' && (
+                <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Guest Comments Board</h4>
+                  {managedEventComments.length > 0 ? (
                     <div className="flex flex-col gap-md">
-                      {managedEventPolls.map(poll => {
-                        const totalVotes = poll.options.reduce((acc, curr) => acc + curr.votes, 0);
-                        return (
-                          <div key={poll.id} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
-                            <h5 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '8px' }}>Q: {poll.question}</h5>
-                            <div className="flex flex-col gap-xs">
-                              {poll.options.map(opt => {
-                                const percent = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
-                                return (
-                                  <div key={opt.id}>
-                                    <div className="flex justify-between" style={{ fontSize: '0.8rem', marginBottom: '2px' }}>
-                                      <span>{opt.text}</span>
-                                      <span style={{ fontWeight: 600 }}>{opt.votes} votes ({percent}%)</span>
-                                    </div>
-                                    <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                                      <div style={{ height: '100%', background: 'var(--color-primary)', width: `${percent}%`, borderRadius: '3px' }}></div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                      {[...managedEventComments]
+                        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+                        .map(comment => (
+                          <div key={comment.id} className="flex justify-between items-start" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', background: comment.pinned ? 'rgba(0,113,227,0.01)' : 'transparent', padding: comment.pinned ? '12px' : '0 0 12px 0', borderRadius: '8px' }}>
+                            <div>
+                              <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
+                                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{comment.name}</span>
+                                {comment.pinned && <span style={{ fontSize: '0.65rem', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>PINNED</span>}
+                                <span className="text-muted" style={{ fontSize: '0.75rem', marginLeft: '6px' }}>{new Date(comment.timestamp).toLocaleDateString()}</span>
+                              </div>
+                              <p style={{ fontSize: '0.85rem', margin: 0 }}>{comment.text}</p>
+                            </div>
+                            <div className="flex gap-sm">
+                              <button
+                                onClick={() => {
+                                  mockStore.pinComment(managedEvent.id, comment.id);
+                                  loadDashboardData();
+                                }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: comment.pinned ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                                title="Pin Comment"
+                              >
+                                📌
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  if (window.confirm("Delete this comment?")) {
+                                    mockStore.deleteComment(managedEvent.id, comment.id);
+                                    loadDashboardData();
+                                  }
+                                }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#dc2626' }}
+                                title="Delete Comment"
+                              >
+                                <Trash2 size={15} />
+                              </button>
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
                     </div>
                   ) : (
-                    <p className="text-muted" style={{ fontSize: '0.875rem' }}>No polls created for this event.</p>
+                    <p className="text-muted" style={{ fontSize: '0.85rem' }}>No comments posted on the guest board yet.</p>
                   )}
                 </Card>
+              )}
 
-                {/* Create Poll Card */}
-                <Card style={{ padding: 'var(--spacing-md)' }}>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Create a Guest Poll</h4>
-                  <form onSubmit={handleCreatePollSubmit} className="flex flex-col gap-sm">
+              {/* SUB-TAB: DETAILS EDITOR */}
+              {selectedEventTab === 'edit' && (
+                <Card style={{ padding: '24px', textAlign: 'left' }} className="glass-surface">
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '20px' }}>Event Settings Editor</h4>
+                  <form onSubmit={handleEditEventSubmit} className="flex flex-col gap-md" style={{ maxWidth: '640px' }}>
+                    
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '4px', fontWeight: 500 }}>Question / Prompt</label>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Event Title *</label>
                       <input 
                         type="text" 
                         required 
-                        placeholder="e.g. Which date works best for you?" 
-                        value={newPollQuestion}
-                        onChange={(e) => setNewPollQuestion(e.target.value)}
+                        value={editEventForm.title} 
+                        onChange={(e) => setEditEventForm({ ...editEventForm, title: e.target.value })} 
                         style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                       />
                     </div>
-                    
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '4px', fontWeight: 500 }}>Options</label>
-                      {newPollOptions.map((opt, idx) => (
-                        <div key={idx} className="flex gap-xs items-center" style={{ marginBottom: '6px' }}>
-                          <input 
-                            type="text" 
-                            placeholder={`Option ${idx + 1}`}
-                            value={opt}
-                            onChange={(e) => {
-                              const opts = [...newPollOptions];
-                              opts[idx] = e.target.value;
-                              setNewPollOptions(opts);
-                            }}
-                            style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                          />
-                          {newPollOptions.length > 2 && (
-                            <button 
-                              type="button" 
-                              onClick={() => setNewPollOptions(newPollOptions.filter((_, i) => i !== idx))}
-                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#dc2626' }}
-                            >
-                              <X size={16} />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button 
-                        type="button" 
-                        onClick={() => setNewPollOptions([...newPollOptions, ''])}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                      >
-                        + Add Option
-                      </button>
-                    </div>
-                    
-                    <Button variant="primary" type="submit" style={{ padding: '10px', fontSize: '0.9rem' }}>Create Poll</Button>
-                  </form>
-                </Card>
-              </div>
-            )}
 
-            {selectedEventTab === 'comments' && (
-              <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Guest Comments Board & Moderation</h4>
-                {managedEventComments.length > 0 ? (
-                  <div className="flex flex-col gap-md">
-                    {managedEventComments.map(comment => (
-                      <div key={comment.id} className="flex justify-between items-start" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
-                        <div>
-                          <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{comment.name}</span>
-                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>{new Date(comment.timestamp).toLocaleString()}</span>
-                          </div>
-                          <p style={{ fontSize: '0.9rem' }}>{comment.text}</p>
-                          {Object.keys(comment.reactions || {}).length > 0 && (
-                            <div className="flex gap-xs" style={{ marginTop: '6px' }}>
-                              {Object.keys(comment.reactions).map(emoji => (
-                                <span key={emoji} style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
-                                  {emoji} {comment.reactions[emoji]}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <button 
-                          onClick={() => {
-                            mockStore.deleteComment(managedEvent.id, comment.id);
-                            loadDashboardData();
-                          }}
-                          style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#dc2626' }}
-                          title="Delete Comment"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted" style={{ fontSize: '0.875rem' }}>No comments posted on the event board yet.</p>
-                )}
-              </Card>
-            )}
-
-            {selectedEventTab === 'invitations' && (
-              <div className="grid-2">
-                <Card style={{ padding: 'var(--spacing-md)' }}>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Create Manual Invitation</h4>
-                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: 'var(--spacing-sm)' }}>Add a guest manually on their behalf (offline RSVPs or VIP guests).</p>
-                  {manualInviteSent && (
-                    <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', color: '#15803d', padding: '10px', borderRadius: '8px', marginBottom: '12px', fontSize: '0.85rem', fontWeight: 600 }}>
-                      Invitation created and sent successfully!
-                    </div>
-                  )}
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    const capacity = managedEvent.capacity;
-                    const attending = managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length;
-                    if (attending + manualInviteForm.guestCount > capacity) {
-                      alert(`Cannot add ${manualInviteForm.guestCount} guests — only ${capacity - attending} spots remaining.`);
-                      return;
-                    }
-                    mockStore.createManualInvitation(selectedEventId, manualInviteForm);
-                    setManualInviteSent(true);
-                    setManualInviteForm({ name: '', email: '', phone: '', guestCount: 1 });
-                    setTimeout(() => setManualInviteSent(false), 3000);
-                    loadDashboardData();
-                  }} className="flex flex-col gap-sm">
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Full Name *</label>
-                      <input required type="text" placeholder="Guest full name" value={manualInviteForm.name} onChange={(e) => setManualInviteForm({ ...manualInviteForm, name: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Email *</label>
-                      <input required type="email" placeholder="guest@email.com" value={manualInviteForm.email} onChange={(e) => setManualInviteForm({ ...manualInviteForm, email: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Phone</label>
-                      <input type="tel" placeholder="+1 (555) 000-0000" value={manualInviteForm.phone} onChange={(e) => setManualInviteForm({ ...manualInviteForm, phone: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Number of Guests</label>
-                      <input type="number" min="1" max={managedEvent.maxGuestsPerRsvp} value={manualInviteForm.guestCount} onChange={(e) => setManualInviteForm({ ...manualInviteForm, guestCount: Number(e.target.value) })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <Button variant="primary" type="submit" style={{ flex: 1 }}>Add & Notify via Email</Button>
-                      <button type="button" onClick={() => {
-                        if (!manualInviteForm.phone) { alert('Phone number required for WhatsApp'); return; }
-                        const msg = `You're invited to ${managedEvent.title} on ${managedEvent.date} at ${managedEvent.time}. RSVP: ${window.location.origin}/e/${managedEvent.id}`;
-                        window.open(`https://wa.me/${manualInviteForm.phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-                      }} style={{ padding: '10px 14px', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
-                        WhatsApp
-                      </button>
-                    </div>
-                  </form>
-                </Card>
-
-                <Card style={{ padding: 'var(--spacing-md)' }}>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Guest Invitation List</h4>
-                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '12px' }}>Total: {managedEventRsvps.length} | Capacity: {managedEvent.capacity}</p>
-                  <div style={{ overflowY: 'auto', maxHeight: '400px' }}>
-                    {managedEventRsvps.length > 0 ? (
-                      <div className="flex flex-col gap-sm">
-                        {managedEventRsvps.map(rsvp => (
-                          <div key={rsvp.id} style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rsvp.name} {rsvp.isManualInvite && <span style={{ fontSize: '0.65rem', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '1px 5px', borderRadius: '3px', marginLeft: '4px' }}>Manual</span>}</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{rsvp.email} • {rsvp.phone || 'No phone'}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                                  Guests: {rsvp.guestCount || 1} • Registered: {new Date(rsvp.timestamp).toLocaleDateString()}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-xs">
-                                <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : rsvp.status === 'maybe' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: rsvp.status === 'going' ? '#16a34a' : rsvp.status === 'maybe' ? '#ca8a04' : '#ef4444' }}>{rsvp.status.toUpperCase()}</span>
-                                <button onClick={() => { mockStore.updateRSVP(selectedEventId, rsvp.id, { status: 'declined' }); loadDashboardData(); }} title="Block/Reject RSVP" style={{ border: 'none', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer', padding: '4px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Block</button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>No invitations yet. Create one above.</p>
-                    )}
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {selectedEventTab === 'checkin' && (
-              <div className="grid-2">
-                <Card style={{ padding: 'var(--spacing-md)' }}>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>Guest QR Check-in Scanner</h4>
-                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: 'var(--spacing-sm)' }}>Enter a guest's Pass ID or scan their QR code to verify and check them in.</p>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                    <input
-                      type="text"
-                      placeholder="Enter Pass ID (e.g. r1, r2...)"
-                      value={checkinInput}
-                      onChange={(e) => setCheckinInput(e.target.value)}
-                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const rsvp = managedEventRsvps.find(r => r.id === checkinInput.trim());
-                          if (!rsvp) { setCheckinResult({ type: 'error', message: `Pass ID "${checkinInput}" not found for this event.` }); return; }
-                          if (rsvp.checkedIn) { setCheckinResult({ type: 'warning', rsvp, message: 'Guest already checked in.' }); return; }
-                          if (rsvp.status === 'declined') { setCheckinResult({ type: 'error', message: 'This RSVP has been declined/blocked.' }); return; }
-                          mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true });
-                          loadDashboardData();
-                          setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: 'Guest checked in successfully!' });
-                          setCheckinInput('');
-                        }
-                      }}
-                    />
-                    <button onClick={() => {
-                      const rsvp = managedEventRsvps.find(r => r.id === checkinInput.trim());
-                      if (!rsvp) { setCheckinResult({ type: 'error', message: `Pass ID "${checkinInput}" not found.` }); return; }
-                      if (rsvp.checkedIn) { setCheckinResult({ type: 'warning', rsvp, message: 'Guest already checked in.' }); return; }
-                      if (rsvp.status === 'declined') { setCheckinResult({ type: 'error', message: 'This RSVP has been declined/blocked.' }); return; }
-                      mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true });
-                      loadDashboardData();
-                      setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: 'Guest checked in successfully!' });
-                      setCheckinInput('');
-                    }} style={{ padding: '10px 16px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>
-                      Verify
-                    </button>
-                  </div>
-                  {checkinResult && (
-                    <div style={{ padding: '14px', borderRadius: '8px', border: `1px solid ${checkinResult.type === 'success' ? '#22c55e' : checkinResult.type === 'warning' ? '#f59e0b' : '#ef4444'}`, background: checkinResult.type === 'success' ? 'rgba(34,197,94,0.08)' : checkinResult.type === 'warning' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)' }}>
-                      <div style={{ fontWeight: 700, marginBottom: '4px', color: checkinResult.type === 'success' ? '#15803d' : checkinResult.type === 'warning' ? '#b45309' : '#dc2626' }}>
-                        {checkinResult.type === 'success' ? '✓ CHECK-IN APPROVED' : checkinResult.type === 'warning' ? '⚠ DUPLICATE SCAN' : '✕ ENTRY DENIED'}
-                      </div>
-                      <p style={{ fontSize: '0.85rem', margin: 0 }}>{checkinResult.message}</p>
-                      {checkinResult.rsvp && (
-                        <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                          <div>Name: <strong>{checkinResult.rsvp.name}</strong></div>
-                          <div>Email: {checkinResult.rsvp.email}</div>
-                          <div>Phone: {checkinResult.rsvp.phone}</div>
-                          <div>Guests: {checkinResult.rsvp.guestCount || 1}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Card>
-
-                <Card style={{ padding: 'var(--spacing-md)' }}>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>Check-in Stats</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                    <div style={{ background: 'rgba(34,197,94,0.08)', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '2rem', fontWeight: 700, color: '#16a34a' }}>{managedEventRsvps.filter(r => r.checkedIn).length}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600 }}>Checked In</div>
-                    </div>
-                    <div style={{ background: 'rgba(239,68,68,0.08)', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
-                      <div style={{ fontSize: '2rem', fontWeight: 700, color: '#ef4444' }}>{managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).length}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>Not Yet Arrived</div>
-                    </div>
-                  </div>
-                  <h5 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Pending Arrivals</h5>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto' }}>
-                    {managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).map(rsvp => (
-                      <div key={rsvp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{rsvp.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Pass: {rsvp.id}</div>
-                        </div>
-                        <button onClick={() => { mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }); loadDashboardData(); setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: `${rsvp.name} checked in.` }); }} style={{ padding: '4px 10px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>Check In</button>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {selectedEventTab === 'payments' && (
-              <div className="flex flex-col gap-md">
-                {managedEvent.enablePayments ? (
-                  <>
-                    <div className="grid-3">
-                      <Card style={{ padding: '16px', textAlign: 'center' }}>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Ticket Price</p>
-                        <p style={{ fontSize: '1.8rem', fontWeight: 700 }}>${managedEvent.ticketPrice}</p>
-                      </Card>
-                      <Card style={{ padding: '16px', textAlign: 'center' }}>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Total Collected</p>
-                        <p style={{ fontSize: '1.8rem', fontWeight: 700, color: '#16a34a' }}>
-                          ${mockStore.getTransactions(selectedEventId).reduce((sum, t) => sum + t.totalCharged, 0)}
-                        </p>
-                      </Card>
-                      <Card style={{ padding: '16px', textAlign: 'center' }}>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Transactions</p>
-                        <p style={{ fontSize: '1.8rem', fontWeight: 700 }}>{mockStore.getTransactions(selectedEventId).length}</p>
-                      </Card>
-                    </div>
-                    <Card style={{ padding: 0 }}>
-                      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
-                        <h4 style={{ fontSize: '1.05rem', margin: 0 }}>Transaction History</h4>
-                      </div>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table className="premium-table">
-                          <thead>
-                            <tr>
-                              <th>Guest Name</th>
-                              <th>Email</th>
-                              <th>Guests</th>
-                              <th>Unit Price</th>
-                              <th>Total Charged</th>
-                              <th>Method</th>
-                              <th>Status</th>
-                              <th>Date</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {mockStore.getTransactions(selectedEventId).map(txn => (
-                              <tr key={txn.id}>
-                                <td style={{ fontWeight: 600 }}>{txn.guestName}</td>
-                                <td>{txn.guestEmail}</td>
-                                <td style={{ textAlign: 'center' }}>{txn.guestCount}</td>
-                                <td>${txn.amount}</td>
-                                <td style={{ fontWeight: 600, color: '#16a34a' }}>${txn.totalCharged}</td>
-                                <td>{txn.method}</td>
-                                <td><span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '99px', background: 'rgba(34,197,94,0.1)', color: '#16a34a', fontWeight: 600 }}>Completed</span></td>
-                                <td style={{ fontSize: '0.8rem' }}>{new Date(txn.timestamp).toLocaleDateString()}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {mockStore.getTransactions(selectedEventId).length === 0 && (
-                          <div className="text-center text-muted" style={{ padding: '32px' }}>No payment transactions recorded yet.</div>
-                        )}
-                      </div>
-                    </Card>
-                  </>
-                ) : (
-                  <Card style={{ padding: '48px', textAlign: 'center' }}>
-                    <p className="text-muted">This event is set as a free event. Enable paid tickets in the Details Editor to view payment transactions.</p>
-                  </Card>
-                )}
-              </div>
-            )}
-
-            {selectedEventTab === 'edit' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                {/* Event Settings Header */}
-                <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }} className="flex justify-between items-center">
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Event Settings Control Panel</h3>
-                    <p className="text-muted" style={{ fontSize: '0.85rem' }}>Configure rules, visibility policies, self-service controls, and notifications.</p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleEditEventSubmit} className="flex flex-col gap-lg" style={{ maxWidth: '750px' }}>
-                  
-                  {/* SECTION 1: Basic Event Info Settings */}
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
-                      <Calendar size={18} /> 1. Basic Event Info Settings
-                    </h4>
-                    <div className="flex flex-col gap-sm">
+                    <div className="grid-2" style={{ gap: '16px' }}>
                       <div>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Event Title</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Date *</label>
                         <input 
-                          type="text" 
-                          value={editEventForm.title}
-                          onChange={(e) => setEditEventForm({ ...editEventForm, title: e.target.value })}
+                          type="date" 
+                          required 
+                          value={editEventForm.date} 
+                          onChange={(e) => setEditEventForm({ ...editEventForm, date: e.target.value })} 
                           style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                          required
                         />
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                          ℹ️ <strong>What it does:</strong> Shown on invitation page and tickets. <strong>Changeable:</strong> Anytime.
-                        </span>
                       </div>
-
-                      <div className="grid-2">
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Event Type</label>
-                          <select 
-                            value={editEventForm.eventType}
-                            onChange={(e) => setEditEventForm({ ...editEventForm, eventType: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                          >
-                            <option value="Party">Party</option>
-                            <option value="Meetup">Meetup</option>
-                            <option value="Workshop">Workshop</option>
-                            <option value="Religious">Religious / Temple</option>
-                            <option value="Wedding">Wedding</option>
-                            <option value="Other">Other</option>
-                          </select>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                            ℹ️ Used to categorize events in discovery feeds.
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                          <div>
-                            <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Date</label>
-                            <input 
-                              type="date" 
-                              value={editEventForm.date}
-                              onChange={(e) => setEditEventForm({ ...editEventForm, date: e.target.value })}
-                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Time</label>
-                            <input 
-                              type="time" 
-                              value={editEventForm.time}
-                              onChange={(e) => setEditEventForm({ ...editEventForm, time: e.target.value })}
-                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Warning on date change */}
-                      {(editEventForm.date !== managedEvent.date || editEventForm.time !== managedEvent.time) && (
-                        <div style={{ padding: '8px 12px', background: 'rgba(244,63,94,0.08)', borderRadius: '6px', color: 'var(--color-accent)', fontSize: '0.75rem', fontWeight: 600 }}>
-                          ⚠️ Warning: Changing the date or time will send an automatic update email to all {managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length} registered guests.
-                        </div>
-                      )}
-
                       <div>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Venue Location</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Time *</label>
                         <input 
-                          type="text" 
-                          value={editEventForm.location}
-                          onChange={(e) => setEditEventForm({ ...editEventForm, location: e.target.value })}
-                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                          required
-                        />
-                        {editEventForm.location !== managedEvent.location && (
-                          <div style={{ padding: '8px 12px', background: 'rgba(244,63,94,0.08)', borderRadius: '6px', color: 'var(--color-accent)', fontSize: '0.75rem', fontWeight: 600, marginTop: '6px' }}>
-                            ⚠️ Warning: Changing the venue location will send an automatic update notification to all registered guests.
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Event Description</label>
-                        <textarea 
-                          value={editEventForm.description}
-                          onChange={(e) => setEditEventForm({ ...editEventForm, description: e.target.value })}
-                          rows="4"
-                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                          required
-                        ></textarea>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* SECTION 2: Visibility & Privacy Settings */}
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
-                      <Compass size={18} /> 2. Visibility & Privacy Settings
-                    </h4>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Event Privacy</label>
-                        <select
-                          value={editEventForm.privacy}
-                          onChange={(e) => setEditEventForm({ ...editEventForm, privacy: e.target.value })}
-                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                        >
-                          <option value="Public">Public (Listed in discover feeds)</option>
-                          <option value="Private">Private (Direct invitation URL only)</option>
-                          <option value="Unlisted">Unlisted (Shown only on direct hosts list)</option>
-                        </select>
-                        {editEventForm.privacy !== managedEvent.privacy && editEventForm.privacy !== 'Public' && (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-accent)', display: 'block', marginTop: '4px' }}>
-                            ⚠️ Switching to private/unlisted removes this event from search.
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>RSVP Status</label>
-                        <select
-                          value={editEventForm.rsvpStatus}
-                          onChange={(e) => setEditEventForm({ ...editEventForm, rsvpStatus: e.target.value })}
-                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                        >
-                          <option value="Open">Open (Accepting RSVPs)</option>
-                          <option value="Closed">Closed (RSVP button disabled)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px' }}>
-                      <div>
-                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Show Guest List Social Proof</span>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Renders attendee avatars & names on public page. Turn off for anonymous counts only.</p>
-                      </div>
-                      <label className="switch">
-                        <input 
-                          type="checkbox" 
-                          checked={editEventForm.showGuestList} 
-                          onChange={(e) => setEditEventForm({ ...editEventForm, showGuestList: e.target.checked })}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                  </Card>
-
-                  {/* SECTION 3: Capacity & RSVP Behavior */}
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
-                      <Users size={18} /> 3. Capacity & RSVP Behavior
-                    </h4>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Total Capacity</label>
-                        <input 
-                          type="number" 
-                          value={editEventForm.capacity}
-                          onChange={(e) => setEditEventForm({ ...editEventForm, capacity: Number(e.target.value) })}
-                          style={{ 
-                            width: '100%', padding: '10px', borderRadius: '6px', 
-                            border: editEventForm.capacity < managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length ? '2px solid #ef4444' : '1px solid var(--color-border)' 
-                          }}
-                        />
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                          ℹ️ Max attendee headcount. Current registrations: <strong>{managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length}</strong>
-                        </span>
-                        {editEventForm.capacity < managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length && (
-                          <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, display: 'block', marginTop: '4px' }}>
-                            ❌ Error: Cannot decrease capacity below attendee total.
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>Max Plus-Ones per RSVP</label>
-                        <input 
-                          type="number" 
-                          value={editEventForm.maxGuestsPerRsvp}
-                          onChange={(e) => setEditEventForm({ ...editEventForm, maxGuestsPerRsvp: Number(e.target.value) })}
+                          type="time" 
+                          required 
+                          value={editEventForm.time} 
+                          onChange={(e) => setEditEventForm({ ...editEventForm, time: e.target.value })} 
                           style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '0.9rem' }}>RSVP Deadline</label>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Location Venue Address *</label>
                       <input 
-                        type="datetime-local" 
-                        value={editEventForm.rsvpDeadline}
-                        onChange={(e) => setEditEventForm({ ...editEventForm, rsvpDeadline: e.target.value })}
+                        type="text" 
+                        required 
+                        value={editEventForm.location} 
+                        onChange={(e) => setEditEventForm({ ...editEventForm, location: e.target.value })} 
                         style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                       />
-                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                        ℹ️ <strong>Impact:</strong> RSVPs close automatically at this date, even if status is set to Open.
-                      </span>
                     </div>
-                  </Card>
 
-                  {/* SECTION 4: Self-Service Change & Cancellation Policies */}
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
-                      <CheckSquare size={18} /> 4. Guest Self-Service Policies
-                    </h4>
-
-                    <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Allow Guest Self-Edit RSVP details</span>
-                          <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Allow guests to update their attendance/custom questions post-RSVP.</p>
-                        </div>
-                        <label className="switch">
-                          <input 
-                            type="checkbox" 
-                            checked={editEventForm.allowSelfEdit} 
-                            onChange={(e) => setEditEventForm({ ...editEventForm, allowSelfEdit: e.target.checked })}
-                          />
-                          <span className="slider"></span>
-                        </label>
+                    <div className="grid-2" style={{ gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Max Capacity *</label>
+                        <input 
+                          type="number" 
+                          required 
+                          value={editEventForm.capacity} 
+                          onChange={(e) => setEditEventForm({ ...editEventForm, capacity: parseInt(e.target.value, 10) })} 
+                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                        />
                       </div>
-
-                      <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px', marginTop: '4px' }}>
-                        <div>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Allow Guest Self-Cancellation</span>
-                          <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Guests can cancel their RSVP and free up capacity spots themselves.</p>
-                        </div>
-                        <label className="switch">
-                          <input 
-                            type="checkbox" 
-                            checked={editEventForm.allowSelfCancellation} 
-                            onChange={(e) => setEditEventForm({ ...editEventForm, allowSelfCancellation: e.target.checked })}
-                          />
-                          <span className="slider"></span>
-                        </label>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', borderTop: '1px solid var(--color-border)', paddingTop: '8px', marginTop: '4px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '2px' }}>Cancellation Cut-off (hrs)</label>
-                          <input 
-                            type="number" 
-                            value={editEventForm.cancellationCutoff}
-                            onChange={(e) => setEditEventForm({ ...editEventForm, cancellationCutoff: Number(e.target.value) })}
-                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}
-                          />
-                          <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>Cut off self-cancels X hours before event.</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <div className="flex justify-between items-center">
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Require Reason text</span>
-                            <label className="switch">
-                              <input 
-                                type="checkbox" 
-                                checked={editEventForm.requireCancellationReason} 
-                                onChange={(e) => setEditEventForm({ ...editEventForm, requireCancellationReason: e.target.checked })}
-                              />
-                              <span className="slider"></span>
-                            </label>
-                          </div>
-                        </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Ticket Price ($)</label>
+                        <input 
+                          type="number" 
+                          value={editEventForm.ticketPrice} 
+                          onChange={(e) => setEditEventForm({ ...editEventForm, ticketPrice: parseFloat(e.target.value) })} 
+                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                        />
                       </div>
                     </div>
-                  </Card>
-
-                  {/* SECTION 5: Registration Form & Custom Questions */}
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
-                      <FileText size={18} /> 5. Custom RSVP Questions Form
-                    </h4>
 
                     <div>
-                      <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>Form Questions</label>
-                      {editEventForm.questions && editEventForm.questions.map((q, idx) => (
-                        <div key={idx} className="flex gap-xs items-center" style={{ marginBottom: '8px' }}>
-                          <input 
-                            type="text" 
-                            value={q} 
-                            onChange={(e) => {
-                              const questions = [...editEventForm.questions];
-                              questions[idx] = e.target.value;
-                              setEditEventForm({ ...editEventForm, questions });
-                            }}
-                            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                          />
-                          <button 
-                            type="button" 
-                            onClick={() => setEditEventForm({ ...editEventForm, questions: editEventForm.questions.filter((_, i) => i !== idx) })}
-                            style={{ border: 'none', background: 'rgba(239,68,68,0.1)', color: '#dc2626', cursor: 'pointer', padding: '8px', borderRadius: '4px' }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                      
-                      <button 
-                        type="button" 
-                        onClick={() => setEditEventForm({ ...editEventForm, questions: [...editEventForm.questions, ''] })}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Event Description</label>
+                      <textarea 
+                        rows="5"
+                        value={editEventForm.description} 
+                        onChange={(e) => setEditEventForm({ ...editEventForm, description: e.target.value })} 
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>Series Cadence Recurrence</span>
+                      <select 
+                        value={seriesType} 
+                        onChange={(e) => setSeriesType(e.target.value)}
+                        style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
                       >
-                        + Add Custom Checkout Question
-                      </button>
-                    </div>
-                  </Card>
-
-                  {/* SECTION 6 & 7 & 8: Communications, Payments & Social */}
-                  <div className="grid-2">
-                    <Card style={{ padding: 'var(--spacing-md)' }}>
-                      <h4 style={{ fontSize: '0.95rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
-                        <Bell size={16} /> 6. Reminders & Alerts
-                      </h4>
-                      <div className="flex flex-col gap-xs" style={{ fontSize: '0.85rem' }}>
-                        <div className="flex justify-between items-center">
-                          <span>Confirmation Emails</span>
-                          <label className="switch">
-                            <input type="checkbox" checked={editEventForm.guestConfirmation} onChange={(e) => setEditEventForm({ ...editEventForm, guestConfirmation: e.target.checked })} />
-                            <span className="slider"></span>
-                          </label>
-                        </div>
-                        <div className="flex justify-between items-center" style={{ marginTop: '8px' }}>
-                          <span>Reminder Schedule</span>
-                          <select 
-                            value={editEventForm.reminderSchedule} 
-                            onChange={(e) => setEditEventForm({ ...editEventForm, reminderSchedule: e.target.value })}
-                            style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                          >
-                            <option value="24h">24 Hours Before</option>
-                            <option value="3h">3 Hours Before</option>
-                            <option value="none">Disabled</option>
-                          </select>
-                        </div>
-                      </div>
-                    </Card>
-
-                    <Card style={{ padding: 'var(--spacing-md)' }}>
-                      <h4 style={{ fontSize: '0.95rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
-                        <CreditCard size={16} /> 7. Ticketing Payments
-                      </h4>
-                      <div className="flex flex-col gap-xs" style={{ fontSize: '0.85rem' }}>
-                        <div className="flex justify-between items-center">
-                          <span>Enable Ticket Charging</span>
-                          <label className="switch">
-                            <input type="checkbox" checked={editEventForm.enablePayments} onChange={(e) => setEditEventForm({ ...editEventForm, enablePayments: e.target.checked })} />
-                            <span className="slider"></span>
-                          </label>
-                        </div>
-                        {editEventForm.enablePayments && (
-                          <div className="flex justify-between items-center" style={{ marginTop: '4px' }}>
-                            <span>Ticket Price ($)</span>
-                            <input 
-                              type="number" 
-                              value={editEventForm.ticketPrice} 
-                              onChange={(e) => setEditEventForm({ ...editEventForm, ticketPrice: Number(e.target.value) })}
-                              style={{ width: '80px', padding: '4px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  </div>
-
-                  <Card style={{ padding: 'var(--spacing-md)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
-                      <MessageSquare size={18} /> 8. Social & Engagement
-                    </h4>
-                    <div className="flex justify-between items-center" style={{ marginBottom: '8px' }}>
-                      <div>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Allow Guest Comments & Board reactions</span>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Guests can leave greetings, question feeds, and vote in polls.</p>
-                      </div>
-                      <label className="switch">
-                        <input 
-                          type="checkbox" 
-                          checked={editEventForm.allowComments} 
-                          onChange={(e) => setEditEventForm({ ...editEventForm, allowComments: e.target.checked })}
-                        />
-                        <span className="slider"></span>
-                      </label>
+                        <option value="None">No Recurrence (Single Occurrence)</option>
+                        <option value="Weekly">Weekly (Create 3 additional occurrences)</option>
+                        <option value="Monthly">Monthly (Create 3 additional occurrences)</option>
+                      </select>
                     </div>
 
-                    <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px', marginTop: '4px' }}>
-                      <div>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Allow Photo Uploads (Post-Event gallery)</span>
-                        <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Guests can add snapshots to the event photo grid.</p>
-                      </div>
-                      <label className="switch">
-                        <input 
-                          type="checkbox" 
-                          checked={editEventForm.allowPhotoUploads} 
-                          onChange={(e) => setEditEventForm({ ...editEventForm, allowPhotoUploads: e.target.checked })}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                  </Card>
-
-                  {/* SECTION 9: Admin / Risk Controls */}
-                  <Card style={{ padding: 'var(--spacing-md)', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.01)' }}>
-                    <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626' }}>
-                      <Shield size={18} /> 9. Admin & Risk Controls
-                    </h4>
-                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '12px' }}>Clone event settings or remove the invitation directory entirely.</p>
-                    
-                    <div className="flex gap-sm">
-                      <button 
-                        type="button" 
-                        onClick={() => handleDuplicateEvent(managedEvent.id)}
-                        className="btn btn-outline"
-                        style={{ padding: '10px 18px', fontSize: '0.85rem', flex: 1 }}
-                      >
-                        Duplicate / Clone Event Settings
-                      </button>
+                    <div className="flex gap-sm" style={{ marginTop: '12px' }}>
+                      <Button variant="primary" type="submit">Save Settings</Button>
+                      <Button variant="ghost" type="button" onClick={() => handleManageEvent(selectedEventId)}>Reset</Button>
                       <button 
                         type="button" 
                         onClick={() => handleDeleteEvent(managedEvent.id)}
-                        className="btn"
-                        style={{ padding: '10px 18px', fontSize: '0.85rem', flex: 1, background: '#dc2626', color: 'white' }}
+                        className="btn btn-outline"
+                        style={{ marginLeft: 'auto', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none' }}
                       >
-                        Delete Event Invitation
+                        Delete Event
                       </button>
                     </div>
+                  </form>
+                </Card>
+              )}
+
+              {/* SUB-TAB: NOTIFICATIONS OUTBOX */}
+              {selectedEventTab === 'notifications' && (
+                <div className="flex flex-col gap-lg">
+                  <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Notification Outbox & Scheduled Reminders</h4>
+                    <form onSubmit={handleNotificationsSubmit} className="flex flex-col gap-md" style={{ maxWidth: '640px' }}>
+                      
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <strong style={{ fontSize: '0.9rem' }}>Send Confirmation Email</strong>
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.75rem' }}>Send email confirmation immediately after guest RSVPs.</p>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          checked={editEventForm.sendRsvpConfirmationEmail}
+                          onChange={(e) => setEditEventForm({ ...editEventForm, sendRsvpConfirmationEmail: e.target.checked })}
+                          style={{ width: '18px', height: '18px' }}
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <strong style={{ fontSize: '0.9rem' }}>Send Confirmation SMS</strong>
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.75rem' }}>Send WhatsApp/SMS alert confirmation.</p>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          checked={editEventForm.sendRsvpConfirmationSms}
+                          onChange={(e) => setEditEventForm({ ...editEventForm, sendRsvpConfirmationSms: e.target.checked })}
+                          style={{ width: '18px', height: '18px' }}
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <strong style={{ fontSize: '0.9rem' }}>Send 24-Hour Pre-event Reminder</strong>
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.75rem' }}>Send auto-reminder alert 24 hours before start.</p>
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          checked={editEventForm.sendPreEventReminders}
+                          onChange={(e) => setEditEventForm({ ...editEventForm, sendPreEventReminders: e.target.checked })}
+                          style={{ width: '18px', height: '18px' }}
+                        />
+                      </div>
+
+                      <Button variant="primary" type="submit" style={{ alignSelf: 'start', marginTop: '10px' }}>Save Schedules</Button>
+                    </form>
                   </Card>
 
-                  {/* Save button footer */}
-                  <div className="flex gap-sm justify-end" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-                    <Button variant="ghost" type="button" onClick={() => setSelectedEventId(null)}>Cancel</Button>
-                    <Button variant="primary" type="submit">Save Event Settings</Button>
-                  </div>
-
-                </form>
-              </div>
-            )}
-
-            {selectedEventTab === 'notifications' && (
-              <div>
-                <form onSubmit={handleNotificationsSubmit} className="flex flex-col gap-md">
-                  <div className="grid-2">
-                    
-                    {/* LEFT COLUMN: Controls & Simulator */}
-                    <div className="flex flex-col gap-md">
-                      
-                      {/* Toggles */}
-                      <Card style={{ padding: 'var(--spacing-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
-                          <Bell size={18} /> General Channels Toggles
-                        </h4>
-                        
-                        <div className="flex flex-col gap-sm" style={{ fontSize: '0.875rem' }}>
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <span style={{ fontWeight: 600 }}>Send RSVP Confirmation Emails</span>
-                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Instantly email booking ID and details to guest on RSVP.</p>
-                            </div>
-                            <label className="switch">
-                              <input 
-                                type="checkbox" 
-                                checked={editEventForm.sendRsvpConfirmationEmail} 
-                                onChange={(e) => setEditEventForm({ ...editEventForm, sendRsvpConfirmationEmail: e.target.checked })}
-                              />
-                              <span className="slider"></span>
-                            </label>
-                          </div>
-
-                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-                            <div>
-                              <span style={{ fontWeight: 600 }}>Send RSVP Confirmation SMS</span>
-                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Send confirmation text to guest's phone number.</p>
-                            </div>
-                            <label className="switch">
-                              <input 
-                                type="checkbox" 
-                                checked={editEventForm.sendRsvpConfirmationSms} 
-                                onChange={(e) => setEditEventForm({ ...editEventForm, sendRsvpConfirmationSms: e.target.checked })}
-                              />
-                              <span className="slider"></span>
-                            </label>
-                          </div>
-
-                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-                            <div>
-                              <span style={{ fontWeight: 600 }}>Send Pre-Event Reminders</span>
-                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Send automated emails before the event starts.</p>
-                            </div>
-                            <label className="switch">
-                              <input 
-                                type="checkbox" 
-                                checked={editEventForm.sendPreEventReminders} 
-                                onChange={(e) => setEditEventForm({ ...editEventForm, sendPreEventReminders: e.target.checked })}
-                              />
-                              <span className="slider"></span>
-                            </label>
-                          </div>
-
-                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-                            <div>
-                              <span style={{ fontWeight: 600 }}>Send Post-Event Feedback Email</span>
-                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Automatically ask for feedback and star ratings after the event.</p>
-                            </div>
-                            <label className="switch">
-                              <input 
-                                type="checkbox" 
-                                checked={editEventForm.sendPostEventFeedbackEmail} 
-                                onChange={(e) => setEditEventForm({ ...editEventForm, sendPostEventFeedbackEmail: e.target.checked })}
-                              />
-                              <span className="slider"></span>
-                            </label>
-                          </div>
-
-                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-                            <div>
-                              <span style={{ fontWeight: 600 }}>Send Post-Event Feedback SMS</span>
-                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Send text survey link to attendee phone numbers.</p>
-                            </div>
-                            <label className="switch">
-                              <input 
-                                type="checkbox" 
-                                checked={editEventForm.sendPostEventFeedbackSms} 
-                                onChange={(e) => setEditEventForm({ ...editEventForm, sendPostEventFeedbackSms: e.target.checked })}
-                              />
-                              <span className="slider"></span>
-                            </label>
-                          </div>
-                        </div>
-                      </Card>
-
-                      {/* Schedule Controls */}
-                      <Card style={{ padding: 'var(--spacing-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
-                          <Calendar size={18} /> Schedule Timing Controls
-                        </h4>
-                        
-                        <div className="flex flex-col gap-md" style={{ fontSize: '0.875rem' }}>
-                          <div>
-                            <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Reminder 1 timing</label>
-                            <select 
-                              value={editEventForm.reminder1Offset}
-                              onChange={(e) => setEditEventForm({ ...editEventForm, reminder1Offset: Number(e.target.value) })}
-                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                              disabled={!editEventForm.sendPreEventReminders}
-                            >
-                              <option value="48">48 hours before start</option>
-                              <option value="24">24 hours before start</option>
-                              <option value="12">12 hours before start</option>
-                              <option value="3">3 hours before start</option>
-                            </select>
-                          </div>
-
-                          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
-                            <div className="flex justify-between items-center" style={{ marginBottom: '8px' }}>
-                              <span style={{ fontWeight: 600 }}>Enable Second Reminder</span>
-                              <label className="switch">
-                                <input 
-                                  type="checkbox" 
-                                  checked={editEventForm.reminder2Enabled} 
-                                  onChange={(e) => setEditEventForm({ ...editEventForm, reminder2Enabled: e.target.checked })}
-                                  disabled={!editEventForm.sendPreEventReminders}
-                                />
-                                <span className="slider"></span>
-                              </label>
-                            </div>
-
-                            {editEventForm.reminder2Enabled && (
-                              <div>
-                                <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Reminder 2 timing</label>
-                                <select 
-                                  value={editEventForm.reminder2Offset}
-                                  onChange={(e) => setEditEventForm({ ...editEventForm, reminder2Offset: Number(e.target.value) })}
-                                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                                  disabled={!editEventForm.sendPreEventReminders}
-                                >
-                                  <option value="12">12 hours before start</option>
-                                  <option value="6">6 hours before start</option>
-                                  <option value="3">3 hours before start</option>
-                                  <option value="1">1 hour before start</option>
-                                </select>
-                              </div>
-                            )}
-                          </div>
-
-                          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
-                            <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Post-event Feedback delay</label>
-                            <select 
-                              value={editEventForm.feedbackDelay}
-                              onChange={(e) => setEditEventForm({ ...editEventForm, feedbackDelay: Number(e.target.value) })}
-                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                              disabled={!editEventForm.sendPostEventFeedbackEmail}
-                            >
-                              <option value="2">2 hours after event ends</option>
-                              <option value="3">3 hours after event ends</option>
-                              <option value="12">12 hours after event ends</option>
-                              <option value="24">24 hours after event ends</option>
-                              <option value="48">48 hours after event ends</option>
-                            </select>
-                          </div>
-                        </div>
-                      </Card>
-
-                      {/* Virtual Cron Simulator */}
-                      <Card style={{ padding: 'var(--spacing-md)', background: 'rgba(0,113,227,0.02)', border: '1px dashed var(--color-primary)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
-                          <RefreshCw size={18} /> System Scheduler Simulator
-                        </h4>
-                        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '12px' }}>
-                          SafalEvents dispatches scheduled reminders hourly. Click below to simulate running the cron job runner for this event right now.
-                        </p>
-                        
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const dispatched = mockStore.runScheduledJobs(managedEvent.id);
-                            setSchedulerRunResult({ count: dispatched.length, logs: dispatched });
-                            loadDashboardData();
-                          }}
-                          className="btn btn-outline"
-                          style={{ width: '100%', padding: '10px', fontSize: '0.875rem' }}
-                        >
-                          Trigger virtual cron job check
-                        </button>
-
-                        {schedulerRunResult && (
-                          <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', background: schedulerRunResult.count > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(148,163,184,0.08)', border: schedulerRunResult.count > 0 ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(148,163,184,0.2)', fontSize: '0.8rem' }}>
-                            {schedulerRunResult.count > 0 ? (
-                              <span>🎉 Successfully dispatched <strong>{schedulerRunResult.count}</strong> notifications:
-                                <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
-                                  {schedulerRunResult.logs.map((log, i) => (
-                                    <li key={i}>{log.channel} {log.type} to {log.guestEmail}</li>
-                                  ))}
-                                </ul>
-                              </span>
-                            ) : (
-                              <span>ℹ️ Virtual cron ran. No notifications were due to send at this time. (Check dates and templates)</span>
-                            )}
-                          </div>
-                        )}
-                      </Card>
-
+                  {/* Dispatched Logs */}
+                  <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Dispatched Logs</h4>
                     </div>
-
-                    {/* RIGHT COLUMN: Template Editor & Realtime Live Preview */}
-                    <div className="flex flex-col gap-md">
-                      
-                      {/* Template Editor */}
-                      <Card style={{ padding: 'var(--spacing-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: '12px' }}>Template Text Customizer</h4>
-                        
-                        {/* Selector Tabs */}
-                        <div className="flex gap-xs" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '12px', paddingBottom: '8px' }}>
-                          {['rsvp', 'reminder', 'feedback'].map(key => (
-                            <button
-                              key={key}
-                              type="button"
-                              onClick={() => setSelectedTemplateKey(key)}
-                              style={{
-                                background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer',
-                                fontSize: '0.8rem', fontWeight: 600,
-                                color: selectedTemplateKey === key ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                                borderBottom: selectedTemplateKey === key ? '2px solid var(--color-primary)' : '2px solid transparent'
-                              }}
-                            >
-                              {key === 'rsvp' ? 'RSVP Confirm' : key === 'reminder' ? 'Reminder 24h/3h' : 'Post-Event Feedback'}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Subject & Wording inputs */}
-                        <div className="flex flex-col gap-sm">
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Subject Line</label>
-                            <input 
-                              type="text"
-                              value={editEventForm.templates[selectedTemplateKey]?.subject || ''}
-                              onChange={(e) => {
-                                const updated = { ...editEventForm.templates };
-                                updated[selectedTemplateKey].subject = e.target.value;
-                                setEditEventForm({ ...editEventForm, templates: updated });
-                              }}
-                              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                              required
-                            />
-                          </div>
-
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Wording Text</label>
-                            <textarea 
-                              rows="6"
-                              value={editEventForm.templates[selectedTemplateKey]?.body || ''}
-                              onChange={(e) => {
-                                const updated = { ...editEventForm.templates };
-                                updated[selectedTemplateKey].body = e.target.value;
-                                setEditEventForm({ ...editEventForm, templates: updated });
-                              }}
-                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'monospace', fontSize: '0.8rem' }}
-                              required
-                            ></textarea>
-                          </div>
-
-                          {/* Placeholder Variables Cheat Sheet */}
-                          <div style={{ background: 'var(--color-surface-hover)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
-                            <strong style={{ color: 'var(--color-primary)' }}>Dynamic Placeholders:</strong>
-                            <div className="flex gap-xs" style={{ flexWrap: 'wrap', marginTop: '4px' }}>
-                              {['{{guest_name}}', '{{event_name}}', '{{event_date}}', '{{event_start_time}}', '{{booking_id}}', '{{manage_rsvp_link}}', '{{feedback_survey_link}}'].map(v => (
-                                <code key={v} style={{ background: 'var(--color-surface)', padding: '2px 4px', borderRadius: '3px', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}>{v}</code>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-
-                      {/* Realtime Live rendering Viewport */}
-                      <Card style={{ padding: 'var(--spacing-md)', background: 'var(--color-surface-hover)' }}>
-                        <div className="flex justify-between items-center" style={{ marginBottom: '12px' }}>
-                          <h4 style={{ fontSize: '0.9rem', fontWeight: 600 }}>Real-Time Dispatch Preview</h4>
-                          <div className="flex gap-xs">
-                            <button
-                              type="button"
-                              onClick={() => setPreviewMode('email')}
-                              style={{
-                                background: previewMode === 'email' ? 'var(--color-primary)' : 'var(--color-surface)',
-                                color: previewMode === 'email' ? 'white' : 'var(--color-text-muted)',
-                                border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer'
-                              }}
-                            >
-                              Email Client
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPreviewMode('sms')}
-                              style={{
-                                background: previewMode === 'sms' ? 'var(--color-primary)' : 'var(--color-surface)',
-                                color: previewMode === 'sms' ? 'white' : 'var(--color-text-muted)',
-                                border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer'
-                              }}
-                            >
-                              SMS Bubble
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Rendering Preview */}
-                        {(() => {
-                          const dummyGuest = { name: "Alice Vance", email: "alice@example.com", phone: "+1 (555) 123-4567", id: "rsvp-alice" };
-                          const templateSubject = editEventForm.templates[selectedTemplateKey]?.subject || '';
-                          const templateBody = editEventForm.templates[selectedTemplateKey]?.body || '';
-                          
-                          const resolvedSubject = mockStore.renderTemplate(templateSubject, managedEvent, dummyGuest);
-                          const resolvedBody = mockStore.renderTemplate(templateBody, managedEvent, dummyGuest);
-
-                          if (previewMode === 'email') {
-                            return (
-                              <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', overflow: 'hidden', color: 'var(--color-text)' }}>
-                                <div style={{ background: 'var(--color-surface-hover)', padding: '6px 12px', borderBottom: '1px solid var(--color-border)', fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'left' }}>
-                                  <strong>To:</strong> {dummyGuest.email} <br/>
-                                  <strong>Subject:</strong> {resolvedSubject || 'Event Update'}
-                                </div>
-                                <div style={{ padding: '16px', fontSize: '0.8rem', color: 'var(--color-text)', whiteSpace: 'pre-line', minHeight: '120px', textAlign: 'left' }}>
-                                  {resolvedBody}
-                                  
-                                  {selectedTemplateKey === 'rsvp' && (
-                                    <div style={{ marginTop: '16px' }}>
-                                      <a href="#" onClick={(e) => e.preventDefault()} style={{ display: 'inline-block', padding: '8px 16px', background: 'var(--color-primary)', color: 'white', borderRadius: '6px', textDecoration: 'none', fontWeight: 600 }}>Manage My RSVP</a>
-                                    </div>
-                                  )}
-                                  {selectedTemplateKey === 'feedback' && (
-                                    <div style={{ marginTop: '16px' }}>
-                                      <a href="#" onClick={(e) => e.preventDefault()} style={{ display: 'inline-block', padding: '8px 16px', background: '#16a34a', color: 'white', borderRadius: '6px', textDecoration: 'none', fontWeight: 600 }}>Submit Feedback Survey</a>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          } else {
-                            // SMS Bubble preview
-                            return (
-                              <div style={{ maxWidth: '320px', margin: '0 auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '24px', padding: '16px 8px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'var(--shadow-md)' }}>
-                                <div style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--color-text-muted)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
-                                  iMessage / SMS Conversation
-                                </div>
-                                <div style={{
-                                  alignSelf: 'flex-start',
-                                  background: 'var(--color-surface-hover)',
-                                  color: 'var(--color-text)',
-                                  padding: '8px 12px',
-                                  borderRadius: '16px',
-                                  fontSize: '0.75rem',
-                                  maxWidth: '85%',
-                                  whiteSpace: 'pre-line',
-                                  textAlign: 'left'
-                                }}>
-                                  {resolvedBody.length > 180 ? resolvedBody.substring(0, 177) + '...' : resolvedBody}
-                                </div>
-                              </div>
-                            );
-                          }
-                        })()}
-                      </Card>
-
-                    </div>
-
-                  </div>
-
-                  {/* Save button footer */}
-                  <div className="flex gap-sm justify-end" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', marginTop: '12px' }}>
-                    <Button variant="ghost" type="button" onClick={() => setSelectedEventId(null)}>Cancel</Button>
-                    <Button variant="primary" type="submit">Save Notification Configuration</Button>
-                  </div>
-                </form>
-
-                {/* DISPATCH LOGS SECTION */}
-                <div style={{ marginTop: '24px' }}>
-                  <Card style={{ padding: 0 }} className="glass-surface">
-                    <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
-                      <h4 style={{ fontSize: '1.1rem', margin: 0 }}>Notification Dispatch History Logs</h4>
-                      <p className="text-muted" style={{ fontSize: '0.8rem', margin: '2px 0 0 0' }}>Logs of all triggers and broadcast deliveries executed for this event.</p>
-                    </div>
-
                     {mockStore.getNotificationLogs(managedEvent.id).length > 0 ? (
                       <div style={{ overflowX: 'auto' }}>
                         <table className="premium-table">
                           <thead>
                             <tr>
-                              <th>Date Sent</th>
-                              <th>Recipient Email</th>
+                              <th>Timestamp</th>
+                              <th>Recipient</th>
                               <th>Channel</th>
-                              <th>Alert Type</th>
+                              <th>Alert</th>
                               <th>Subject</th>
-                              <th>Details</th>
+                              <th>Action</th>
                             </tr>
                           </thead>
                           <tbody>
                             {mockStore.getNotificationLogs(managedEvent.id).map(log => (
                               <tr key={log.id}>
-                                <td>{new Date(log.sentAt).toLocaleString()}</td>
+                                <td style={{ fontSize: '0.8rem' }}>{new Date(log.sentAt).toLocaleTimeString()}</td>
                                 <td>{log.guestEmail}</td>
                                 <td>
-                                  <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(0,113,227,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>
                                     {log.channel}
                                   </span>
                                 </td>
+                                <td style={{ textTransform: 'capitalize' }}>{log.type}</td>
+                                <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.subject}</td>
                                 <td>
-                                  <span style={{ fontSize: '0.75rem', textTransform: 'capitalize', fontWeight: 500 }}>
-                                    {log.type}
-                                  </span>
-                                </td>
-                                <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {log.subject}
-                                </td>
-                                <td>
-                                  <Button 
-                                    variant="ghost" 
-                                    onClick={() => setViewLogDetail(log)}
-                                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                                  >
-                                    View Message
-                                  </Button>
+                                  <Button variant="ghost" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => setViewLogDetail(log)}>View</Button>
                                 </td>
                               </tr>
                             ))}
@@ -2092,428 +2066,904 @@ export default function HostDashboard({ onLogout }) {
                         </table>
                       </div>
                     ) : (
-                      <div className="text-center text-muted" style={{ padding: '24px 0' }}>
-                        No dispatched notifications logged yet. (Submit a guest RSVP to generate logs)
-                      </div>
+                      <p className="text-muted" style={{ padding: '24px' }}>No messages sent yet.</p>
                     )}
                   </Card>
                 </div>
-                
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* --- GLOBAL AUDIENCE VIEW --- */}
-        {activeSidebar === 'audience' && (
-          <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)' }}>Audience Directory</h1>
-            <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>List of all unique guests who have RSVP'd or attended your events.</p>
-            
-            <Card style={{ padding: 0 }} className="glass-surface">
-              {audienceList.length > 0 ? (
-                <table className="premium-table">
-                  <thead>
-                    <tr>
-                      <th>Guest Name</th>
-                      <th>Email</th>
-                      <th>Phone</th>
-                      <th>Events RSVP'd</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {audienceList.map(guest => (
-                      <tr key={guest.email}>
-                        <td style={{ fontWeight: 600 }}>{guest.name}</td>
-                        <td>{guest.email}</td>
-                        <td>{guest.phone}</td>
-                        <td>{guest.eventsAttended.join(', ')}</td>
-                        <td>
-                          <Button 
-                            variant="ghost" 
-                            style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            onClick={() => {
-                              setBroadcastTarget(guest.email);
-                              setShowBroadcastModal(true);
-                            }}
-                          >
-                            <Mail size={12} /> Contact
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="text-center text-muted" style={{ padding: 'var(--spacing-xl) 0' }}>
-                  <Users size={48} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                  <p>No audience members found in your history.</p>
-                </div>
               )}
-            </Card>
-          </div>
-        )}
 
-        {/* --- GLOBAL ANALYTICS VIEW --- */}
-        {activeSidebar === 'analytics' && (
-          <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)' }}>Channel & Traffic Analytics</h1>
-            <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>Insights into event traffic, conversion rates, and acquisition channels.</p>
-            
-            <div className="grid-2" style={{ marginBottom: 'var(--spacing-lg)' }}>
-              {/* Conversion Funnel */}
-              <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>RSVP Conversion Funnel</h4>
-                <div className="flex flex-col gap-md" style={{ padding: '10px 0' }}>
-                  <div>
-                    <div className="flex justify-between" style={{ fontSize: '0.85rem', marginBottom: '4px' }}>
-                      <span>Total Page Views</span>
-                      <span style={{ fontWeight: 600 }}>{totalViews} (100%)</span>
-                    </div>
-                    <div style={{ height: '24px', background: 'rgba(0,113,227,0.1)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
-                      <div style={{ height: '100%', background: 'var(--color-primary)', width: '100%' }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between" style={{ fontSize: '0.85rem', marginBottom: '4px' }}>
-                      <span>RSVP Drawer Opened</span>
-                      <span style={{ fontWeight: 600 }}>{Math.round(totalViews * 0.45)} (45%)</span>
-                    </div>
-                    <div style={{ height: '24px', background: 'rgba(0,113,227,0.1)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
-                      <div style={{ height: '100%', background: 'var(--color-primary)', width: '45%' }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between" style={{ fontSize: '0.85rem', marginBottom: '4px' }}>
-                      <span>RSVPs Submitted (Going / Maybe)</span>
-                      <span style={{ fontWeight: 600 }}>{totalRsvps} ({totalViews > 0 ? Math.round((totalRsvps / totalViews) * 100) : 0}%)</span>
-                    </div>
-                    <div style={{ height: '24px', background: 'rgba(244,63,94,0.1)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
-                      <div style={{ height: '100%', background: 'var(--color-accent)', width: `${totalViews > 0 ? (totalRsvps / totalViews) * 100 : 0}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+              {/* SUB-TAB: MANUAL ADD */}
+              {selectedEventTab === 'invitations' && (
+                <div className="grid-2" style={{ gap: '20px' }}>
+                  <Card style={{ padding: '20px', textAlign: 'left' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px' }}>Add Guest Manually</h4>
+                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '16px' }}>Directly register offline tickets or VIP guests.</p>
+                    {manualInviteSent && (
+                      <div style={{ padding: '10px', background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', color: '#16a34a', borderRadius: '8px', marginBottom: '12px', fontSize: '0.85rem', fontWeight: 600 }}>
+                        Guest RSVP added successfully!
+                      </div>
+                    )}
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const capacity = managedEvent.capacity;
+                      const attending = managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length;
+                      if (attending + manualInviteForm.guestCount > capacity) {
+                        alert(`Cannot add guests. Remaining spots: ${capacity - attending}.`);
+                        return;
+                      }
+                      mockStore.createManualInvitation(selectedEventId, manualInviteForm);
+                      setManualInviteSent(true);
+                      setManualInviteForm({ name: '', email: '', phone: '', guestCount: 1 });
+                      setTimeout(() => setManualInviteSent(false), 2000);
+                      loadDashboardData();
+                    }} className="flex flex-col gap-sm">
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Full Name *</label>
+                        <input required type="text" value={manualInviteForm.name} onChange={(e) => setManualInviteForm({ ...manualInviteForm, name: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Email *</label>
+                        <input required type="email" value={manualInviteForm.email} onChange={(e) => setManualInviteForm({ ...manualInviteForm, email: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Phone</label>
+                        <input type="tel" placeholder="+1 (555) 000-0000" value={manualInviteForm.phone} onChange={(e) => setManualInviteForm({ ...manualInviteForm, phone: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Guests Size</label>
+                        <input type="number" min="1" max={managedEvent.maxGuestsPerRsvp} value={manualInviteForm.guestCount} onChange={(e) => setManualInviteForm({ ...manualInviteForm, guestCount: parseInt(e.target.value, 10) })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                      </div>
+                      <div className="flex gap-sm">
+                        <Button variant="primary" type="submit" style={{ flex: 1 }}>Register & Notify</Button>
+                        <button type="button" onClick={() => {
+                          if (!manualInviteForm.phone) { alert('Phone number required for WhatsApp'); return; }
+                          const msg = `You're invited to ${managedEvent.title} on ${managedEvent.date}. RSVP: ${window.location.origin}/e/${managedEvent.id}`;
+                          window.open(`https://wa.me/${manualInviteForm.phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+                        }} style={{ padding: '10px 14px', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
+                          WhatsApp
+                        </button>
+                      </div>
+                    </form>
+                  </Card>
 
-              {/* Referral Channels */}
-              <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Traffic Channels</h4>
-                <div style={{ minHeight: '200px' }} className="flex justify-around items-center">
-                  {/* SVG Bar Chart for Channels */}
-                  <svg width="220" height="150" viewBox="0 0 220 150">
-                    <line x1="30" y1="120" x2="210" y2="120" stroke="#cbd5e1" />
-                    
-                    {/* WhatsApp */}
-                    <rect x="50" y="30" width="24" height="90" rx="3" fill="#22c55e" className="chart-bar" />
-                    {/* Instagram */}
-                    <rect x="90" y="50" width="24" height="70" rx="3" fill="#e1306c" className="chart-bar" />
-                    {/* Email/Direct */}
-                    <rect x="130" y="75" width="24" height="45" rx="3" fill="var(--color-primary)" className="chart-bar" />
-                    {/* Twitter */}
-                    <rect x="170" y="100" width="24" height="20" rx="3" fill="#1da1f2" className="chart-bar" />
-
-                    {/* Labels */}
-                    <text x="62" y="135" fontSize="8" textAnchor="middle" fill="#64748b">WhatsApp</text>
-                    <text x="102" y="135" fontSize="8" textAnchor="middle" fill="#64748b">Insta</text>
-                    <text x="142" y="135" fontSize="8" textAnchor="middle" fill="#64748b">Direct</text>
-                    <text x="182" y="135" fontSize="8" textAnchor="middle" fill="#64748b">Twitter</text>
-                  </svg>
-                  <div style={{ fontSize: '0.85rem' }}>
-                    <div style={{ marginBottom: '4px' }}><strong>• WhatsApp:</strong> 60%</div>
-                    <div style={{ marginBottom: '4px' }}><strong>• Instagram:</strong> 25%</div>
-                    <div style={{ marginBottom: '4px' }}><strong>• Direct Link:</strong> 10%</div>
-                    <div style={{ marginBottom: '4px' }}><strong>• Twitter/X:</strong> 5%</div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Global Feedback Survey Analytics */}
-            {(() => {
-              const allEvents = mockStore.getEvents();
-              const allFeedback = allEvents.reduce((acc, evt) => {
-                const evFeedbacks = mockStore.getFeedbackResponses(evt.id).map(fb => ({ ...fb, eventTitle: evt.title }));
-                return [...acc, ...evFeedbacks];
-              }, []);
-
-              if (allFeedback.length > 0) {
-                const avgRating = (allFeedback.reduce((sum, fb) => sum + fb.rating, 0) / allFeedback.length).toFixed(1);
-                return (
-                  <div style={{ marginTop: '24px' }}>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Guest Feedback & Satisfaction (Aggregate)</h3>
-                    <div className="grid-2">
-                      <Card style={{ padding: 'var(--spacing-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', fontWeight: 600 }}>Ratings Overview</h4>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '16px' }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '3rem', fontWeight: 800, color: '#fbbf24', lineHeight: 1 }}>
-                              {avgRating}
-                            </div>
-                            <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', margin: '8px 0 4px 0' }}>
-                              {[1, 2, 3, 4, 5].map(star => {
-                                const active = star <= Math.round(Number(avgRating));
-                                return <Star key={star} size={14} fill={active ? '#fbbf24' : 'none'} stroke={active ? '#fbbf24' : '#cbd5e1'} />;
-                              })}
-                            </div>
-                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>{allFeedback.length} reviews</span>
+                  {/* Manual Guest logs */}
+                  <Card style={{ padding: '20px', textAlign: 'left' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Invitations outbox</h4>
+                    <div style={{ overflowY: 'auto', maxHeight: '380px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {managedEventRsvps.map(rsvp => (
+                        <div key={rsvp.id} style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rsvp.name} {rsvp.isManualInvite && <span style={{ fontSize: '0.65rem', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '1px 5px', borderRadius: '3px' }}>Manual</span>}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.email}</div>
                           </div>
-
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {[5, 4, 3, 2, 1].map(stars => {
-                              const count = allFeedback.filter(fb => fb.rating === stars).length;
-                              const pct = (count / allFeedback.length) * 100;
-                              return (
-                                <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
-                                  <span style={{ width: '40px', textAlign: 'right', fontWeight: 500 }}>{stars} ★</span>
-                                  <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ width: `${pct}%`, height: '100%', background: '#fbbf24', borderRadius: '4px' }}></div>
-                                  </div>
-                                  <span style={{ width: '24px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{count}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '12px', background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)', color: rsvp.status === 'going' ? '#16a34a' : '#ca8a04' }}>
+                            {rsvp.status.toUpperCase()}
+                          </span>
                         </div>
-                      </Card>
-
-                      <Card style={{ padding: 'var(--spacing-md)' }}>
-                        <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', fontWeight: 600 }}>Recent Feedback Reviews</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
-                          {allFeedback.slice().reverse().map(fb => (
-                            <div key={fb.id} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '10px', fontSize: '0.85rem' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                <span style={{ fontWeight: 600 }}>{fb.name}</span>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{new Date(fb.submittedAt).toLocaleDateString()}</span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                                <div style={{ display: 'flex', gap: '1px' }}>
-                                  {[1, 2, 3, 4, 5].map(star => (
-                                    <Star key={star} size={10} fill={star <= fb.rating ? '#fbbf24' : 'none'} stroke={star <= fb.rating ? '#fbbf24' : '#cbd5e1'} />
-                                  ))}
-                                </div>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '6px' }}>on "{fb.eventTitle}"</span>
-                              </div>
-                              {fb.comments && <p style={{ color: '#475569', margin: '4px 0 0 0', fontStyle: 'italic', fontSize: '0.8rem' }}>"{fb.comments}"</p>}
-                            </div>
-                          ))}
-                        </div>
-                      </Card>
+                      ))}
                     </div>
-                  </div>
-                );
-              }
-              return (
-                <div style={{ marginTop: '24px' }}>
-                  <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Guest Feedback & Satisfaction (Aggregate)</h3>
-                  <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
-                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', marginBottom: '12px' }}>
-                      <MessageSquare size={24} />
-                    </div>
-                    <h4 style={{ fontSize: '1rem', margin: '0 0 4px 0', fontWeight: 600 }}>No Guest Feedback Yet</h4>
-                    <p className="text-muted" style={{ fontSize: '0.85rem', maxWidth: '360px', margin: '0 auto' }}>
-                      Feedback surveys are automatically sent after events complete. Responses will show up here.
-                    </p>
                   </Card>
                 </div>
-              );
-            })()}
-          </div>
-        )}
+              )}
 
-        {/* --- GLOBAL SETTINGS VIEW --- */}
-        {activeSidebar === 'settings' && (
-          <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)' }}>Settings & Config</h1>
-            <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>Manage host credentials and profile defaults.</p>
-            
-            <Card style={{ maxWidth: '600px', padding: 'var(--spacing-lg)' }}>
-              <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Organizer Profile</h4>
-              <form onSubmit={(e) => { e.preventDefault(); alert('Profile updated!'); }} className="flex flex-col gap-md">
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '4px', fontWeight: 500 }}>Host Display Name</label>
-                  <input type="text" defaultValue="Alex Rivera" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+              {/* SUB-TAB: QR SCAN CHECK-IN */}
+              {selectedEventTab === 'checkin' && (
+                <div className="grid-2" style={{ gap: '20px' }}>
+                  <Card style={{ padding: '20px', textAlign: 'left' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px' }}>QR Ticket Validator</h4>
+                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '16px' }}>Input ticket pass ID (e.g. r1, r2) or scan QR code to verify entries.</p>
+                    
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Active Scanner Operator</label>
+                      <select 
+                        value={activeScannerStaff}
+                        onChange={(e) => setActiveScannerStaff(e.target.value)}
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                      >
+                        {activeStaffList.map(s => (
+                          <option key={s.email} value={s.name}>{s.name} ({s.role})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex gap-sm" style={{ marginBottom: '16px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Enter Ticket Pass ID" 
+                        value={checkinInput}
+                        onChange={(e) => setCheckinInput(e.target.value)}
+                        style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleVerifyCheckin(checkinInput)}
+                      />
+                      <Button variant="primary" onClick={() => handleVerifyCheckin(checkinInput)}>Verify</Button>
+                    </div>
+
+                    {checkinResult && (
+                      <div style={{
+                        padding: '14px', borderRadius: '8px', 
+                        border: `1.5px solid ${checkinResult.type === 'success' ? '#22c55e' : checkinResult.type === 'warning' ? '#f59e0b' : '#ef4444'}`,
+                        background: checkinResult.type === 'success' ? 'rgba(34,197,94,0.08)' : checkinResult.type === 'warning' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'
+                      }}>
+                        <strong style={{ display: 'block', color: checkinResult.type === 'success' ? '#15803d' : checkinResult.type === 'warning' ? '#b45309' : '#dc2626', marginBottom: '4px' }}>
+                          {checkinResult.type === 'success' ? '✓ ENTRY APPROVED' : checkinResult.type === 'warning' ? '⚠️ DUPLICATE ENTRY' : '✕ ENTRY DENIED'}
+                        </strong>
+                        <p style={{ fontSize: '0.85rem', margin: 0 }}>{checkinResult.message}</p>
+                        {checkinResult.rsvp && (
+                          <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            <div>Guest: <strong>{checkinResult.rsvp.name}</strong></div>
+                            <div>Email: {checkinResult.rsvp.email}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Card>
+
+                  <Card style={{ padding: '20px', textAlign: 'left' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Gate Attendance Stats</h4>
+                    <div className="grid-2" style={{ gap: '12px', marginBottom: '16px' }}>
+                      <div style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.1)', padding: '14px', borderRadius: '8px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#16a34a' }}>
+                          {managedEventRsvps.filter(r => r.checkedIn).length}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600 }}>Checked In</span>
+                      </div>
+                      <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.1)', padding: '14px', borderRadius: '8px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>
+                          {managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).length}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>Arriving Soon</span>
+                      </div>
+                    </div>
+
+                    <h5 style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px' }}>Pending Guest Arrivals</h5>
+                    <div style={{ overflowY: 'auto', maxHeight: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).map(rsvp => (
+                        <div key={rsvp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '8px 12px', borderRadius: '6px' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{rsvp.name}</span>
+                          <button 
+                            onClick={() => {
+                              mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }, activeScannerStaff);
+                              loadDashboardData();
+                              setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: `${rsvp.name} checked in successfully.` });
+                            }}
+                            style={{ border: 'none', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}
+                          >
+                            Check-in
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '4px', fontWeight: 500 }}>Email Address</label>
-                  <input type="email" defaultValue="alex@safalevent.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+              )}
+
+              {/* SUB-TAB: PAYMENTS */}
+              {selectedEventTab === 'payments' && (
+                <div className="flex flex-col gap-lg">
+                  <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', color: 'var(--color-primary)' }}>Stripe Connect Setup</h4>
+                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '16px' }}>Link bank payouts details to sell paid tickets seamlessly on SafalEvents.</p>
+                    
+                    <div className="grid-2" style={{ gap: '24px', alignItems: 'start' }}>
+                      <div style={{ background: 'var(--color-surface-hover)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                        <h5 style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '8px' }}>Stripe Payout Connection</h5>
+                        <div className="flex items-center gap-xs" style={{ marginBottom: '16px' }}>
+                          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: stripeConnected ? '#22c55e' : '#cbd5e1' }}></span>
+                          <strong>{stripeConnected ? 'CONNECTED' : 'DISCONNECTED'}</strong>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setStripeConnected(!stripeConnected);
+                            alert(stripeConnected ? 'Stripe disconnected.' : 'Stripe connected successfully!');
+                          }}
+                          className="btn btn-primary"
+                          style={{ border: 'none', padding: '10px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          {stripeConnected ? 'Disconnect Merchant' : 'Connect Stripe Account'}
+                        </button>
+                      </div>
+
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const user = mockStore.getCurrentUser();
+                        if (user && user.email) {
+                          mockStore.saveBankAccount(user.email, bankForm);
+                          alert('Bank routing saved!');
+                        }
+                      }} className="flex flex-col gap-sm">
+                        <h5 style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '2px' }}>Direct Deposit Bank Setup</h5>
+                        <div className="grid-2" style={{ gap: '8px' }}>
+                          <input type="text" required placeholder="Bank Name" value={bankForm.bankName || ''} onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                          <input type="text" required placeholder="Account Holder" value={bankForm.holderName || ''} onChange={(e) => setBankForm({ ...bankForm, holderName: e.target.value })} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                        </div>
+                        <div className="grid-2" style={{ gap: '8px' }}>
+                          <input type="text" required placeholder="Routing Number (9 digits)" value={bankForm.routingNumber || ''} onChange={(e) => setBankForm({ ...bankForm, routingNumber: e.target.value.replace(/\D/g,'').substring(0,9) })} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                          <input type="text" required placeholder="Account Number" value={bankForm.accountNumber || ''} onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value.replace(/\D/g,'').substring(0,12) })} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                        </div>
+                        <Button type="submit" variant="outline" style={{ alignSelf: 'end', padding: '8px 12px', fontSize: '0.85rem' }}>Save Bank Routing</Button>
+                      </form>
+                    </div>
+                  </Card>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '4px', fontWeight: 500 }}>Contact Phone</label>
-                  <input type="text" defaultValue="+1 (555) 999-8888" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '4px', fontWeight: 500 }}>Default Brand Colors</label>
-                  <div className="flex gap-sm">
-                    <span style={{ width: '30px', height: '30px', background: 'var(--color-primary)', borderRadius: '50%', cursor: 'pointer', border: '2px solid white', boxShadow: '0 0 0 2px var(--color-primary)' }}></span>
-                    <span style={{ width: '30px', height: '30px', background: 'var(--color-accent)', borderRadius: '50%', cursor: 'pointer', border: '2px solid transparent' }}></span>
-                    <span style={{ width: '30px', height: '30px', background: '#10b981', borderRadius: '50%', cursor: 'pointer', border: '2px solid transparent' }}></span>
-                    <span style={{ width: '30px', height: '30px', background: '#f59e0b', borderRadius: '50%', cursor: 'pointer', border: '2px solid transparent' }}></span>
+              )}
+
+              {/* SUB-TAB: STAFF ROLES & AUDIT TRAILS */}
+              {selectedEventTab === 'staff' && (
+                <div className="flex flex-col gap-lg">
+                  <div className="grid-2" style={{ gap: '20px' }}>
+                    <Card style={{ padding: '20px', textAlign: 'left' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Co-Hosts & Gate Staff</h4>
+                      <form onSubmit={handleInviteStaffSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '16px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Add team member</span>
+                        <div className="grid-2" style={{ gap: '6px' }}>
+                          <input required placeholder="Staff Name" value={inviteStaffForm.name} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, name: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
+                          <input required type="email" placeholder="Email" value={inviteStaffForm.email} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, email: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
+                        </div>
+                        <div className="flex gap-sm">
+                          <select value={inviteStaffForm.role} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, role: e.target.value })} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
+                            <option value="Check-in Staff">Check-in Staff</option>
+                            <option value="Co-Manager">Co-Manager</option>
+                          </select>
+                          <Button type="submit" variant="primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>Invite</Button>
+                        </div>
+                      </form>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {activeStaffList.map(s => (
+                          <div key={s.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
+                            <div>
+                              <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{s.role} • {s.email}</div>
+                            </div>
+                            <button onClick={() => handleRemoveStaff(s.email)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+
+                    <Card style={{ padding: '20px', textAlign: 'left' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Auto-Reply Notification Rules</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                        {autoReplyRules.map(r => (
+                          <div key={r.id} style={{ padding: '10px 12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <strong style={{ fontSize: '0.85rem' }}>Trigger: {r.trigger}</strong>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Condition: {r.condition} &rarr; Action: {r.action}</div>
+                            </div>
+                            <button onClick={() => handleDeleteRule(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <form onSubmit={handleAddRule} className="flex flex-col gap-sm" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Create auto-rule trigger</span>
+                        <div className="grid-3" style={{ gap: '6px' }}>
+                          <select value={newRule.trigger} onChange={(e) => setNewRule({ ...newRule, trigger: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                            <option value="On Guest RSVP">On Guest RSVP</option>
+                            <option value="On QR Check-in">On QR Check-in</option>
+                          </select>
+                          <select value={newRule.condition} onChange={(e) => setNewRule({ ...newRule, condition: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                            <option value="If Status is Going">If Status is Going</option>
+                            <option value="If Status is Waitlist">If Status is Waitlist</option>
+                          </select>
+                          <select value={newRule.action} onChange={(e) => setNewRule({ ...newRule, action: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                            <option value="Send Confirmation email (rsvp)">Send Confirmation (Email)</option>
+                            <option value="Send Welcoming text alert">Send Alert (SMS)</option>
+                          </select>
+                        </div>
+                        <Button type="submit" variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem', alignSelf: 'end' }}>Add Auto-rule</Button>
+                      </form>
+                    </Card>
                   </div>
+
+                  {/* Audit Logs security table */}
+                  <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Security Audit Trail Logs</h4>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="premium-table">
+                        <thead>
+                          <tr>
+                            <th>Timestamp</th>
+                            <th>Operator</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mockStore.getAuditTrail().filter(l => l.eventId === selectedEventId).map(l => (
+                            <tr key={l.id}>
+                              <td style={{ fontSize: '0.8rem' }}>{new Date(l.timestamp).toLocaleString()}</td>
+                              <td style={{ fontWeight: 600 }}>{l.actor}</td>
+                              <td>{l.action}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
                 </div>
+              )}
+
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* SECTION 7: EARNINGS & PAYOUTS                                             */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'earnings' && (
+            <div className="flex flex-col gap-xl">
+              <div style={{ textAlign: 'left' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Earnings & Payouts</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Review ticket sale transactions and bank payout logs.</p>
+              </div>
+
+              <div className="grid-2" style={{ gap: '24px', alignItems: 'start' }}>
                 
-                <Button variant="primary" type="submit" style={{ marginTop: '10px' }}>Save Changes</Button>
+                {/* Available balance block */}
+                <Card style={{ padding: '24px', textAlign: 'left' }} className="glass-surface">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '2rem' }}>🏦</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '4px 10px', background: 'rgba(34,197,94,0.1)', color: '#16a34a', borderRadius: '20px' }}>
+                      Auto-transfers enabled
+                    </span>
+                  </div>
+                  <h3 className="text-muted" style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px 0', fontWeight: 600 }}>
+                    Available Payout Balance
+                  </h3>
+                  <p style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 20px 0', lineHeight: 1 }}>
+                    ${availableBalance.toLocaleString()}
+                  </p>
+                  
+                  <Button 
+                    variant="primary" 
+                    onClick={handleBankTransfer} 
+                    disabled={transferring || availableBalance === 0}
+                    style={{ width: '100%', padding: '12px 20px', fontSize: '0.95rem' }}
+                  >
+                    {transferring ? 'Connecting to Bank API...' : availableBalance > 0 ? `Transfer $${availableBalance} to Chase Bank` : 'No balance to withdraw'}
+                  </Button>
+                </Card>
+
+                {/* Upcoming payouts block */}
+                <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Upcoming Schedule</h4>
+                  <div className="flex flex-col gap-sm">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                      <div>
+                        <strong style={{ fontSize: '0.85rem', display: 'block' }}>Summer Rooftop Mixer Payout</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Estimated payout date: June 15, 2026</span>
+                      </div>
+                      <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>$1,500.00</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                      <div>
+                        <strong style={{ fontSize: '0.85rem', display: 'block' }}>Tech Startup Meetup Ticket Sales</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Estimated payout date: June 22, 2026</span>
+                      </div>
+                      <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>$2,750.00</strong>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Transactions log tables */}
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>Payout Logs History</h2>
+                <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="premium-table">
+                      <thead>
+                        <tr>
+                          <th>Transfer Date</th>
+                          <th>Payout ID</th>
+                          <th>Routing Bank</th>
+                          <th>Status</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payoutHistory.map(po => (
+                          <tr key={po.id}>
+                            <td>{po.date}</td>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{po.id}</td>
+                            <td>{po.bank}</td>
+                            <td>
+                              <span style={{
+                                fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px',
+                                background: po.status === 'Paid' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
+                                color: po.status === 'Paid' ? '#16a34a' : '#ca8a04'
+                              }}>
+                                {po.status}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 700 }}>${po.amount.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Stripe Connection config fields inside payouts page */}
+              <Card style={{ padding: '20px', textAlign: 'left' }}>
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px' }}>Stripe Direct-Deposit Config</h4>
+                <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '16px' }}>Verify your bank routing routing numbers below to ensure seamless payouts transfer.</p>
+                <div style={{ maxWidth: '480px' }}>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    alert("Bank payouts connection verified & saved.");
+                  }} className="flex flex-col gap-sm">
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Bank Name</label>
+                      <input type="text" value={bankForm.bankName || 'Chase Bank'} onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Account Number</label>
+                      <input type="password" value={bankForm.accountNumber || '1234567890'} onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                    </div>
+                    <Button type="submit" variant="outline" style={{ alignSelf: 'start' }}>Save Payout Routing</Button>
+                  </form>
+                </div>
+              </Card>
+
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* SECTION 8: MESSAGES & COMMUNICATION HUB                                    */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'messages' && (
+            <div className="flex flex-col gap-lg" style={{ height: 'calc(100vh - 120px)' }}>
+              
+              <div style={{ textAlign: 'left' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Messages & Communication</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Answer guest questions, verify requests, and coordinate announcements.</p>
+              </div>
+
+              <div style={{
+                flex: 1,
+                display: 'grid',
+                gridTemplateColumns: '320px 1fr',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: 'var(--shadow-soft)'
+              }}>
+                
+                {/* Left conversations list */}
+                <div style={{ borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
+                  <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Search conversations..."
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  
+                  <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {conversations.map(c => {
+                      const lastMsg = c.messages[c.messages.length - 1];
+                      const isActive = c.id === activeConversationId;
+                      return (
+                        <div 
+                          key={c.id}
+                          onClick={() => {
+                            setActiveConversationId(c.id);
+                            // Mark read
+                            setConversations(conversations.map(conv => conv.id === c.id ? { ...conv, unread: false } : conv));
+                          }}
+                          style={{
+                            padding: '16px',
+                            borderBottom: '1px solid var(--color-border)',
+                            cursor: 'pointer',
+                            background: isActive ? 'rgba(0,113,227,0.06)' : 'transparent',
+                            textAlign: 'left',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'start',
+                            position: 'relative'
+                          }}
+                        >
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            background: 'var(--color-primary)',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            fontSize: '0.9rem',
+                            flexShrink: 0
+                          }}>
+                            {c.avatar}
+                          </div>
+                          
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
+                              <strong style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>{c.guestName}</strong>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{lastMsg?.time}</span>
+                            </div>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
+                              {c.eventTitle}
+                            </span>
+                            <p style={{
+                              margin: 0,
+                              fontSize: '0.8rem',
+                              color: c.unread ? 'var(--color-text)' : 'var(--color-text-muted)',
+                              fontWeight: c.unread ? 600 : 400,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {lastMsg?.text}
+                            </p>
+                          </div>
+
+                          {c.unread && (
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: '#ff3b30',
+                              position: 'absolute',
+                              right: '16px',
+                              bottom: '16px'
+                            }} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right Active Message Thread */}
+                {activeConversation ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--color-surface)' }}>
+                    
+                    {/* Header */}
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong style={{ fontSize: '1rem', display: 'block' }}>{activeConversation.guestName}</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                          Conversation regarding: <strong>{activeConversation.eventTitle}</strong> ({activeConversation.guestEmail})
+                        </span>
+                      </div>
+                      <div className="flex gap-xs">
+                        <button 
+                          onClick={() => alert(`Flagged conversation with ${activeConversation.guestName}`)}
+                          className="btn btn-outline"
+                          style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'transparent' }}
+                        >
+                          Flag Chat
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Messages Thread Bubbles */}
+                    <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {activeConversation.messages.map((m, idx) => {
+                        const isHost = m.sender === 'host';
+                        return (
+                          <div 
+                            key={idx}
+                            style={{
+                              alignSelf: isHost ? 'flex-end' : 'flex-start',
+                              maxWidth: '70%',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <div style={{
+                              background: isHost ? 'var(--color-primary)' : 'var(--color-surface-hover)',
+                              color: isHost ? 'white' : 'var(--color-text)',
+                              padding: '10px 14px',
+                              borderRadius: isHost ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                              fontSize: '0.85rem',
+                              border: isHost ? 'none' : '1px solid var(--color-border)',
+                              lineHeight: '1.4'
+                            }}>
+                              {m.text}
+                            </div>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '3px', display: 'block', textAlign: isHost ? 'right' : 'left' }}>
+                              {m.time}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Input Reply Box */}
+                    <form 
+                      onSubmit={handleSendMessage}
+                      style={{ padding: '16px', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg)', display: 'flex', gap: '10px' }}
+                    >
+                      <input 
+                        type="text" 
+                        placeholder={`Reply to ${activeConversation.guestName}...`}
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        style={{ flex: 1, padding: '10px 14px', borderRadius: '24px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
+                      />
+                      <button 
+                        type="submit"
+                        style={{
+                          background: 'var(--color-primary)',
+                          color: 'white',
+                          border: 'none',
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Send size={16} />
+                      </button>
+                    </form>
+
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                    Select a conversation to reply to guest inquiries.
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* GLOBAL AUDIENCE VIEW                                                      */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'audience' && (
+            <div>
+              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Audience Directory</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Manage contacts and histories for unique registered attendees.</p>
+              </div>
+              
+              <Card style={{ padding: 0 }} className="glass-surface text-left">
+                {audienceList.length > 0 ? (
+                  <table className="premium-table">
+                    <thead>
+                      <tr>
+                        <th>Guest Name</th>
+                        <th>Email Address</th>
+                        <th>Phone Number</th>
+                        <th>Events RSVP'd</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {audienceList.map(guest => (
+                        <tr key={guest.email}>
+                          <td style={{ fontWeight: 600 }}>{guest.name}</td>
+                          <td>{guest.email}</td>
+                          <td>{guest.phone || 'N/A'}</td>
+                          <td>{guest.eventsAttended.join(', ')}</td>
+                          <td>
+                            <Button 
+                              variant="ghost" 
+                              style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => {
+                                setBroadcastTarget(guest.email);
+                                setShowBroadcastModal(true);
+                              }}
+                            >
+                              <Mail size={12} /> Message
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="text-center text-muted" style={{ padding: '48px 0' }}>
+                    <Users size={48} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                    <p>No audience members found in your database.</p>
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* GLOBAL SETTINGS VIEW                                                      */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'settings' && (
+            <div>
+              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Organizer Settings</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Configure default host profile settings and brand styles.</p>
+              </div>
+              
+              <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left' }} className="glass-surface">
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Organizer Profile Info</h4>
+                <form onSubmit={(e) => { e.preventDefault(); alert('Profile preferences updated!'); }} className="flex flex-col gap-md">
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Host Display Name</label>
+                    <input type="text" defaultValue="Alex Rivera" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Email Address</label>
+                    <input type="email" defaultValue="alex@safalevent.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Contact Phone</label>
+                    <input type="text" defaultValue="+1 (555) 999-8888" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                  </div>
+                  
+                  <Button variant="primary" type="submit" style={{ marginTop: '10px', alignSelf: 'start' }}>Save Changes</Button>
+                </form>
+              </Card>
+            </div>
+          )}
+
+        </main>
+
+        {/* Broadcast Message Modal */}
+        {showBroadcastModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          }}>
+            <div style={{
+              background: 'var(--color-surface)', borderRadius: '16px', width: '90%', maxWidth: '500px',
+              padding: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
+            }}>
+              <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Mail size={18} /> Broadcast Announcement
+                </h3>
+                <button onClick={() => setShowBroadcastModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={20} /></button>
+              </div>
+
+              <form onSubmit={handleSendBroadcast} className="flex flex-col gap-sm">
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Recipient Group</label>
+                  <select 
+                    value={broadcastTarget}
+                    onChange={(e) => setBroadcastTarget(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                  >
+                    <option value="all">All RSVP Guests ({managedEventRsvps.length})</option>
+                    <option value="going">Going Only ({managedEventRsvps.filter(r => r.status === 'going').length})</option>
+                    <option value="maybe">Maybe Only ({managedEventRsvps.filter(r => r.status === 'maybe').length})</option>
+                    {broadcastTarget.includes('@') && <option value={broadcastTarget}>Direct contact: {broadcastTarget}</option>}
+                  </select>
+                </div>
+
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Subject Line</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="e.g. Venue Directions / Important Announcement" 
+                    value={broadcastSubject}
+                    onChange={(e) => setBroadcastSubject(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                  />
+                </div>
+
+                <div style={{ textAlign: 'left' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Message Body</label>
+                  <textarea 
+                    required 
+                    placeholder="Type message content here..." 
+                    rows="6"
+                    value={broadcastMessage}
+                    onChange={(e) => setBroadcastMessage(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                  ></textarea>
+                </div>
+
+                <div className="flex gap-sm justify-end" style={{ marginTop: '12px' }}>
+                  <Button variant="ghost" type="button" onClick={() => setShowBroadcastModal(false)}>Cancel</Button>
+                  <Button variant="primary" type="submit" disabled={broadcastSent}>
+                    {broadcastSent ? 'Sending...' : 'Send Broadcast'}
+                  </Button>
+                </div>
               </form>
-            </Card>
+            </div>
           </div>
         )}
 
-      </main>
-
-      {/* Broadcast Message Modal */}
-      {showBroadcastModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
+        {/* Message Log View Modal */}
+        {viewLogDetail && (
           <div style={{
-            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '500px',
-            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
           }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Mail size={20} /> Broadcast message</h3>
-              <button onClick={() => setShowBroadcastModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleSendBroadcast} className="flex flex-col gap-sm">
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '4px', fontWeight: 500 }}>Recipient Group</label>
-                <select 
-                  value={broadcastTarget}
-                  onChange={(e) => setBroadcastTarget(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                >
-                  <option value="all">All RSVP Guests ({managedEventRsvps.length})</option>
-                  <option value="going">Going Only ({managedEventRsvps.filter(r => r.status === 'going').length})</option>
-                  <option value="maybe">Maybe Only ({managedEventRsvps.filter(r => r.status === 'maybe').length})</option>
-                  {broadcastTarget.includes('@') && <option value={broadcastTarget}>Direct to: {broadcastTarget}</option>}
-                </select>
+            <div style={{
+              background: 'var(--color-surface)', borderRadius: '16px', width: '90%', maxWidth: '600px',
+              padding: '24px', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: '16px',
+              maxHeight: '85vh', border: '1px solid var(--color-border)', color: 'var(--color-text)'
+            }}>
+              <div className="flex justify-between items-center" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>Outbox Message Details</h3>
+                  <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>
+                    Dispatched to {viewLogDetail.guestEmail} on {new Date(viewLogDetail.sentAt).toLocaleString()}
+                  </p>
+                </div>
+                <button onClick={() => setViewLogDetail(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={20} /></button>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '4px', fontWeight: 500 }}>Subject Line</label>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder="e.g. Venue Update or Parking Info" 
-                  value={broadcastSubject}
-                  onChange={(e) => setBroadcastSubject(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '4px', fontWeight: 500 }}>Message Content</label>
-                <textarea 
-                  required 
-                  placeholder="Write your email/SMS broadcast here..." 
-                  rows="6"
-                  value={broadcastMessage}
-                  onChange={(e) => setBroadcastMessage(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                ></textarea>
-              </div>
-
-              <div className="flex gap-sm justify-end" style={{ marginTop: '12px' }}>
-                <Button variant="ghost" type="button" onClick={() => setShowBroadcastModal(false)}>Cancel</Button>
-                <Button variant="primary" type="submit" disabled={broadcastSent}>
-                  {broadcastSent ? 'Sending...' : 'Broadcast Message'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Message Details Modal */}
-      {viewLogDetail && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div style={{
-            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '600px',
-            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: '16px',
-            maxHeight: '85vh', border: '1px solid var(--color-border)', color: 'var(--color-text)'
-          }}>
-            <div className="flex justify-between items-center" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
-                  <span>Message Details</span>
-                  <span style={{ 
-                    fontSize: '0.7rem', 
-                    padding: '2px 8px', 
-                    borderRadius: '9999px', 
-                    background: viewLogDetail.channel === 'Email' ? 'rgba(0,113,227,0.1)' : 'rgba(34,197,94,0.1)', 
-                    color: viewLogDetail.channel === 'Email' ? 'var(--color-primary)' : '#16a34a',
-                    fontWeight: 600
-                  }}>
-                    {viewLogDetail.channel}
-                  </span>
-                  <span style={{ 
-                    fontSize: '0.7rem', 
-                    padding: '2px 8px', 
-                    borderRadius: '9999px', 
-                    background: 'var(--color-surface-hover)', 
-                    color: 'var(--color-text-muted)',
-                    fontWeight: 500,
-                    textTransform: 'capitalize'
-                  }}>
-                    {viewLogDetail.type}
-                  </span>
-                </h3>
-                <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>
-                  Sent to {viewLogDetail.guestEmail} on {new Date(viewLogDetail.sentAt).toLocaleString()}
-                </p>
-              </div>
-              <button onClick={() => setViewLogDetail(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={20} /></button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
-              {viewLogDetail.channel === 'Email' ? (
+              <div style={{ flex: 1, overflowY: 'auto', textAlign: 'left' }}>
                 <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
-                  <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderBottom: '1px solid var(--color-border)', fontSize: '0.8rem', textAlign: 'left' }}>
-                    <div><strong>From:</strong> Alex Rivera &lt;alex@safalevent.com&gt;</div>
+                  <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderBottom: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
                     <div><strong>To:</strong> {viewLogDetail.guestEmail}</div>
-                    <div style={{ marginTop: '4px' }}><strong>Subject:</strong> {viewLogDetail.subject}</div>
+                    <div style={{ marginTop: '2px' }}><strong>Subject:</strong> {viewLogDetail.subject}</div>
                   </div>
-                  <div style={{ padding: '16px', background: 'var(--color-bg)', fontSize: '0.85rem', whiteSpace: 'pre-wrap', color: 'var(--color-text)', minHeight: '150px', textAlign: 'left' }}>
+                  <div style={{ padding: '16px', background: 'var(--color-bg)', fontSize: '0.85rem', whiteSpace: 'pre-wrap', minHeight: '150px' }}>
                     {viewLogDetail.body}
                   </div>
                 </div>
-              ) : (
-                <div style={{ maxWidth: '360px', margin: '0 auto', width: '100%' }}>
-                  <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '24px', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'var(--shadow-md)' }}>
-                    <div style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--color-text-muted)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
-                      iMessage / SMS Conversation
-                    </div>
-                    <div style={{
-                      alignSelf: 'flex-start',
-                      background: 'var(--color-surface-hover)',
-                      color: 'var(--color-text)',
-                      padding: '10px 14px',
-                      borderRadius: '18px',
-                      fontSize: '0.8rem',
-                      maxWidth: '85%',
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: '1.4',
-                      textAlign: 'left'
-                    }}>
-                      {viewLogDetail.body}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
 
-            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px', display: 'flex', justifyContent: 'end' }}>
-              <Button variant="ghost" onClick={() => setViewLogDetail(null)}>Close</Button>
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px', display: 'flex', justifyContent: 'end' }}>
+                <Button variant="ghost" onClick={() => setViewLogDetail(null)}>Close</Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Series Confirmation Modal */}
+        {showSeriesConfirmModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          }}>
+            <div style={{
+              background: 'var(--color-surface)', borderRadius: '16px', width: '90%', maxWidth: '440px',
+              padding: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)',
+              textAlign: 'center'
+            }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', marginBottom: '16px' }}>
+                <Calendar size={22} />
+              </div>
+              
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px', margin: 0 }}>Recurrence Series Options</h3>
+              <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '20px', lineHeight: '1.5' }}>
+                You have enabled {seriesType} recurrence. Would you like to save changes and auto-generate 3 additional occurrences for the series, or update the current occurrence only?
+              </p>
+              
+              <div className="flex flex-col gap-sm">
+                <Button
+                  variant="primary"
+                  onClick={() => handleSaveEventSeries(true)}
+                  style={{ width: '100%', padding: '12px' }}
+                >
+                  Apply & Generate Entire Series
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleSaveEventSeries(false)}
+                  style={{ width: '100%', padding: '12px' }}
+                >
+                  Apply to Current Only
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSeriesConfirmModal(false)}
+                  style={{ width: '100%', padding: '8px', color: 'var(--color-text-muted)' }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </PageShell>
   );

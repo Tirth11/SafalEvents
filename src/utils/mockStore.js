@@ -8,6 +8,8 @@ const defaultEvents = [
     date: '2026-08-15',
     time: '19:00',
     location: 'Penthouse Lounge, Manhattan, NY',
+    city: 'New York City',
+    state: 'NY',
     description: 'Join us for cocktails, high-fidelity music, and networking under the stars. Meet other creatives, developers, and designers in the city. Premium dress code enforced.',
     status: 'Published',
     capacity: 100,
@@ -30,7 +32,10 @@ const defaultEvents = [
     guestConfirmation: true,
     reminderSchedule: '24h',
     hostAlerts: true,
-    enablePayments: false
+    enablePayments: false,
+    distance: 2.3,
+    rating: 4.8,
+    reviewsCount: 124
   },
   {
     id: '2',
@@ -38,6 +43,8 @@ const defaultEvents = [
     date: '2026-09-02',
     time: '18:30',
     location: 'Venture Hub HQ, San Francisco, CA',
+    city: 'San Francisco',
+    state: 'CA',
     description: 'Pitch your startup, find co-founders, and talk to VCs. Free pizza and beverages will be provided. RSVP required for building security.',
     status: 'Published',
     capacity: 150,
@@ -46,7 +53,7 @@ const defaultEvents = [
     approvalRequired: true,
     questions: ['What startup are you building or working at?', 'Are you looking for funding?'],
     eventType: 'Meetup',
-    privacy: 'Private',
+    privacy: 'Public',
     rsvpStatus: 'Open',
     showGuestList: true,
     maxGuestsPerRsvp: 2,
@@ -60,7 +67,10 @@ const defaultEvents = [
     guestConfirmation: true,
     reminderSchedule: '3h',
     hostAlerts: true,
-    enablePayments: false
+    enablePayments: false,
+    distance: 5.1,
+    rating: 4.5,
+    reviewsCount: 89
   },
   {
     id: '3',
@@ -68,29 +78,34 @@ const defaultEvents = [
     date: '2026-06-25',
     time: '08:00',
     location: 'Central Park Great Lawn, NY',
+    city: 'New York City',
+    state: 'NY',
     description: 'A relaxing morning yoga session for all skill levels. Bring your own mat and water. Led by certified instructor Priya Patel.',
-    status: 'Draft',
-    capacity: 50,
-    cover: null,
+    status: 'Published',
+    capacity: 40,
+    cover: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80',
     theme: 'mesh-gradient-forest',
     approvalRequired: false,
     questions: ['Do you need a yoga mat?'],
-    eventType: 'Workshop',
-    privacy: 'Unlisted',
+    eventType: 'Fitness',
+    privacy: 'Public',
     rsvpStatus: 'Open',
     showGuestList: false,
     maxGuestsPerRsvp: 1,
     rsvpDeadline: '2026-06-24T23:59',
-    allowSelfEdit: false,
-    allowSelfCancellation: false,
-    cancellationCutoff: 48,
+    allowSelfEdit: true,
+    allowSelfCancellation: true,
+    cancellationCutoff: 24,
     requireCancellationReason: false,
-    allowComments: false,
+    allowComments: true,
     allowPhotoUploads: false,
     guestConfirmation: false,
     reminderSchedule: 'none',
     hostAlerts: false,
-    enablePayments: false
+    enablePayments: false,
+    distance: 1.2,
+    rating: 4.9,
+    reviewsCount: 56
   },
   {
     id: '4',
@@ -98,6 +113,8 @@ const defaultEvents = [
     date: '2025-12-10',
     time: '20:00',
     location: 'Grand Ballroom, Boston, MA',
+    city: 'Boston',
+    state: 'MA',
     description: 'Annual winter celebration and charity auction. Formal black-tie event.',
     status: 'Completed',
     capacity: 200,
@@ -120,7 +137,46 @@ const defaultEvents = [
     guestConfirmation: false,
     reminderSchedule: 'none',
     hostAlerts: false,
-    enablePayments: false
+    enablePayments: false,
+    distance: 4.0,
+    rating: 4.6,
+    reviewsCount: 112
+  },
+  {
+    id: '5',
+    title: 'Stand-up Comedy Night',
+    date: '2026-07-10',
+    time: '20:30',
+    location: 'The Comedy Club, Manhattan, NY',
+    city: 'New York City',
+    state: 'NY',
+    description: 'Get ready for a night of belly laughs with 5 national touring headliners. Craft beers and cocktails available. Strictly 21+.',
+    status: 'Published',
+    capacity: 80,
+    cover: 'https://images.unsplash.com/photo-1516280440614-37939bbacd6a?auto=format&fit=crop&w=800&q=80',
+    theme: 'mesh-gradient-sunset',
+    approvalRequired: false,
+    questions: [],
+    eventType: 'Comedy',
+    privacy: 'Public',
+    rsvpStatus: 'Open',
+    showGuestList: true,
+    maxGuestsPerRsvp: 2,
+    rsvpDeadline: '2026-07-09T23:59',
+    allowSelfEdit: true,
+    allowSelfCancellation: true,
+    cancellationCutoff: 24,
+    requireCancellationReason: false,
+    allowComments: true,
+    allowPhotoUploads: false,
+    guestConfirmation: true,
+    reminderSchedule: '24h',
+    hostAlerts: true,
+    enablePayments: true,
+    ticketPrice: 25,
+    distance: 0.8,
+    rating: 4.7,
+    reviewsCount: 204
   }
 ];
 
@@ -183,7 +239,7 @@ const defaultAnalytics = {
   }
 };
 
-const defaultTemplates = {
+export const defaultTemplates = {
   rsvp: {
     subject: "You're going to {{event_name}} on {{event_date}}",
     body: "Hey {{guest_name}},\n\nYour spot is confirmed for {{event_name}}! Here are the details:\n\nDate: {{event_date}}\nTime: {{event_start_time}}\nLocation: {{event_location}}\nGuests: {{guest_guest_count}}\nBooking ID: {{booking_id}}\n\nManage your RSVP here:\n{{manage_rsvp_link}}\n\nBest,\n{{host_name}}"
@@ -195,6 +251,66 @@ const defaultTemplates = {
   feedback: {
     subject: "How was {{event_name}}?",
     body: "Hey {{guest_name}},\n\nThank you for attending {{event_name}}! We would love to know how your experience was. Please take 2 minutes to fill out our short feedback survey:\n\n{{feedback_survey_link}}\n\nThank you,\n{{host_name}}"
+  },
+  rsvp_going: {
+    subject: "Confirmed: You are attending {{event_name}}!",
+    body: "Hi {{guest_name}},\n\nYour RSVP status for {{event_name}} is now confirmed as GOING.\n\nDate: {{event_date}} at {{event_start_time}}\nVenue: {{event_location}}\nTicket ID: {{booking_id}}\n\nManage tickets: {{manage_rsvp_link}}\n\nSee you there!\n{{host_name}}"
+  },
+  rsvp_maybe: {
+    subject: "RSVP Update: Interested in {{event_name}}",
+    body: "Hi {{guest_name}},\n\nWe've recorded your status as MAYBE for {{event_name}}.\n\nWe'll keep a spot open for you. If you decide to attend, please confirm here:\n{{manage_rsvp_link}}\n\nBest,\n{{host_name}}"
+  },
+  rsvp_waitlist: {
+    subject: "Waitlisted for {{event_name}}",
+    body: "Hi {{guest_name}},\n\n{{event_name}} is currently at full capacity. You have been placed on the official waitlist (Booking ID: {{booking_id}}).\n\nIf a spot opens up, you will be promoted and notified automatically.\n\nCheck status: {{manage_rsvp_link}}"
+  },
+  waitlist_promote: {
+    subject: "Good news: You've been promoted to GOING for {{event_name}}!",
+    body: "Hi {{guest_name}},\n\nA spot has opened up and you've been promoted from the waitlist to confirmed GOING for {{event_name}}!\n\nYour pass is now active. Access details & QR pass here:\n{{manage_rsvp_link}}"
+  },
+  reminder_24h: {
+    subject: "Reminder: {{event_name}} is tomorrow!",
+    body: "Hey {{guest_name}},\n\nJust 24 hours until {{event_name}}! Here's a reminder of the details:\n\nDate: {{event_date}}\nTime: {{event_start_time}}\nLocation: {{event_location}}\n\nPass verification ID: {{booking_id}}\n\nSee you tomorrow!\n{{host_name}}"
+  },
+  reminder_3h: {
+    subject: "Reminder: {{event_name}} starts in 3 hours!",
+    body: "Hi {{guest_name}},\n\nWe start in 3 hours! Get ready for {{event_name}}.\n\nLocation: {{event_location}}\nDoors open at: {{event_start_time}}\n\nHave your ticket QR code ready for check-in: {{manage_rsvp_link}}"
+  },
+  details_updated: {
+    subject: "Update: Details changed for {{event_name}}",
+    body: "Hi {{guest_name}},\n\nThe host has updated the details for {{event_name}}.\n\nPlease note the updated schedule/venue details:\nDate: {{event_date}}\nTime: {{event_start_time}}\nLocation: {{event_location}}\n\nView latest details: {{manage_rsvp_link}}"
+  },
+  event_cancelled: {
+    subject: "Notice: {{event_name}} has been cancelled",
+    body: "Hi {{guest_name}},\n\nWe regret to inform you that {{event_name}} on {{event_date}} has been cancelled by the host. We apologize for any inconvenience caused."
+  },
+  feedback_survey: {
+    subject: "Thanks for coming to {{event_name}}! Rate your experience",
+    body: "Hi {{guest_name}},\n\nWe hope you enjoyed {{event_name}}! Please take a moment to rate the event and write any comments:\n{{feedback_survey_link}}"
+  },
+  broadcast_all: {
+    subject: "Announcement: Urgent update for {{event_name}}",
+    body: "Dear Guest,\n\nWe have an announcement regarding {{event_name}}:\n\n[Your Message Here]\n\nManage RSVP: {{manage_rsvp_link}}"
+  },
+  host_new_rsvp: {
+    subject: "[Host Notice] New Guest registered for {{event_name}}",
+    body: "Hi Organizer,\n\n{{guest_name}} has registered for {{event_name}} (Status: Confirmed Going)."
+  },
+  host_rsvp_cancelled: {
+    subject: "[Host Notice] Guest cancelled RSVP for {{event_name}}",
+    body: "Hi Organizer,\n\n{{guest_name}} has cancelled their RSVP for {{event_name}}."
+  },
+  host_capacity_full: {
+    subject: "[Host Notice] {{event_name}} has reached capacity limits",
+    body: "Hi Organizer,\n\nYour event {{event_name}} is now at maximum capacity. New signups will automatically go to the Waitlist."
+  },
+  host_checkin_log: {
+    subject: "[Host Notice] {{guest_name}} checked in to {{event_name}}",
+    body: "Hi Organizer,\n\n{{guest_name}} has been checked in via QR pass scanner."
+  },
+  ticket_invoice: {
+    subject: "Receipt for your ticket: {{event_name}}",
+    body: "Hi {{guest_name}},\n\nHere is your receipt for {{event_name}}.\n\nTotal Paid: {{event_price}}\nBooking ID: {{booking_id}}\n\nAccess QR ticket: {{manage_rsvp_link}}"
   }
 };
 
@@ -281,6 +397,96 @@ const getDB = () => {
   if (!db.verificationLogs) {
     db.verificationLogs = [];
   }
+  if (!db.hostNotifications) {
+    db.hostNotifications = [
+      {
+        id: 'n_1',
+        type: 'rsvp',
+        title: 'New RSVP',
+        message: 'Alice Vance registered for Summer Rooftop Mixer.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        read: false,
+        eventId: '1'
+      },
+      {
+        id: 'n_2',
+        type: 'payment',
+        title: 'Payment Received',
+        message: 'Bob Smith paid $15.00 for Summer Rooftop Mixer.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+        read: false,
+        eventId: '1'
+      },
+      {
+        id: 'n_3',
+        type: 'checkin',
+        title: 'Guest Checked In',
+        message: 'Ethan Hunt checked in via QR scanner.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+        read: true,
+        eventId: '1'
+      }
+    ];
+  }
+  if (!db.immutableAuditTrail) {
+    db.immutableAuditTrail = [
+      {
+        id: 'a_1',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+        actor: 'System',
+        action: 'Database initialized & seeded defaults',
+        eventId: null
+      },
+      {
+        id: 'a_2',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 23).toISOString(),
+        actor: 'Alex Rivera (Host)',
+        action: 'Created Summer Rooftop Mixer',
+        eventId: '1'
+      },
+      {
+        id: 'a_3',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+        actor: 'Alice Vance (Guest)',
+        action: 'RSVP registered status: going',
+        eventId: '1'
+      }
+    ];
+  }
+  if (!db.hostSuspensions) {
+    db.hostSuspensions = {};
+  }
+  if (!db.systemTemplates) {
+    db.systemTemplates = [
+      {
+        key: 'rsvp',
+        name: 'RSVP Confirmation',
+        subject: "You're going to {{event_name}} on {{event_date}}",
+        body: "Hey {{guest_name}},\n\nYour spot is confirmed for {{event_name}}! Here are the details:\n\nDate: {{event_date}}\nTime: {{event_start_time}}\nLocation: {{event_location}}\nGuests: {{guest_guest_count}}\nBooking ID: {{booking_id}}\n\nManage your RSVP here:\n{{manage_rsvp_link}}\n\nBest,\n{{host_name}}",
+        version: '1.0',
+        updatedAt: new Date().toISOString(),
+        logs: ['v1.0: Seed default system-wide template.']
+      },
+      {
+        key: 'reminder',
+        name: 'Event Reminder',
+        subject: "Reminder: {{event_name}} starts soon!",
+        body: "Hey {{guest_name}},\n\nThis is a quick reminder that {{event_name}} is starting soon.\n\nDate: {{event_date}}\nTime: {{event_start_time}}\nLocation: {{event_location}}\n\nIf you need to change your RSVP status, you can do so here:\n{{manage_rsvp_link}}\n\nSee you there!\n{{host_name}}",
+        version: '1.0',
+        updatedAt: new Date().toISOString(),
+        logs: ['v1.0: Seed default system-wide template.']
+      },
+      {
+        key: 'feedback',
+        name: 'Post-Event Feedback',
+        subject: "How was {{event_name}}?",
+        body: "Hey {{guest_name}},\n\nThank you for attending {{event_name}}! We would love to know how your experience was. Please take 2 minutes to fill out our short feedback survey:\n\n{{feedback_survey_link}}\n\nThank you,\n{{host_name}}",
+        version: '1.0',
+        updatedAt: new Date().toISOString(),
+        logs: ['v1.0: Seed default system-wide template.']
+      }
+    ];
+  }
 
   db.events = db.events.map(event => {
     const defaults = {
@@ -304,7 +510,7 @@ const getDB = () => {
     if (!event.templates) {
       event.templates = { ...defaultTemplates };
     } else {
-      ['rsvp', 'reminder', 'feedback'].forEach(tKey => {
+      Object.keys(defaultTemplates).forEach(tKey => {
         if (!event.templates[tKey]) {
           event.templates[tKey] = { ...defaultTemplates[tKey] };
         }
@@ -380,11 +586,26 @@ export const mockStore = {
     return newEvent;
   },
 
-  updateEvent: (id, eventData) => {
+  updateEvent: (id, eventData, actor = 'Organizer') => {
     const db = getDB();
+    const oldEvent = db.events.find(e => e.id === id);
+    if (!oldEvent) return null;
+
     db.events = db.events.map(e => e.id === id ? { ...e, ...eventData } : e);
     saveDB(db);
-    return db.events.find(e => e.id === id);
+
+    const newEvent = db.events.find(e => e.id === id);
+    
+    // Audit Log
+    mockStore.addAuditLog(actor, `Updated event details for "${newEvent.title}"`, id);
+
+    // If capacity increased, check if we can promote waitlisted guests
+    if (newEvent.capacity > (oldEvent.capacity || 0)) {
+      mockStore.promoteWaitlistedGuestsIfPossible(id, db);
+      saveDB(db);
+    }
+    
+    return newEvent;
   },
 
   duplicateEvent: (eventId) => {
@@ -420,6 +641,20 @@ export const mockStore = {
 
   addRSVP: (eventId, rsvpData) => {
     const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    let finalStatus = rsvpData.status || 'going';
+
+    if (event) {
+      const currentGoingCount = db.rsvps
+        .filter(r => r.eventId === eventId && r.status === 'going')
+        .reduce((sum, r) => sum + (r.guestCount || 1), 0);
+      const capacity = event.capacity || 100;
+
+      if (currentGoingCount + (rsvpData.guestCount || 1) > capacity && (rsvpData.status === 'going' || !rsvpData.status)) {
+        finalStatus = 'waitlist';
+      }
+    }
+
     const newRsvp = {
       id: 'r_' + Math.random().toString(36).substr(2, 9),
       eventId,
@@ -427,36 +662,81 @@ export const mockStore = {
       timestamp: new Date().toISOString(),
       answers: {},
       guestCount: rsvpData.guestCount || 1,
-      ...rsvpData
+      preferredChannel: rsvpData.preferredChannel || 'Email',
+      reminderSchedule: rsvpData.reminderSchedule || 'both',
+      optOutSms: rsvpData.optOutSms || false,
+      ...rsvpData,
+      status: finalStatus
     };
     db.rsvps.push(newRsvp);
     saveDB(db);
 
+    // Add Host Notification & Audit Log
+    if (event) {
+      const eventTitle = event.title || 'Event';
+      if (finalStatus === 'waitlist') {
+        mockStore.addHostNotification('rsvp', 'Waitlist Join', `${newRsvp.name} joined the waitlist for ${eventTitle} (Capacity full).`, eventId);
+      } else {
+        mockStore.addHostNotification('rsvp', 'New RSVP', `${newRsvp.name} registered for ${eventTitle}.`, eventId);
+      }
+      mockStore.addAuditLog(newRsvp.name + ' (Guest)', `RSVP registered with status: ${finalStatus}`, eventId);
+    }
+
     // Dynamic Trigger for RSVP Confirmation
-    const event = db.events.find(e => e.id === eventId);
     if (event) {
       const templates = event.templates || defaultTemplates;
-      if (event.sendRsvpConfirmationEmail) {
-        const subject = mockStore.renderTemplate(templates.rsvp?.subject || defaultTemplates.rsvp.subject, event, newRsvp);
-        const body = mockStore.renderTemplate(templates.rsvp?.body || defaultTemplates.rsvp.body, event, newRsvp);
+      const isWaitlisted = finalStatus === 'waitlist';
+      const emailEnabled = event.sendRsvpConfirmationEmail && newRsvp.preferredChannel === 'Email';
+      const smsEnabled = event.sendRsvpConfirmationSms && newRsvp.preferredChannel === 'SMS' && !newRsvp.optOutSms;
+
+      if (emailEnabled) {
+        const templateKey = isWaitlisted ? 'rsvp_waitlist' : 'rsvp';
+        const subject = mockStore.renderTemplate(templates[templateKey]?.subject || defaultTemplates[templateKey].subject, event, newRsvp);
+        const body = mockStore.renderTemplate(templates[templateKey]?.body || defaultTemplates[templateKey].body, event, newRsvp);
+        
         mockStore.addNotificationLog(eventId, {
           rsvpId: newRsvp.id,
           guestEmail: newRsvp.email,
           type: 'rsvp',
           channel: 'Email',
           subject,
-          body
+          body,
+          status: 'Delivered'
         });
+
+        // If ticket payments are enabled and it's not waitlisted, send the ticket invoice
+        if (event.enablePayments && !isWaitlisted) {
+          const priceStr = `$${event.ticketPrice || 0}`;
+          const invSubject = mockStore.renderTemplate(templates.ticket_invoice?.subject || defaultTemplates.ticket_invoice.subject, event, newRsvp);
+          const invBody = mockStore.renderTemplate(templates.ticket_invoice?.body || defaultTemplates.ticket_invoice.body, event, newRsvp, { '{{event_price}}': priceStr });
+          
+          mockStore.addNotificationLog(eventId, {
+            rsvpId: newRsvp.id,
+            guestEmail: newRsvp.email,
+            type: 'payment',
+            channel: 'Email',
+            subject: invSubject,
+            body: invBody,
+            status: 'Delivered'
+          });
+
+          // Also trigger a payment host notification
+          mockStore.addHostNotification('payment', 'Payment Received', `${newRsvp.name} paid $${(event.ticketPrice || 0) * (newRsvp.guestCount || 1)} for ${event.title}.`, eventId);
+        }
       }
-      if (event.sendRsvpConfirmationSms) {
-        const body = mockStore.renderTemplate(templates.rsvp?.body || defaultTemplates.rsvp.body, event, newRsvp);
+
+      if (smsEnabled) {
+        const templateKey = isWaitlisted ? 'rsvp_waitlist' : 'rsvp';
+        const body = mockStore.renderTemplate(templates[templateKey]?.body || defaultTemplates[templateKey].body, event, newRsvp);
+        
         mockStore.addNotificationLog(eventId, {
           rsvpId: newRsvp.id,
           guestEmail: newRsvp.email,
           type: 'rsvp',
           channel: 'SMS',
-          subject: 'RSVP Confirmation',
-          body: body.length > 160 ? body.substring(0, 157) + '...' : body
+          subject: isWaitlisted ? 'Waitlisted Alert' : 'RSVP Confirmation',
+          body: body.length > 160 ? body.substring(0, 157) + '...' : body,
+          status: 'Delivered'
         });
       }
     }
@@ -464,11 +744,80 @@ export const mockStore = {
     return newRsvp;
   },
 
-  updateRSVP: (eventId, rsvpId, updatedData) => {
+  updateRSVP: (eventId, rsvpId, updatedData, actor = 'Organizer') => {
     const db = getDB();
+    const oldRsvp = db.rsvps.find(r => r.id === rsvpId || (r.eventId === eventId && r.email === rsvpId));
+    if (!oldRsvp) return null;
+
+    const event = db.events.find(e => e.id === eventId);
+    const eventTitle = event ? event.title : 'Event';
+
+    // Perform the status mapping update
     db.rsvps = db.rsvps.map(r => (r.id === rsvpId || (r.eventId === eventId && r.email === rsvpId)) ? { ...r, ...updatedData } : r);
     saveDB(db);
-    return db.rsvps.find(r => r.id === rsvpId || (r.eventId === eventId && r.email === rsvpId));
+
+    const newRsvp = db.rsvps.find(r => r.id === rsvpId || (r.eventId === eventId && r.email === rsvpId));
+
+    // Audit Log
+    let auditAction = `RSVP details updated. Preferred Channel: ${newRsvp.preferredChannel}, Reminder Schedule: ${newRsvp.reminderSchedule}`;
+    if (updatedData.status && updatedData.status !== oldRsvp.status) {
+      auditAction = `RSVP status updated from ${oldRsvp.status} to ${newRsvp.status}`;
+    }
+    if (updatedData.checkedIn !== undefined && updatedData.checkedIn !== oldRsvp.checkedIn) {
+      auditAction = `Guest check-in status updated from ${oldRsvp.checkedIn ? 'Checked-In' : 'Absent'} to ${newRsvp.checkedIn ? 'Checked-In' : 'Absent'}`;
+    }
+    mockStore.addAuditLog(actor, auditAction, eventId);
+
+    // Host Notification on check-in
+    if (updatedData.checkedIn && !oldRsvp.checkedIn) {
+      mockStore.addHostNotification('checkin', 'Guest Checked In', `${newRsvp.name} checked in to ${eventTitle}.`, eventId);
+      
+      // Dispatch checking notice to outbox logs
+      if (event && event.sendRsvpConfirmationEmail) {
+        mockStore.addNotificationLog(eventId, {
+          rsvpId: newRsvp.id,
+          guestEmail: newRsvp.email,
+          type: 'checkin',
+          channel: 'Email',
+          subject: `Welcome: You checked in to ${eventTitle}`,
+          body: `Hi ${newRsvp.name},\n\nWe have recorded your check-in for the event "${eventTitle}" via QR scanner.\n\nEnjoy the event!`,
+          status: 'Delivered'
+        });
+      }
+    }
+
+    // Host Notification on status change to going (approved)
+    if (updatedData.status === 'going' && oldRsvp.status !== 'going') {
+      mockStore.addHostNotification('rsvp', 'RSVP Confirmed', `${newRsvp.name}'s RSVP for ${eventTitle} is confirmed (attending).`, eventId);
+      
+      // Dispatch rsvp_going notice
+      if (event) {
+        const templates = event.templates || defaultTemplates;
+        const subject = mockStore.renderTemplate(templates.rsvp_going?.subject || defaultTemplates.rsvp_going.subject, event, newRsvp);
+        const body = mockStore.renderTemplate(templates.rsvp_going?.body || defaultTemplates.rsvp_going.body, event, newRsvp);
+        mockStore.addNotificationLog(eventId, {
+          rsvpId: newRsvp.id,
+          guestEmail: newRsvp.email,
+          type: 'rsvp',
+          channel: 'Email',
+          subject,
+          body,
+          status: 'Delivered'
+        });
+      }
+    }
+
+    // Trigger waitlist promotion if a spot opened up
+    const spotOpened = 
+      (oldRsvp.status === 'going' && newRsvp.status !== 'going') ||
+      (updatedData.status === 'declined' && oldRsvp.status === 'going');
+
+    if (spotOpened) {
+      mockStore.promoteWaitlistedGuestsIfPossible(eventId, db);
+      saveDB(db);
+    }
+
+    return newRsvp;
   },
 
   // --- Polls ---
@@ -1104,11 +1453,17 @@ export const mockStore = {
     return db.verificationLogs || [];
   },
 
-  saveBankAccount: (userId, bankData) => {
+  saveBankAccount: (email, bankData) => {
     const db = getDB();
-    db.users = db.users.map(u => u.id === userId ? { ...u, bankAccount: bankData } : u);
+    db.users = db.users.map(u => u.email === email ? { ...u, bankAccount: bankData } : u);
     saveDB(db);
-    return db.users.find(u => u.id === userId);
+    return db.users.find(u => u.email === email);
+  },
+
+  getBankAccount: (email) => {
+    const db = getDB();
+    const u = db.users.find(x => x.email === email);
+    return u ? (u.bankAccount || null) : null;
   },
 
   getTransactions: (eventId) => {
@@ -1150,5 +1505,178 @@ export const mockStore = {
     db.rsvps.push(newRsvp);
     saveDB(db);
     return newRsvp;
+  },
+
+  // --- Global Notification Inbox ---
+  getHostNotifications: () => {
+    const db = getDB();
+    return db.hostNotifications || [];
+  },
+  addHostNotification: (type, title, message, eventId) => {
+    const db = getDB();
+    if (!db.hostNotifications) db.hostNotifications = [];
+    const newNotif = {
+      id: 'n_' + Math.random().toString(36).substr(2, 9),
+      type,
+      title,
+      message,
+      timestamp: new Date().toISOString(),
+      read: false,
+      eventId
+    };
+    db.hostNotifications.unshift(newNotif);
+    saveDB(db);
+    return newNotif;
+  },
+  markHostNotificationsRead: () => {
+    const db = getDB();
+    if (!db.hostNotifications) db.hostNotifications = [];
+    db.hostNotifications = db.hostNotifications.map(n => ({ ...n, read: true }));
+    saveDB(db);
+  },
+
+  // --- Audit Trail ---
+  getAuditTrail: () => {
+    const db = getDB();
+    return db.immutableAuditTrail || [];
+  },
+  addAuditLog: (actor, action, eventId = null) => {
+    const db = getDB();
+    if (!db.immutableAuditTrail) db.immutableAuditTrail = [];
+    const newLog = {
+      id: 'a_' + Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toISOString(),
+      actor,
+      action,
+      eventId
+    };
+    db.immutableAuditTrail.unshift(newLog);
+    saveDB(db);
+    return newLog;
+  },
+
+  // --- Comments Board Pinning ---
+  pinComment: (eventId, commentId) => {
+    const db = getDB();
+    db.comments = db.comments.map(c => {
+      if (c.eventId === eventId && c.id === commentId) {
+        return { ...c, pinned: !c.pinned };
+      }
+      return c;
+    });
+    saveDB(db);
+  },
+
+  // --- Admin Custom Templates ---
+  getSystemTemplates: () => {
+    const db = getDB();
+    return db.systemTemplates || [];
+  },
+  updateSystemTemplate: (key, subject, body, versionLog) => {
+    const db = getDB();
+    db.systemTemplates = db.systemTemplates.map(t => {
+      if (t.key === key) {
+        const nextVer = (parseFloat(t.version) + 0.1).toFixed(1);
+        return {
+          ...t,
+          subject,
+          body,
+          version: String(nextVer),
+          updatedAt: new Date().toISOString(),
+          logs: [...(t.logs || []), `v${nextVer}: ${versionLog}`]
+        };
+      }
+      return t;
+    });
+    saveDB(db);
+  },
+
+  // --- Admin Host Suspensions ---
+  getHostSuspensions: () => {
+    const db = getDB();
+    return db.hostSuspensions || {};
+  },
+  toggleHostSuspension: (email, suspend, reason) => {
+    const db = getDB();
+    if (!db.hostSuspensions) db.hostSuspensions = {};
+    if (suspend) {
+      db.hostSuspensions[email] = {
+        suspended: true,
+        reason,
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      delete db.hostSuspensions[email];
+    }
+    saveDB(db);
+  },
+  isHostSuspended: (email) => {
+    const db = getDB();
+    if (!db.hostSuspensions) return false;
+    return !!db.hostSuspensions[email];
+  },
+
+  // --- Waitlist Promotion (FIFO) ---
+  promoteWaitlistedGuestsIfPossible: (eventId, db) => {
+    const event = db.events.find(e => e.id === eventId);
+    if (!event) return;
+    
+    let currentGoing = db.rsvps.filter(r => r.eventId === eventId && r.status === 'going').reduce((sum, r) => sum + (r.guestCount || 1), 0);
+    const capacity = event.capacity || 100;
+    
+    // Sort waitlist guests by timestamp (FIFO)
+    const waitlisted = db.rsvps.filter(r => r.eventId === eventId && r.status === 'waitlist')
+                               .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    for (let rsvp of waitlisted) {
+      if (currentGoing + (rsvp.guestCount || 1) <= capacity) {
+        rsvp.status = 'going';
+        currentGoing += (rsvp.guestCount || 1);
+        
+        // Add a host notification
+        db.hostNotifications = db.hostNotifications || [];
+        db.hostNotifications.unshift({
+          id: 'n_' + Math.random().toString(36).substr(2, 9),
+          type: 'rsvp',
+          title: 'Waitlist Promotion',
+          message: `${rsvp.name} has been promoted from the waitlist to GOING for ${event.title}.`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          eventId
+        });
+        
+        // Audit log
+        db.immutableAuditTrail = db.immutableAuditTrail || [];
+        db.immutableAuditTrail.unshift({
+          id: 'a_' + Math.random().toString(36).substr(2, 9),
+          timestamp: new Date().toISOString(),
+          actor: 'System',
+          action: `Promoted waitlisted guest ${rsvp.name} to GOING`,
+          eventId
+        });
+
+        // Dispatch waitlist promotion notification log
+        const templates = event.templates || defaultTemplates;
+        const subject = mockStore.renderTemplate(templates.waitlist_promote?.subject || defaultTemplates.waitlist_promote.subject, event, rsvp);
+        const body = mockStore.renderTemplate(templates.waitlist_promote?.body || defaultTemplates.waitlist_promote.body, event, rsvp);
+        
+        const newLog = {
+          id: 'log_' + Math.random().toString(36).substr(2, 9),
+          eventId,
+          sentAt: new Date().toISOString(),
+          rsvpId: rsvp.id,
+          guestEmail: rsvp.email,
+          type: 'rsvp',
+          channel: 'Email',
+          subject,
+          body,
+          status: 'Delivered'
+        };
+        if (!db.notificationLogs) db.notificationLogs = [];
+        db.notificationLogs.unshift(newLog);
+      } else {
+        break; // No more capacity
+      }
+    }
   }
 };

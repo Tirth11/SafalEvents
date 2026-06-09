@@ -9,6 +9,7 @@ import EventPage from './pages/EventPage'
 import RsvpFlow from './pages/RsvpFlow'
 import FeedbackPage from './pages/FeedbackPage'
 import AdminDashboard from './pages/AdminDashboard'
+import HostProfile from './pages/HostProfile'
 import { mockStore } from './utils/mockStore'
 import { Sparkles } from 'lucide-react'
 
@@ -98,6 +99,7 @@ function App() {
       <Route path="/dashboard" element={<DashboardWrapper />} />
       <Route path="/create" element={<CreateEvent />} />
       <Route path="/e/:eventId" element={<EventPage />} />
+      <Route path="/host/:hostName" element={<HostProfile />} />
       <Route path="/rsvp/:eventId" element={<RsvpFlow />} />
       <Route path="/feedback/:eventId" element={<FeedbackPage />} />
     </Routes>
