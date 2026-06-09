@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X, 
+import {
+  Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X,
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw, BarChart, ToggleLeft,
-  Compass, Star
+  Compass, Star, CreditCard, Bell, Shield, CheckSquare, FileText
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -34,6 +34,12 @@ export default function HostDashboard({ onLogout }) {
   // New Poll form state
   const [newPollQuestion, setNewPollQuestion] = useState('');
   const [newPollOptions, setNewPollOptions] = useState(['', '']);
+
+  // New tab states
+  const [manualInviteForm, setManualInviteForm] = useState({ name: '', email: '', phone: '', guestCount: 1 });
+  const [manualInviteSent, setManualInviteSent] = useState(false);
+  const [checkinInput, setCheckinInput] = useState('');
+  const [checkinResult, setCheckinResult] = useState(null);
 
   // Edit Event state
   const [editEventForm, setEditEventForm] = useState({
@@ -563,20 +569,33 @@ export default function HostDashboard({ onLogout }) {
                   <p className="text-muted" style={{ fontSize: '0.95rem' }}>{managedEvent.date} at {managedEvent.time} • {managedEvent.location}</p>
                 </div>
                 
-                <div className="flex gap-sm">
-                  <button 
+                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                  <button
                     onClick={() => handleExportCSV(managedEvent, managedEventRsvps)}
                     className="btn btn-outline"
                     style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
                     <Download size={16} /> Export CSV
                   </button>
-                  <button 
+                  <button
                     onClick={() => setShowBroadcastModal(true)}
                     className="btn btn-primary"
                     style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
                     <Mail size={16} /> Message Guests
+                  </button>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/e/${managedEvent.id}`); alert('Event link copied to clipboard!'); }}
+                    className="btn btn-outline"
+                    style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    Copy Link
+                  </button>
+                  <button
+                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(managedEvent.title + ': ' + window.location.origin + '/e/' + managedEvent.id)}`, '_blank')}
+                    style={{ padding: '10px 16px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px', background: '#25D366', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Share WhatsApp
                   </button>
                 </div>
               </div>
@@ -590,6 +609,9 @@ export default function HostDashboard({ onLogout }) {
               <button onClick={() => setSelectedEventTab('comments')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Comments ({managedEventComments.length})</button>
               <button onClick={() => setSelectedEventTab('edit')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'edit' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'edit' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Details Editor</button>
               <button onClick={() => setSelectedEventTab('notifications')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'notifications' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'notifications' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Notifications</button>
+              <button onClick={() => setSelectedEventTab('invitations')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'invitations' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'invitations' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Invitations</button>
+              <button onClick={() => setSelectedEventTab('checkin')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'checkin' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'checkin' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>QR Check-in</button>
+              <button onClick={() => setSelectedEventTab('payments')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'payments' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'payments' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Payments</button>
             </div>
 
             {/* --- Event Sub-Tab Content --- */}
@@ -982,6 +1004,242 @@ export default function HostDashboard({ onLogout }) {
                   <p className="text-muted" style={{ fontSize: '0.875rem' }}>No comments posted on the event board yet.</p>
                 )}
               </Card>
+            )}
+
+            {selectedEventTab === 'invitations' && (
+              <div className="grid-2">
+                <Card style={{ padding: 'var(--spacing-md)' }}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Create Manual Invitation</h4>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: 'var(--spacing-sm)' }}>Add a guest manually on their behalf (offline RSVPs or VIP guests).</p>
+                  {manualInviteSent && (
+                    <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', color: '#15803d', padding: '10px', borderRadius: '8px', marginBottom: '12px', fontSize: '0.85rem', fontWeight: 600 }}>
+                      Invitation created and sent successfully!
+                    </div>
+                  )}
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const capacity = managedEvent.capacity;
+                    const attending = managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length;
+                    if (attending + manualInviteForm.guestCount > capacity) {
+                      alert(`Cannot add ${manualInviteForm.guestCount} guests — only ${capacity - attending} spots remaining.`);
+                      return;
+                    }
+                    mockStore.createManualInvitation(selectedEventId, manualInviteForm);
+                    setManualInviteSent(true);
+                    setManualInviteForm({ name: '', email: '', phone: '', guestCount: 1 });
+                    setTimeout(() => setManualInviteSent(false), 3000);
+                    loadDashboardData();
+                  }} className="flex flex-col gap-sm">
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Full Name *</label>
+                      <input required type="text" placeholder="Guest full name" value={manualInviteForm.name} onChange={(e) => setManualInviteForm({ ...manualInviteForm, name: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Email *</label>
+                      <input required type="email" placeholder="guest@email.com" value={manualInviteForm.email} onChange={(e) => setManualInviteForm({ ...manualInviteForm, email: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Phone</label>
+                      <input type="tel" placeholder="+1 (555) 000-0000" value={manualInviteForm.phone} onChange={(e) => setManualInviteForm({ ...manualInviteForm, phone: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>Number of Guests</label>
+                      <input type="number" min="1" max={managedEvent.maxGuestsPerRsvp} value={manualInviteForm.guestCount} onChange={(e) => setManualInviteForm({ ...manualInviteForm, guestCount: Number(e.target.value) })} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <Button variant="primary" type="submit" style={{ flex: 1 }}>Add & Notify via Email</Button>
+                      <button type="button" onClick={() => {
+                        if (!manualInviteForm.phone) { alert('Phone number required for WhatsApp'); return; }
+                        const msg = `You're invited to ${managedEvent.title} on ${managedEvent.date} at ${managedEvent.time}. RSVP: ${window.location.origin}/e/${managedEvent.id}`;
+                        window.open(`https://wa.me/${manualInviteForm.phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+                      }} style={{ padding: '10px 14px', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
+                        WhatsApp
+                      </button>
+                    </div>
+                  </form>
+                </Card>
+
+                <Card style={{ padding: 'var(--spacing-md)' }}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: 'var(--spacing-sm)' }}>Guest Invitation List</h4>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '12px' }}>Total: {managedEventRsvps.length} | Capacity: {managedEvent.capacity}</p>
+                  <div style={{ overflowY: 'auto', maxHeight: '400px' }}>
+                    {managedEventRsvps.length > 0 ? (
+                      <div className="flex flex-col gap-sm">
+                        {managedEventRsvps.map(rsvp => (
+                          <div key={rsvp.id} style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rsvp.name} {rsvp.isManualInvite && <span style={{ fontSize: '0.65rem', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '1px 5px', borderRadius: '3px', marginLeft: '4px' }}>Manual</span>}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{rsvp.email} • {rsvp.phone || 'No phone'}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                  Guests: {rsvp.guestCount || 1} • Registered: {new Date(rsvp.timestamp).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-xs">
+                                <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : rsvp.status === 'maybe' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: rsvp.status === 'going' ? '#16a34a' : rsvp.status === 'maybe' ? '#ca8a04' : '#ef4444' }}>{rsvp.status.toUpperCase()}</span>
+                                <button onClick={() => { mockStore.updateRSVP(selectedEventId, rsvp.id, { status: 'declined' }); loadDashboardData(); }} title="Block/Reject RSVP" style={{ border: 'none', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer', padding: '4px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Block</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>No invitations yet. Create one above.</p>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {selectedEventTab === 'checkin' && (
+              <div className="grid-2">
+                <Card style={{ padding: 'var(--spacing-md)' }}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>Guest QR Check-in Scanner</h4>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: 'var(--spacing-sm)' }}>Enter a guest's Pass ID or scan their QR code to verify and check them in.</p>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter Pass ID (e.g. r1, r2...)"
+                      value={checkinInput}
+                      onChange={(e) => setCheckinInput(e.target.value)}
+                      style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const rsvp = managedEventRsvps.find(r => r.id === checkinInput.trim());
+                          if (!rsvp) { setCheckinResult({ type: 'error', message: `Pass ID "${checkinInput}" not found for this event.` }); return; }
+                          if (rsvp.checkedIn) { setCheckinResult({ type: 'warning', rsvp, message: 'Guest already checked in.' }); return; }
+                          if (rsvp.status === 'declined') { setCheckinResult({ type: 'error', message: 'This RSVP has been declined/blocked.' }); return; }
+                          mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true });
+                          loadDashboardData();
+                          setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: 'Guest checked in successfully!' });
+                          setCheckinInput('');
+                        }
+                      }}
+                    />
+                    <button onClick={() => {
+                      const rsvp = managedEventRsvps.find(r => r.id === checkinInput.trim());
+                      if (!rsvp) { setCheckinResult({ type: 'error', message: `Pass ID "${checkinInput}" not found.` }); return; }
+                      if (rsvp.checkedIn) { setCheckinResult({ type: 'warning', rsvp, message: 'Guest already checked in.' }); return; }
+                      if (rsvp.status === 'declined') { setCheckinResult({ type: 'error', message: 'This RSVP has been declined/blocked.' }); return; }
+                      mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true });
+                      loadDashboardData();
+                      setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: 'Guest checked in successfully!' });
+                      setCheckinInput('');
+                    }} style={{ padding: '10px 16px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>
+                      Verify
+                    </button>
+                  </div>
+                  {checkinResult && (
+                    <div style={{ padding: '14px', borderRadius: '8px', border: `1px solid ${checkinResult.type === 'success' ? '#22c55e' : checkinResult.type === 'warning' ? '#f59e0b' : '#ef4444'}`, background: checkinResult.type === 'success' ? 'rgba(34,197,94,0.08)' : checkinResult.type === 'warning' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)' }}>
+                      <div style={{ fontWeight: 700, marginBottom: '4px', color: checkinResult.type === 'success' ? '#15803d' : checkinResult.type === 'warning' ? '#b45309' : '#dc2626' }}>
+                        {checkinResult.type === 'success' ? '✓ CHECK-IN APPROVED' : checkinResult.type === 'warning' ? '⚠ DUPLICATE SCAN' : '✕ ENTRY DENIED'}
+                      </div>
+                      <p style={{ fontSize: '0.85rem', margin: 0 }}>{checkinResult.message}</p>
+                      {checkinResult.rsvp && (
+                        <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                          <div>Name: <strong>{checkinResult.rsvp.name}</strong></div>
+                          <div>Email: {checkinResult.rsvp.email}</div>
+                          <div>Phone: {checkinResult.rsvp.phone}</div>
+                          <div>Guests: {checkinResult.rsvp.guestCount || 1}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+
+                <Card style={{ padding: 'var(--spacing-md)' }}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>Check-in Stats</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                    <div style={{ background: 'rgba(34,197,94,0.08)', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 700, color: '#16a34a' }}>{managedEventRsvps.filter(r => r.checkedIn).length}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600 }}>Checked In</div>
+                    </div>
+                    <div style={{ background: 'rgba(239,68,68,0.08)', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 700, color: '#ef4444' }}>{managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).length}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>Not Yet Arrived</div>
+                    </div>
+                  </div>
+                  <h5 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Pending Arrivals</h5>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto' }}>
+                    {managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).map(rsvp => (
+                      <div key={rsvp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--color-surface-hover)', borderRadius: '6px' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{rsvp.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Pass: {rsvp.id}</div>
+                        </div>
+                        <button onClick={() => { mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }); loadDashboardData(); setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: `${rsvp.name} checked in.` }); }} style={{ padding: '4px 10px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>Check In</button>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {selectedEventTab === 'payments' && (
+              <div className="flex flex-col gap-md">
+                {managedEvent.enablePayments ? (
+                  <>
+                    <div className="grid-3">
+                      <Card style={{ padding: '16px', textAlign: 'center' }}>
+                        <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Ticket Price</p>
+                        <p style={{ fontSize: '1.8rem', fontWeight: 700 }}>${managedEvent.ticketPrice}</p>
+                      </Card>
+                      <Card style={{ padding: '16px', textAlign: 'center' }}>
+                        <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Total Collected</p>
+                        <p style={{ fontSize: '1.8rem', fontWeight: 700, color: '#16a34a' }}>
+                          ${mockStore.getTransactions(selectedEventId).reduce((sum, t) => sum + t.totalCharged, 0)}
+                        </p>
+                      </Card>
+                      <Card style={{ padding: '16px', textAlign: 'center' }}>
+                        <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Transactions</p>
+                        <p style={{ fontSize: '1.8rem', fontWeight: 700 }}>{mockStore.getTransactions(selectedEventId).length}</p>
+                      </Card>
+                    </div>
+                    <Card style={{ padding: 0 }}>
+                      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
+                        <h4 style={{ fontSize: '1.05rem', margin: 0 }}>Transaction History</h4>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="premium-table">
+                          <thead>
+                            <tr>
+                              <th>Guest Name</th>
+                              <th>Email</th>
+                              <th>Guests</th>
+                              <th>Unit Price</th>
+                              <th>Total Charged</th>
+                              <th>Method</th>
+                              <th>Status</th>
+                              <th>Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {mockStore.getTransactions(selectedEventId).map(txn => (
+                              <tr key={txn.id}>
+                                <td style={{ fontWeight: 600 }}>{txn.guestName}</td>
+                                <td>{txn.guestEmail}</td>
+                                <td style={{ textAlign: 'center' }}>{txn.guestCount}</td>
+                                <td>${txn.amount}</td>
+                                <td style={{ fontWeight: 600, color: '#16a34a' }}>${txn.totalCharged}</td>
+                                <td>{txn.method}</td>
+                                <td><span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '99px', background: 'rgba(34,197,94,0.1)', color: '#16a34a', fontWeight: 600 }}>Completed</span></td>
+                                <td style={{ fontSize: '0.8rem' }}>{new Date(txn.timestamp).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {mockStore.getTransactions(selectedEventId).length === 0 && (
+                          <div className="text-center text-muted" style={{ padding: '32px' }}>No payment transactions recorded yet.</div>
+                        )}
+                      </div>
+                    </Card>
+                  </>
+                ) : (
+                  <Card style={{ padding: '48px', textAlign: 'center' }}>
+                    <p className="text-muted">This event is set as a free event. Enable paid tickets in the Details Editor to view payment transactions.</p>
+                  </Card>
+                )}
+              </div>
             )}
 
             {selectedEventTab === 'edit' && (

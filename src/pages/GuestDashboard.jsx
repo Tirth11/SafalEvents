@@ -475,6 +475,24 @@ export default function GuestDashboard({ onLogout }) {
                   </Button>
                 )}
               </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                <a
+                  href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selectedTicket.event.title)}&dates=${selectedTicket.event.date.replace(/-/g,'')}T${(selectedTicket.event.time||'180000').replace(':','')}00/${selectedTicket.event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(selectedTicket.event.location)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(0,113,227,0.08)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                >
+                  + Google Calendar
+                </a>
+                <a
+                  href={`data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0ASUMMARY:${encodeURIComponent(selectedTicket.event.title)}%0ALOCATION:${encodeURIComponent(selectedTicket.event.location)}%0ADTSTART:${selectedTicket.event.date.replace(/-/g,'')}T${(selectedTicket.event.time||'18:00').replace(':','')}00%0ADTEND:${selectedTicket.event.date.replace(/-/g,'')}T220000%0AEND:VEVENT%0AEND:VCALENDAR`}
+                  download={`${selectedTicket.event.title.replace(/\s+/g,'-')}.ics`}
+                  style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(249,115,22,0.08)', color: 'var(--color-accent)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                >
+                  + Apple Calendar
+                </a>
+              </div>
             </div>
           </div>
         </div>

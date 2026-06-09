@@ -1,14 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  CalendarPlus, Share2, Users, MapPin, Sparkles, LayoutDashboard, QrCode, 
-  ArrowRight, ShieldCheck, Zap, Heart, Check 
+import {
+  CalendarPlus, Share2, Users, MapPin, Sparkles, LayoutDashboard, QrCode,
+  ArrowRight, ShieldCheck, Zap, Heart, Check, Search, Filter, Calendar
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import { mockStore } from '../utils/mockStore';
 
 export default function LandingPage() {
+  const [events, setEvents] = React.useState([]);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [filterState, setFilterState] = React.useState('');
+
+  React.useEffect(() => {
+    setEvents(mockStore.getEvents().filter(e => e.status === 'Published' && e.privacy === 'Public'));
+  }, []);
+
   return (
     <PageShell>
       <div className="mesh-bg" style={{ overflow: 'hidden' }}>
@@ -178,6 +187,106 @@ export default function LandingPage() {
             }}>
               <QrCode size={14} style={{ color: 'var(--color-primary)' }} /> Mobile Ticket QR
             </div>
+          </div>
+        </section>
+
+        {/* Event Discovery Section */}
+        <section id="discover" style={{ padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)' }}>
+          <div className="container">
+            <div className="text-center" style={{ marginBottom: 'var(--spacing-lg)' }}>
+              <h2 style={{ fontSize: '2.25rem', marginBottom: '8px', fontWeight: 600 }}>Discover Events Near You</h2>
+              <p className="text-muted" style={{ fontSize: '1.1rem' }}>Search public events by name, date, or location.</p>
+            </div>
+
+            {/* Search + Filter bar */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: 'var(--spacing-lg)', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Search events by name or city..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '0.95rem', outline: 'none' }}
+                />
+              </div>
+              <select
+                value={filterState}
+                onChange={(e) => setFilterState(e.target.value)}
+                style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '0.95rem', background: 'white', minWidth: '180px' }}
+              >
+                <option value="">All States</option>
+                {['New York', 'California', 'Texas', 'Florida', 'Illinois', 'Massachusetts', 'Washington', 'Colorado', 'Georgia', 'Arizona'].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Event Cards Grid */}
+            {(() => {
+              const filtered = events.filter(evt => {
+                const q = searchQuery.toLowerCase();
+                const matchesSearch = !q || evt.title.toLowerCase().includes(q) || evt.location.toLowerCase().includes(q) || evt.date.includes(q);
+                const matchesState = !filterState || evt.location.toLowerCase().includes(filterState.toLowerCase());
+                return matchesSearch && matchesState;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center text-muted" style={{ padding: 'var(--spacing-xl) 0' }}>
+                    <p>No public events found. Try a different search or <Link to="/login?signup=true" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>host your own event</Link>.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid-3" style={{ gap: 'var(--spacing-md)' }}>
+                  {filtered.map(evt => {
+                    const themes = {
+                      'mesh-gradient-sunset': 'linear-gradient(135deg, #f43f5e 0%, #3b82f6 100%)',
+                      'mesh-gradient-ocean': 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+                      'mesh-gradient-forest': 'linear-gradient(135deg, #10b981 0%, #0f172a 100%)',
+                      'mesh-gradient-midnight': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+                    };
+                    const spotsLeft = evt.capacity - (mockStore.getRSVPs(evt.id).filter(r => r.status === 'going' || r.status === 'maybe').length);
+                    return (
+                      <div key={evt.id} style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden', boxShadow: 'var(--shadow-md)', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column' }}
+                        onMouseOver={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                        onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+                      >
+                        <div style={{ height: '140px', background: evt.cover ? `url(${evt.cover}) center/cover` : (themes[evt.theme] || themes['mesh-gradient-sunset']), position: 'relative' }}>
+                          <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>{evt.eventType}</div>
+                          {spotsLeft <= 10 && spotsLeft > 0 && (
+                            <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(249,115,22,0.9)', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px' }}>Only {spotsLeft} left!</div>
+                          )}
+                          {spotsLeft <= 0 && (
+                            <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(239,68,68,0.9)', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px' }}>SOLD OUT</div>
+                          )}
+                        </div>
+                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>{evt.title}</h3>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} /> {new Date(evt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {evt.time}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={13} /> {evt.location}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Users size={13} /> {spotsLeft > 0 ? `${spotsLeft} spots remaining` : 'Full capacity'} of {evt.capacity}</span>
+                          </div>
+                          {evt.enablePayments ? (
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#16a34a' }}>Ticket: ${evt.ticketPrice} per person</div>
+                          ) : (
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#16a34a' }}>Free Event</div>
+                          )}
+                          <Link to={`/e/${evt.id}`} style={{ marginTop: 'auto' }}>
+                            <button style={{ width: '100%', padding: '10px', background: spotsLeft > 0 ? 'var(--color-primary)' : '#e2e8f0', color: spotsLeft > 0 ? 'white' : 'var(--color-text-muted)', border: 'none', borderRadius: 'var(--radius-sm)', fontWeight: 600, cursor: spotsLeft > 0 ? 'pointer' : 'not-allowed', fontSize: '0.9rem', transition: 'background 0.2s' }}>
+                              {spotsLeft > 0 ? 'View & RSVP' : 'Fully Booked'}
+                            </button>
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </section>
 

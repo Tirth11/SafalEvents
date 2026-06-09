@@ -235,6 +235,7 @@ export default function EventPage() {
       email: email,
       phone: phone,
       status: finalStatus,
+      guestCount: rsvpForm.guestCount || 1,
       answers: rsvpForm.answers
     });
 
@@ -534,6 +535,24 @@ export default function EventPage() {
                   <Link to="/dashboard">
                     <Button variant="primary" style={{ width: '100%' }}>View Ticket Pass</Button>
                   </Link>
+                  {/* Add to Calendar buttons */}
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                    <a
+                      href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${event.date.replace(/-/g,'')}T${(event.time||'180000').replace(':','')}00/${event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(event.location)}&details=${encodeURIComponent(event.description)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(0,113,227,0.08)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      + Google Calendar
+                    </a>
+                    <a
+                      href={`data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0ASUMMARY:${encodeURIComponent(event.title)}%0ALOCATION:${encodeURIComponent(event.location)}%0ADESCRIPTION:${encodeURIComponent(event.description)}%0ADTSTART:${event.date.replace(/-/g,'')}T${(event.time||'18:00').replace(':','')}00%0ADTEND:${event.date.replace(/-/g,'')}T220000%0AEND:VEVENT%0AEND:VCALENDAR`}
+                      download={`${event.title.replace(/\s+/g,'-')}.ics`}
+                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(249,115,22,0.08)', color: 'var(--color-accent)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      + Apple Calendar
+                    </a>
+                  </div>
                 </div>
               ) : isRsvpClosed ? (
                 <div className="text-center">
@@ -561,6 +580,13 @@ export default function EventPage() {
                       : 'RSVP now to save your spot. Capacity is limited!'}
                   </p>
 
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', marginBottom: '12px', fontSize: '0.85rem' }}>
+                    <span className="text-muted">Spots remaining</span>
+                    <span style={{ fontWeight: 700, color: event.capacity - totalAttending <= 10 ? '#dc2626' : '#16a34a' }}>
+                      {Math.max(0, event.capacity - totalAttending)} / {event.capacity}
+                    </span>
+                  </div>
+
                   <Button variant="primary" onClick={handleOpenRsvpDrawer} style={{ width: '100%', padding: '12px 0' }} className="flex justify-center items-center gap-xs">
                     {event.approvalRequired ? 'Request to Join (Waitlist)' : 'RSVP Now'} <ArrowRight size={18} />
                   </Button>
@@ -573,6 +599,37 @@ export default function EventPage() {
               <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Questions?</span>
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>Email: alex@safalevent.com</span>
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>Direct Phone: +1 (555) 999-8888</span>
+            </Card>
+
+            {/* Share Event Card */}
+            <Card style={{ padding: 'var(--spacing-sm)' }}>
+              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '10px' }}>Share This Event</span>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link copied!'); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                >
+                  Copy Link
+                </button>
+                <button
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(event.title + ': ' + window.location.href)}`, '_blank')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#25D366', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                >
+                  WhatsApp
+                </button>
+                <button
+                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#1DA1F2', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                >
+                  Twitter
+                </button>
+                <button
+                  onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#1877F2', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                >
+                  Facebook
+                </button>
+              </div>
             </Card>
 
           </div>
@@ -712,6 +769,18 @@ export default function EventPage() {
                     </button>
                   </div>
                 </div>
+
+                <FormField label="Number of guests (including yourself)" hint={`Max ${event.maxGuestsPerRsvp} per RSVP`}>
+                  <select
+                    value={rsvpForm.guestCount || 1}
+                    onChange={(e) => setRsvpForm({ ...rsvpForm, guestCount: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                  >
+                    {Array.from({ length: Math.min(event.maxGuestsPerRsvp, Math.max(1, event.capacity - totalAttending)) }, (_, i) => i + 1).map(n => (
+                      <option key={n} value={n}>{n} {n === 1 ? 'person (just me)' : 'people'}</option>
+                    ))}
+                  </select>
+                </FormField>
 
                 {/* Render Host Custom Questions */}
                 {event.questions && event.questions.map(q => (

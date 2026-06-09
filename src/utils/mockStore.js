@@ -426,6 +426,7 @@ export const mockStore = {
       checkedIn: false,
       timestamp: new Date().toISOString(),
       answers: {},
+      guestCount: rsvpData.guestCount || 1,
       ...rsvpData
     };
     db.rsvps.push(newRsvp);
@@ -1101,5 +1102,53 @@ export const mockStore = {
   getVerificationLogs: () => {
     const db = getDB();
     return db.verificationLogs || [];
+  },
+
+  saveBankAccount: (userId, bankData) => {
+    const db = getDB();
+    db.users = db.users.map(u => u.id === userId ? { ...u, bankAccount: bankData } : u);
+    saveDB(db);
+    return db.users.find(u => u.id === userId);
+  },
+
+  getTransactions: (eventId) => {
+    const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    if (!event || !event.enablePayments) return [];
+    const rsvps = db.rsvps.filter(r => r.eventId === eventId && (r.status === 'going' || r.status === 'maybe'));
+    return rsvps.map(r => ({
+      id: 'txn_' + r.id,
+      eventId,
+      guestName: r.name,
+      guestEmail: r.email,
+      amount: event.ticketPrice || 0,
+      guestCount: r.guestCount || 1,
+      totalCharged: (event.ticketPrice || 0) * (r.guestCount || 1),
+      status: 'completed',
+      timestamp: r.timestamp,
+      method: 'Credit Card'
+    }));
+  },
+
+  createManualInvitation: (eventId, inviteData) => {
+    const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    if (!event) return null;
+    const newRsvp = {
+      id: 'r_' + Math.random().toString(36).substr(2, 9),
+      eventId,
+      name: inviteData.name,
+      email: inviteData.email,
+      phone: inviteData.phone,
+      guestCount: inviteData.guestCount || 1,
+      status: 'going',
+      checkedIn: false,
+      isManualInvite: true,
+      timestamp: new Date().toISOString(),
+      answers: {}
+    };
+    db.rsvps.push(newRsvp);
+    saveDB(db);
+    return newRsvp;
   }
 };

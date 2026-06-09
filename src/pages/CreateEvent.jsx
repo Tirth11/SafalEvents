@@ -47,7 +47,11 @@ export default function CreateEvent() {
     allowComments: true,
     enablePayments: false,
     ticketPrice: 0,
-    
+    bankAccountName: '',
+    bankRouting: '',
+    bankAccount: '',
+    bankName: '',
+
     questions: ['Any dietary restrictions?']
   });
 
@@ -136,8 +140,10 @@ export default function CreateEvent() {
               <div className="grid-2">
                 <FormField label="Event type">
                   <FormSelect value={formData.eventType} onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}>
-                    <option value="Party">Party</option>
+                    <option value="Party">Party / Social</option>
                     <option value="Meetup">Meetup</option>
+                    <option value="Meeting">Meeting</option>
+                    <option value="Webinar">Webinar</option>
                     <option value="Workshop">Workshop</option>
                     <option value="Religious">Religious / Temple</option>
                     <option value="Wedding">Wedding</option>
@@ -193,8 +199,39 @@ export default function CreateEvent() {
                 </div>
               </div>
 
-              <FormField label="Cover image URL">
-                <FormInput type="text" placeholder="https://images.unsplash.com/..." value={formData.cover} onChange={(e) => setFormData({ ...formData, cover: e.target.value })} />
+              <FormField label="Cover image" hint="JPG or PNG, max 5MB. Click to upload or drag & drop.">
+                <div style={{ position: 'relative' }}>
+                  {formData.cover && formData.cover.startsWith('data:') ? (
+                    <div style={{ position: 'relative', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: '8px' }}>
+                      <img src={formData.cover} alt="Event cover preview" style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
+                      <button type="button" onClick={() => setFormData({ ...formData, cover: '' })} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(239,68,68,0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>✕</button>
+                    </div>
+                  ) : (
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--color-border)', borderRadius: 'var(--radius-md)', padding: '24px', cursor: 'pointer', background: 'var(--color-surface-hover)', transition: 'border-color 0.2s' }}>
+                      <Image size={28} style={{ color: 'var(--color-text-muted)', marginBottom: '8px' }} />
+                      <span style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9rem' }}>Upload Event Image</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>JPG or PNG, max 5MB</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); return; }
+                          if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) { alert('Only JPG and PNG files are supported.'); return; }
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setFormData({ ...formData, cover: ev.target.result });
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                  )}
+                  <div style={{ marginTop: '8px' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Or enter image URL:</label>
+                    <FormInput type="text" placeholder="https://images.unsplash.com/..." value={formData.cover && !formData.cover.startsWith('data:') ? formData.cover : ''} onChange={(e) => setFormData({ ...formData, cover: e.target.value })} />
+                  </div>
+                </div>
               </FormField>
             </div>
           )}
@@ -282,9 +319,9 @@ export default function CreateEvent() {
 
               <div>
                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>RSVP Deadline Date</label>
-                <input 
-                  type="datetime-local" 
-                  value={formData.rsvpDeadline} 
+                <input
+                  type="datetime-local"
+                  value={formData.rsvpDeadline}
                   onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value })}
                   style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
                 />
@@ -292,6 +329,23 @@ export default function CreateEvent() {
                   ℹ️ <strong>Impact:</strong> Auto-closes RSVPs once date/time passes.
                 </span>
               </div>
+
+              {formData.privacy === 'Private' && (
+                <div style={{ background: 'rgba(0,113,227,0.05)', border: '1px solid rgba(0,113,227,0.2)', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><Shield size={14} className="text-primary" /> Private Event — Share Link</h4>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                    <input readOnly value={`${window.location.origin}/e/[event-id]`} style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem', background: 'var(--color-surface)', color: 'var(--color-text-muted)' }} />
+                    <button type="button" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/e/[event-id]`); alert('Link copied to clipboard!'); }} style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      Copy Link
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Share via:
+                    <button type="button" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('Join my event: ' + window.location.origin + '/e/[event-id]')}`, '_blank')} style={{ background: 'none', border: 'none', color: '#25D366', fontWeight: 600, cursor: 'pointer', marginLeft: '8px', fontSize: '0.72rem' }}>WhatsApp</button>
+                    <button type="button" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('Join my event: ' + window.location.origin + '/e/[event-id]')}`, '_blank')} style={{ background: 'none', border: 'none', color: '#1DA1F2', fontWeight: 600, cursor: 'pointer', marginLeft: '8px', fontSize: '0.72rem' }}>Twitter</button>
+                    <button type="button" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/e/[event-id]')}`, '_blank')} style={{ background: 'none', border: 'none', color: '#1877F2', fontWeight: 600, cursor: 'pointer', marginLeft: '8px', fontSize: '0.72rem' }}>Facebook</button>
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -402,16 +456,43 @@ export default function CreateEvent() {
                     </label>
                   </div>
                   {formData.enablePayments && (
-                    <input 
-                      type="number" 
-                      placeholder="Price ($)" 
-                      value={formData.ticketPrice} 
+                    <input
+                      type="number"
+                      placeholder="Price ($)"
+                      value={formData.ticketPrice}
                       onChange={(e) => setFormData({ ...formData, ticketPrice: Number(e.target.value) })}
                       style={{ width: '100%', padding: '4px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                     />
                   )}
                 </div>
               </div>
+
+              {formData.enablePayments && (
+                <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <CreditCard size={14} className="text-primary" /> Bank Account for Payouts (Required for Paid Events)
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '4px' }}>Account Holder Name</label>
+                      <input type="text" placeholder="Legal name on account" value={formData.bankAccountName || ''} onChange={(e) => setFormData({ ...formData, bankAccountName: e.target.value })} style={{ width: '100%', padding: '8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '4px' }}>Routing Number</label>
+                      <input type="text" placeholder="9-digit routing number" value={formData.bankRouting || ''} onChange={(e) => setFormData({ ...formData, bankRouting: e.target.value })} style={{ width: '100%', padding: '8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '4px' }}>Account Number</label>
+                      <input type="text" placeholder="Account number" value={formData.bankAccount || ''} onChange={(e) => setFormData({ ...formData, bankAccount: e.target.value })} style={{ width: '100%', padding: '8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '4px' }}>Bank Name</label>
+                      <input type="text" placeholder="e.g. Chase, Bank of America" value={formData.bankName || ''} onChange={(e) => setFormData({ ...formData, bankName: e.target.value })} style={{ width: '100%', padding: '8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }} />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>Payments collected from attendees will be automatically transferred to this account after the event.</p>
+                </div>
+              )}
 
               {/* Custom Questions */}
               <div>
@@ -448,15 +529,34 @@ export default function CreateEvent() {
           )}
 
           {/* Wizard Navigation */}
-          <div className="flex justify-between items-center" style={{ marginTop: 'var(--spacing-md)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--spacing-sm)' }}>
-            {step > 1 ? (
-              <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
-                Previous Step
+          <div className="flex justify-between items-center" style={{ marginTop: 'var(--spacing-md)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--spacing-sm)', flexWrap: 'wrap', gap: '8px' }}>
+            <div className="flex gap-sm">
+              {step > 1 ? (
+                <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
+                  Previous Step
+                </Button>
+              ) : (
+                <div></div>
+              )}
+              <Button type="button" variant="ghost" onClick={() => {
+                const today = new Date().toISOString().split('T')[0];
+                const cleanQuestions = formData.questions.filter(q => q.trim() !== '');
+                mockStore.createEvent({
+                  ...formData,
+                  title: formData.title.trim() || 'My Event',
+                  date: formData.date || today,
+                  time: formData.time || '18:00',
+                  location: formData.location.trim() || 'To be announced',
+                  description: formData.description.trim() || 'Join us for a great gathering!',
+                  questions: cleanQuestions,
+                  status: 'Draft'
+                });
+                navigate('/dashboard');
+              }} style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                Save Draft
               </Button>
-            ) : (
-              <div></div>
-            )}
-            
+            </div>
+
             <Button variant="primary" type="submit" className="flex items-center gap-xs">
               {step < 4 ? (
                 <>Next Step <ArrowRight size={18} /></>
