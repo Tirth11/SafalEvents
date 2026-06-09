@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Image, CheckSquare, Calendar, MapPin, Users, HelpCircle, Eye, ArrowRight, Save, Shield, Compass, FileText, Bell, CreditCard, MessageSquare, Plus, Trash } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import FormField, { FormInput, FormTextarea, FormSelect } from '../components/FormField';
 
 export default function CreateEvent() {
   const navigate = useNavigate();
@@ -79,10 +79,15 @@ export default function CreateEvent() {
     if (step < 4) {
       setStep(step + 1);
     } else {
-      // Create Event
+      const today = new Date().toISOString().split('T')[0];
       const cleanQuestions = formData.questions.filter(q => q.trim() !== '');
       const newEvent = mockStore.createEvent({
         ...formData,
+        title: formData.title.trim() || 'My Event',
+        date: formData.date || today,
+        time: formData.time || '18:00',
+        location: formData.location.trim() || 'To be announced',
+        description: formData.description.trim() || 'Join us for a great gathering!',
         questions: cleanQuestions
       });
       // Redirect to the event details page
@@ -102,23 +107,19 @@ export default function CreateEvent() {
 
   return (
     <PageShell>
-      <div style={{ display: 'flex', minHeight: '80vh', background: 'var(--color-bg)' }}>
-        
-        {/* LEFT COLUMN: Form Wizard */}
-        <div style={{ flex: 1, padding: 'var(--spacing-md) var(--spacing-lg)', maxWidth: '650px', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
+      <div className="create-event-layout">
+        <div className="create-event-form-panel">
           <div style={{ marginBottom: 'var(--spacing-sm)' }}>
             <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '0.9rem', marginBottom: '12px' }}>
               <ArrowLeft size={16} /> Back to Dashboard
             </Link>
-            
             <h1 style={{ fontSize: '1.75rem' }}>Create Event</h1>
-            <p className="text-muted" style={{ fontSize: '0.9rem' }}>Configure details, privacy, rules, and communication workflows.</p>
+            <p className="text-muted" style={{ fontSize: '0.9rem' }}>Fill in what you know — you can always edit later.</p>
           </div>
 
-        {/* Form Steps Indicators */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: 'var(--spacing-md)' }}>
-          {[1,2,3,4].map(s => (
-            <div key={s} style={{ flex: 1, height: '4px', background: step >= s ? 'var(--color-primary)' : 'var(--color-border)', borderRadius: '2px' }}></div>
+        <div className="step-indicator">
+          {[1, 2, 3, 4].map(s => (
+            <div key={s} className={`step-indicator-bar ${step >= s ? 'active' : ''}`} />
           ))}
         </div>
 
@@ -128,99 +129,36 @@ export default function CreateEvent() {
           {/* STEP 1: Basic Event Info Settings */}
           {step === 1 && (
             <div className="flex flex-col gap-sm">
-              <h3 style={{ fontSize: '1.15rem' }} className="flex items-center gap-xs"><Sparkles size={18} className="text-primary" /> 1. Basic Info Settings</h3>
-              
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Event Title</label>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder="e.g. Summer Rooftop Mixer" 
-                  value={formData.title} 
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                />
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                  ℹ️ <strong>What:</strong> Name shown on invite page & tickets. <strong>Changeable:</strong> Anytime. <strong>Impact:</strong> Syncs instantly.
-                </span>
-              </div>
-
+              <h3 className="wizard-section-title"><Sparkles size={18} className="text-primary" /> Basic details</h3>
+              <FormField label="Event title">
+                <FormInput type="text" placeholder="Summer Rooftop Mixer" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+              </FormField>
               <div className="grid-2">
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Event Type</label>
-                  <select 
-                    value={formData.eventType}
-                    onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
-                    style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                  >
+                <FormField label="Event type">
+                  <FormSelect value={formData.eventType} onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}>
                     <option value="Party">Party</option>
                     <option value="Meetup">Meetup</option>
                     <option value="Workshop">Workshop</option>
                     <option value="Religious">Religious / Temple</option>
                     <option value="Wedding">Wedding</option>
                     <option value="Other">Other</option>
-                  </select>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                    ℹ️ Used for analytics & discover feeds.
-                  </span>
-                </div>
-
+                  </FormSelect>
+                </FormField>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Date</label>
-                    <input 
-                      type="date" 
-                      required 
-                      value={formData.date} 
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Time</label>
-                    <input 
-                      type="time" 
-                      required 
-                      value={formData.time} 
-                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '0.85rem' }}
-                    />
-                  </div>
+                  <FormField label="Date">
+                    <FormInput type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
+                  </FormField>
+                  <FormField label="Time">
+                    <FormInput type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} />
+                  </FormField>
                 </div>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '-4px' }}>
-                ℹ️ <strong>Changeable:</strong> Before event starts. <strong>Impact:</strong> Changing date triggers automatic email notification to all RSVPs.
-              </span>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Venue Location</label>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder="e.g. Penthouse Lounge, Manhattan, NY" 
-                  value={formData.location} 
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                />
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                  ℹ️ <strong>What:</strong> Where guests gather. <strong>Impact:</strong> Modifying triggers a location updated SMS/Email.
-                </span>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Event Description</label>
-                <textarea 
-                  required 
-                  placeholder="Details about what the event is..." 
-                  value={formData.description} 
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                />
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
-                  ℹ️ <strong>What:</strong> Detailed event agenda. <strong>Changeable:</strong> Anytime. <strong>Impact:</strong> Instantly updates page.
-                </span>
-              </div>
+              <FormField label="Venue">
+                <FormInput type="text" placeholder="Penthouse Lounge, Manhattan" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+              </FormField>
+              <FormField label="Description">
+                <FormTextarea placeholder="Tell guests what to expect..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+              </FormField>
             </div>
           )}
 
@@ -255,16 +193,9 @@ export default function CreateEvent() {
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500 }}>Or Cover Image URL</label>
-                <input 
-                  type="text" 
-                  placeholder="https://images.unsplash.com/... (Optional)" 
-                  value={formData.cover} 
-                  onChange={(e) => setFormData({ ...formData, cover: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                />
-              </div>
+              <FormField label="Cover image URL">
+                <FormInput type="text" placeholder="https://images.unsplash.com/..." value={formData.cover} onChange={(e) => setFormData({ ...formData, cover: e.target.value })} />
+              </FormField>
             </div>
           )}
 
@@ -487,13 +418,12 @@ export default function CreateEvent() {
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px' }}>Checkout Questions</label>
                 {formData.questions.map((q, idx) => (
                   <div key={idx} className="flex gap-xs items-center" style={{ marginBottom: '6px' }}>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="e.g. Dietary details?" 
-                      value={q} 
+                    <FormInput
+                      type="text"
+                      placeholder="e.g. Dietary details?"
+                      value={q}
                       onChange={(e) => handleFieldChange(idx, e.target.value)}
-                      style={{ flex: 1, padding: '8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                      style={{ flex: 1, fontSize: '0.85rem' }}
                     />
                     <button 
                       type="button" 
@@ -538,8 +468,7 @@ export default function CreateEvent() {
         </form>
       </div>
 
-      {/* RIGHT COLUMN: Sticky Live Invitation Preview */}
-      <div style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)', background: 'var(--color-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'sticky', top: '70px', height: 'calc(100vh - 120px)', overflowY: 'auto' }}>
+      <div className="create-event-preview-panel">
         <div style={{ width: '100%', maxWidth: '420px', position: 'relative' }}>
           
           <div className="text-center" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600 }}>

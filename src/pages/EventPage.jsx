@@ -5,6 +5,7 @@ import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import FormField, { FormInput } from '../components/FormField';
 
 export default function EventPage() {
   const { eventId } = useParams();
@@ -150,28 +151,27 @@ export default function EventPage() {
     e.preventDefault();
     setAuthError('');
 
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim()) {
-      setAuthError('Please fill in all contact fields.');
-      return;
-    }
+    const fn = firstName.trim() || 'Guest';
+    const ln = lastName.trim() || '';
+    const em = email.trim() || `guest${Date.now()}@example.com`;
+    const ph = phone.trim() || '+1 (555) 000-0000';
 
-    // OTP Bypass check: loginless behavior
-    const skipOtp = mockStore.checkRecentRsvpVerification(event.id, email.trim(), phone.trim());
+    const skipOtp = mockStore.checkRecentRsvpVerification(event.id, em, ph);
     if (skipOtp) {
       setRsvpForm(prev => ({
         ...prev,
-        name: `${firstName} ${lastName}`,
-        emailOrPhone: email
+        name: `${fn} ${ln}`.trim(),
+        emailOrPhone: em
       }));
       setDrawerStep(2);
       return;
     }
 
     const session = mockStore.createRsvpSession(event.id, {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      phone: phone.trim()
+      firstName: fn,
+      lastName: ln,
+      email: em,
+      phone: ph
     });
 
     setRsvpSession(session);
@@ -179,19 +179,15 @@ export default function EventPage() {
     setRsvpOtp('');
     setDrawerStep(1.5);
 
-    alert(`[Simulated Multi-Channel Delivery]\nVerification code sent to:\nEmail (${email}) & SMS (${phone})\n\nOTP Code: ${session.otpCode}`);
+    alert(`[Simulated Multi-Channel Delivery]\nVerification code sent to:\nEmail (${em}) & SMS (${ph})\n\nOTP Code: ${session.otpCode}`);
   };
 
   const handleRsvpOtpVerifySubmit = (e) => {
     e.preventDefault();
     setAuthError('');
 
-    if (rsvpOtp.trim().length !== 6) {
-      setAuthError('Please enter a valid 6-digit OTP code.');
-      return;
-    }
-
-    const res = mockStore.verifyRsvpSession(rsvpSession.id, rsvpOtp);
+    const code = rsvpOtp.trim() || rsvpSession.otpCode;
+    const res = mockStore.verifyRsvpSession(rsvpSession.id, code);
     if (!res.success) {
       setAuthError(res.error);
       return;
@@ -464,7 +460,6 @@ export default function EventPage() {
                         value={commentName} 
                         onChange={(e) => setCommentName(e.target.value)}
                         style={{ padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border)', flex: 1 }}
-                        required
                       />
                     </div>
                   ) : null}
@@ -476,7 +471,6 @@ export default function EventPage() {
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.875rem' }}
-                      required
                     />
                     <Button variant="primary" type="submit" style={{ padding: '8px 12px' }}><Send size={16} /></Button>
                   </div>
@@ -603,7 +597,7 @@ export default function EventPage() {
             {/* Drawer Step 1: Guest Contact details */}
             {drawerStep === 1 && (
               <form onSubmit={handleContactSubmit} className="flex flex-col gap-md">
-                <p className="text-muted" style={{ fontSize: '0.875rem' }}>We verify your spot via a quick OTP code sent to your email and phone.</p>
+                <p className="text-muted" style={{ fontSize: '0.875rem' }}>Share what you're comfortable with — all fields are optional.</p>
                 
                 {authError && (
                   <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid #ef4444', color: '#ef4444', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem' }}>
@@ -612,65 +606,19 @@ export default function EventPage() {
                 )}
 
                 <div className="grid-2">
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>First Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="Alice"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Last Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="Vance"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                    />
-                  </div>
+                  <FormField label="First name">
+                    <FormInput type="text" placeholder="Alice" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  </FormField>
+                  <FormField label="Last name">
+                    <FormInput type="text" placeholder="Vance" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                  </FormField>
                 </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Email Address *</label>
-                  <input 
-                    type="email" 
-                    required 
-                    placeholder="alice@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                  />
-                </div>
-
-                <div className="grid-2">
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Phone (US Only) *</label>
-                    <input 
-                      type="tel" 
-                      required 
-                      placeholder="+1 (555) 123-4567"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Country *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      readOnly
-                      value="USA"
-                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', background: 'var(--color-surface-hover)', color: 'var(--color-text-muted)' }}
-                    />
-                  </div>
-                </div>
+                <FormField label="Email">
+                  <FormInput type="email" placeholder="alice@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </FormField>
+                <FormField label="Phone">
+                  <FormInput type="tel" placeholder="+1 (555) 123-4567" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </FormField>
 
                 <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-sm)', padding: '12px' }}>
                   Continue to Verification
@@ -702,21 +650,9 @@ export default function EventPage() {
                   </div>
                 )}
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', fontWeight: 500 }}>6-Digit OTP *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    maxLength={6}
-                    value={rsvpOtp}
-                    onChange={(e) => setRsvpOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456" 
-                    style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', letterSpacing: '8px', textAlign: 'center', fontSize: '1.5rem', fontWeight: 700 }} 
-                  />
-                  <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '6px', textAlign: 'center' }}>
-                    Max 5 attempts. Resending code invalidates the previous OTP.
-                  </p>
-                </div>
+                <FormField label="Verification code" hint="Leave blank in demo mode to auto-verify.">
+                  <FormInput type="text" maxLength={6} value={rsvpOtp} onChange={(e) => setRsvpOtp(e.target.value.replace(/\D/g, ''))} placeholder="123456" style={{ letterSpacing: '8px', textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 }} />
+                </FormField>
 
                 <Button variant="primary" type="submit" style={{ width: '100%', padding: '12px', fontWeight: 600 }}>
                   Verify Verification Code
@@ -747,17 +683,9 @@ export default function EventPage() {
             {drawerStep === 2 && (
               <form onSubmit={handleConfirmRsvpSubmit} className="flex flex-col gap-md">
                 
-                <div>
-                  <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Your Full Name</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="Enter name"
-                    value={rsvpForm.name}
-                    onChange={(e) => setRsvpForm({ ...rsvpForm, name: e.target.value })}
-                    style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                  />
-                </div>
+                <FormField label="Your name">
+                  <FormInput type="text" placeholder="Enter name" value={rsvpForm.name} onChange={(e) => setRsvpForm({ ...rsvpForm, name: e.target.value })} />
+                </FormField>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Will you be attending?</label>
@@ -787,21 +715,18 @@ export default function EventPage() {
 
                 {/* Render Host Custom Questions */}
                 {event.questions && event.questions.map(q => (
-                  <div key={q}>
-                    <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>{q}</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="Type answer..."
+                  <FormField key={q} label={q}>
+                    <FormInput
+                      type="text"
+                      placeholder="Your answer..."
                       value={rsvpForm.answers[q] || ''}
                       onChange={(e) => {
                         const answers = { ...rsvpForm.answers };
                         answers[q] = e.target.value;
                         setRsvpForm({ ...rsvpForm, answers });
                       }}
-                      style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
                     />
-                  </div>
+                  </FormField>
                 ))}
 
                 <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-md)' }}>

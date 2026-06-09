@@ -5,6 +5,7 @@ import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import FormField, { FormInput, FormSelect } from '../components/FormField';
 
 export default function GuestDashboard({ onLogout }) {
   const navigate = useNavigate();
@@ -153,88 +154,33 @@ export default function GuestDashboard({ onLogout }) {
 
   return (
     <PageShell>
-      <div className="flex" style={{ minHeight: '80vh', background: 'var(--color-bg)' }}>
-        {/* Sidebar */}
-        <aside style={{ width: '260px', background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)', padding: 'var(--spacing-lg) var(--spacing-md)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: 'var(--spacing-xl)', padding: '0 var(--spacing-sm)' }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}>Guest Center</div>
-          </div>
-
-        <nav className="flex flex-col gap-sm" style={{ flex: 1 }}>
-          <button 
-            onClick={() => setActiveTab('tickets')} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeTab === 'tickets' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
-              color: activeTab === 'tickets' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
-          >
-            <Ticket size={20} /> My RSVPs & Tickets
+      <div className="dashboard-layout">
+        <aside className="dashboard-sidebar">
+          <div className="dashboard-sidebar-title">Guest Center</div>
+          <nav style={{ flex: 1, display: 'contents' }}>
+            <button type="button" onClick={() => setActiveTab('tickets')} className={`dashboard-nav-btn ${activeTab === 'tickets' ? 'active' : ''}`}>
+              <Ticket size={18} /> My Tickets
+            </button>
+            <button type="button" onClick={() => setActiveTab('explore')} className={`dashboard-nav-btn ${activeTab === 'explore' ? 'active' : ''}`}>
+              <Compass size={18} /> Discover
+            </button>
+            <button type="button" onClick={() => setActiveTab('past')} className={`dashboard-nav-btn ${activeTab === 'past' ? 'active' : ''}`}>
+              <History size={18} /> History
+            </button>
+            <button type="button" onClick={() => setActiveTab('profile')} className={`dashboard-nav-btn ${activeTab === 'profile' ? 'active' : ''}`}>
+              <Settings size={18} /> Profile
+            </button>
+          </nav>
+          <button type="button" onClick={onLogout} className="dashboard-nav-btn" style={{ marginTop: 'auto' }}>
+            <LogOut size={18} /> Log Out
           </button>
-          
-          <button 
-            onClick={() => setActiveTab('explore')} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeTab === 'explore' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
-              color: activeTab === 'explore' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
-          >
-            <Compass size={20} /> Discover Events
-          </button>
+        </aside>
 
-          <button 
-            onClick={() => setActiveTab('past')} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeTab === 'past' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
-              color: activeTab === 'past' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
-          >
-            <History size={20} /> History
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('profile')} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeTab === 'profile' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
-              color: activeTab === 'profile' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
-          >
-            <Settings size={20} /> My Profile
-          </button>
-        </nav>
-
-        <button 
-          onClick={onLogout} 
-          className="flex items-center gap-sm text-muted" 
-          style={{ padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 500 }}
-        >
-          <LogOut size={20} /> Log Out
-        </button>
-      </aside>
-
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)' }}>
-        
-        {/* Header Block */}
-        <div className="flex justify-between items-center" style={{ marginBottom: 'var(--spacing-xl)', borderBottom: '1px solid var(--color-border)', paddingBottom: 'var(--spacing-sm)' }}>
+      <main className="dashboard-main">
+        <div className="page-header">
           <div>
-            <h1 style={{ fontSize: '2rem' }}>Hey, {currentUser?.name}! 👋</h1>
-            <p className="text-muted">Welcome to your RSVP portal. Enter an invite code or manage your passes.</p>
+            <h1>Hey, {currentUser?.name}! 👋</h1>
+            <p>Your RSVP portal — find events, manage tickets, and update your profile.</p>
           </div>
           
           {/* Quick Join form */}
@@ -411,55 +357,26 @@ export default function GuestDashboard({ onLogout }) {
             <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: 'var(--spacing-md)' }}>Update your default RSVP contact information and dietary settings.</p>
             
             <form onSubmit={handleProfileSubmit} className="flex flex-col gap-md">
-              <div>
-                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Full Name</label>
-                <input 
-                  type="text" 
-                  value={profileForm.name}
-                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Email Address</label>
-                <input 
-                  type="email" 
-                  value={profileForm.email}
-                  onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Phone Number</label>
-                <input 
-                  type="tel" 
-                  value={profileForm.phone}
-                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Dietary Requirements</label>
-                <select 
-                  value={profileForm.dietary}
-                  onChange={(e) => setProfileForm({ ...profileForm, dietary: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                >
+              <FormField label="Full name">
+                <FormInput type="text" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
+              </FormField>
+              <FormField label="Email">
+                <FormInput type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} />
+              </FormField>
+              <FormField label="Phone">
+                <FormInput type="tel" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
+              </FormField>
+              <FormField label="Dietary preferences">
+                <FormSelect value={profileForm.dietary} onChange={(e) => setProfileForm({ ...profileForm, dietary: e.target.value })}>
                   <option value="None">None</option>
                   <option value="Vegetarian">Vegetarian</option>
                   <option value="Vegan">Vegan</option>
                   <option value="Gluten-Free">Gluten-Free</option>
                   <option value="Halal">Halal</option>
                   <option value="Kosher">Kosher</option>
-                  <option value="Other">Other (Will specify per event)</option>
-                </select>
-              </div>
+                  <option value="Other">Other</option>
+                </FormSelect>
+              </FormField>
 
               <div className="flex gap-sm items-center" style={{ marginTop: 'var(--spacing-sm)' }}>
                 <Button variant="primary" type="submit">Save Settings</Button>

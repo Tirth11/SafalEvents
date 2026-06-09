@@ -60,72 +60,28 @@ function DashboardWrapper() {
         <GuestDashboard onLogout={handleLogout} />
       )}
 
-      {/* Floating Demo Persona Switcher */}
-      <div 
-        style={{ 
-          position: 'fixed', 
-          bottom: '24px', 
-          right: '24px', 
-          zIndex: 9999, 
-          background: 'rgba(255, 255, 255, 0.95)', 
-          backdropFilter: 'blur(10px)',
-          border: '1px solid var(--color-border)', 
-          borderRadius: 'var(--radius-md)', 
-          padding: '10px 14px', 
-          boxShadow: 'var(--shadow-lg)', 
-          display: 'flex', 
-          gap: '12px', 
-          alignItems: 'center' 
-        }}
-      >
-        <div className="flex items-center gap-xs" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-          <Sparkles size={14} /> Quick Switch Role:
+      <div className="role-switcher">
+        <div className="role-switcher-label">
+          <Sparkles size={14} /> Demo roles
         </div>
-        <button 
-          onClick={() => toggleRole('host')} 
-          style={{ 
-            background: user.role === 'host' ? 'var(--color-primary)' : 'none', 
-            color: user.role === 'host' ? 'white' : 'var(--color-text)', 
-            border: '1px solid var(--color-border)', 
-            borderRadius: 'var(--radius-sm)', 
-            padding: '5px 10px', 
-            fontSize: '0.75rem', 
-            cursor: 'pointer', 
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
+        <button
+          type="button"
+          onClick={() => toggleRole('host')}
+          className={`role-switcher-btn ${user.role === 'host' ? 'active-host' : ''}`}
         >
           Host
         </button>
-        <button 
-          onClick={() => toggleRole('admin')} 
-          style={{ 
-            background: user.role === 'admin' ? '#0ea5e9' : 'none', 
-            color: user.role === 'admin' ? 'white' : 'var(--color-text)', 
-            border: '1px solid var(--color-border)', 
-            borderRadius: 'var(--radius-sm)', 
-            padding: '5px 10px', 
-            fontSize: '0.75rem', 
-            cursor: 'pointer', 
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
+        <button
+          type="button"
+          onClick={() => toggleRole('admin')}
+          className={`role-switcher-btn ${user.role === 'admin' ? 'active-admin' : ''}`}
         >
           Admin
         </button>
-        <button 
-          onClick={() => toggleRole('guest')} 
-          style={{ 
-            background: user.role === 'guest' ? 'var(--color-accent)' : 'none', 
-            color: user.role === 'guest' ? 'white' : 'var(--color-text)', 
-            border: '1px solid var(--color-border)', 
-            borderRadius: 'var(--radius-sm)', 
-            padding: '5px 10px', 
-            fontSize: '0.75rem', 
-            cursor: 'pointer', 
-            fontWeight: 600,
-            transition: 'all 0.2s'
-          }}
+        <button
+          type="button"
+          onClick={() => toggleRole('guest')}
+          className={`role-switcher-btn ${user.role === 'guest' ? 'active-guest' : ''}`}
         >
           Guest
         </button>

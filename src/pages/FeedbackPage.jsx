@@ -5,6 +5,7 @@ import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import FormField, { FormInput, FormTextarea } from '../components/FormField';
 
 export default function FeedbackPage() {
   const { eventId } = useParams();
@@ -38,23 +39,10 @@ export default function FeedbackPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim()) {
-      setError('Please provide your name.');
-      return;
-    }
-    if (!email.trim()) {
-      setError('Please provide your email.');
-      return;
-    }
-    if (rating === 0) {
-      setError('Please select a rating between 1 and 5 stars.');
-      return;
-    }
-
     mockStore.submitFeedback(eventId, {
-      name,
-      email,
-      rating,
+      name: name.trim() || 'Anonymous Guest',
+      email: email.trim() || 'guest@example.com',
+      rating: rating || 3,
       comments
     });
 
@@ -143,7 +131,7 @@ export default function FeedbackPage() {
               <div>
                 <h3 style={{ fontSize: '1.2rem', marginBottom: '6px', fontWeight: 600 }}>How was your experience?</h3>
                 <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
-                  Please rate the event and leave your comments below to help us improve future gatherings.
+                  Share as much or as little as you like — everything here is optional.
                 </p>
               </div>
 
@@ -191,40 +179,16 @@ export default function FeedbackPage() {
               </div>
 
               <div className="grid-2">
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '6px', fontWeight: 600 }}>Your Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Alice Vance"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '6px', fontWeight: 600 }}>Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="e.g. alice@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
-                  />
-                </div>
+                <FormField label="Your name">
+                  <FormInput type="text" placeholder="Alice Vance" value={name} onChange={(e) => setName(e.target.value)} />
+                </FormField>
+                <FormField label="Email">
+                  <FormInput type="email" placeholder="alice@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </FormField>
               </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '6px', fontWeight: 600 }}>Comments & Suggestions (Optional)</label>
-                <textarea
-                  placeholder="What did you enjoy most? What could we do better?"
-                  rows="4"
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit', resize: 'vertical' }}
-                />
-              </div>
+              <FormField label="Comments">
+                <FormTextarea placeholder="What did you enjoy most? What could we do better?" rows={4} value={comments} onChange={(e) => setComments(e.target.value)} />
+              </FormField>
 
               <Button variant="primary" type="submit" style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}>
                 <MessageSquare size={18} /> Submit Feedback

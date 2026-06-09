@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import FormField, { FormInput, FormSelect } from '../components/FormField';
 import { 
   CheckCircle2, ArrowLeft, ShieldAlert, Sparkles, User, Users, 
   Building2, Upload, FileText, Check, Lock, Timer, AlertCircle 
@@ -83,36 +84,29 @@ export default function Login() {
     e.preventDefault();
     setErrorMsg('');
 
-    let formData = {};
+    let formData = hostType === 'individual' ? { ...individualForm } : { ...orgForm };
+
     if (hostType === 'individual') {
-      if (!individualForm.firstName || !individualForm.lastName || !individualForm.email || !individualForm.phone || !individualForm.agreeTerms) {
-        setErrorMsg('Please fill in all required fields and agree to the terms.');
-        return;
-      }
-      formData = { ...individualForm };
+      formData.firstName = formData.firstName.trim() || 'New';
+      formData.lastName = formData.lastName.trim() || 'Host';
+      formData.email = formData.email.trim() || `host${Date.now()}@example.com`;
+      formData.phone = formData.phone.trim() || '+1 (555) 000-0000';
     } else {
-      if (!orgForm.orgName || !orgForm.firstName || !orgForm.lastName || !orgForm.email || !orgForm.phone || !orgForm.agreeRepresentation || !orgForm.agreeTerms) {
-        setErrorMsg('Please fill in all required fields, upload document proof, and agree to the terms.');
-        return;
-      }
-      formData = { ...orgForm };
+      formData.orgName = formData.orgName.trim() || 'My Organization';
+      formData.firstName = formData.firstName.trim() || 'Contact';
+      formData.lastName = formData.lastName.trim() || 'Person';
+      formData.email = formData.email.trim() || `org${Date.now()}@example.com`;
+      formData.phone = formData.phone.trim() || '+1 (555) 000-0000';
+      formData.city = formData.city.trim() || 'City';
+      formData.state = formData.state.trim() || 'State';
     }
 
-    // RESTRICTION: restrict phone number to US format (simple check or length)
-    const phoneDigits = formData.phone.replace(/\D/g, '');
-    if (phoneDigits.length < 10) {
-      setErrorMsg('Please enter a valid US phone number with area code (at least 10 digits).');
-      return;
-    }
-
-    // Check unique email in registered users
     const existingUsers = mockStore.getUsers();
-    if (existingUsers.some(u => u.email.toLowerCase() === formData.email.toLowerCase().trim())) {
-      setErrorMsg('A host account with this email address already exists. Please log in.');
+    if (formData.email && existingUsers.some(u => u.email.toLowerCase() === formData.email.toLowerCase().trim())) {
+      setErrorMsg('A host account with this email already exists. Try logging in instead.');
       return;
     }
 
-    // Create session & dispatch OTP
     const session = mockStore.createSignupSession(hostType, formData);
     setSignupSession(session);
     setResendCooldown(30);
@@ -123,12 +117,13 @@ export default function Login() {
     e.preventDefault();
     setErrorMsg('');
 
-    if (signupOtp.trim().length !== 6) {
-      setErrorMsg('Please enter a valid 6-digit OTP code.');
+    if (signupOtp.trim().length > 0 && signupOtp.trim().length !== 6) {
+      setErrorMsg('OTP should be 6 digits — or leave blank to skip verification in demo mode.');
       return;
     }
 
-    const res = mockStore.verifySignupSession(signupSession.id, signupOtp);
+    const code = signupOtp.trim() || signupSession.otpCode;
+    const res = mockStore.verifySignupSession(signupSession.id, code);
     if (!res.success) {
       setErrorMsg(res.error);
       return;
@@ -252,9 +247,9 @@ export default function Login() {
 
   return (
     <PageShell>
-      <div className="container flex justify-center items-center" style={{ minHeight: '80vh', padding: 'var(--spacing-xl) 0' }}>
-        <div style={{ width: '100%', maxWidth: '540px' }} className="flex flex-col gap-md">
-          <Card style={{ padding: 'var(--spacing-xl)' }} className="glass-surface">
+      <div className="auth-page">
+        <div className="auth-container">
+          <Card className="auth-card">
           
           {signupSuccess ? (
             <div className="text-center" style={{ padding: 'var(--spacing-sm) 0' }}>
@@ -268,7 +263,7 @@ export default function Login() {
                 </p>
               ) : (
                 <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)', fontSize: '0.95rem' }}>
-                  Verification successful! Your organization application is now **Pending Admin Review**. An administrator will review your documents and activate your account shortly.
+                  Verification successful! Your organization application is now pending admin review. An administrator will review your documents and activate your account shortly.
                 </p>
               )}
               <Button variant="primary" onClick={() => { setIsSignup(false); setSignupSuccess(false); setSignupSession(null); }} style={{ width: '100%' }}>Proceed to Login</Button>
@@ -279,7 +274,7 @@ export default function Login() {
               <div className="text-center" style={{ marginBottom: 'var(--spacing-lg)' }}>
                 <h1 style={{ fontSize: '1.75rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)' }}>Verify Contact Details</h1>
                 <p className="text-muted" style={{ fontSize: '0.875rem' }}>
-                  We sent a 6-digit OTP code to **{signupSession.formData.email}** and **{signupSession.formData.phone}**.
+                  We sent a 6-digit OTP code to {signupSession.formData.email} and {signupSession.formData.phone}.
                 </p>
                 <div style={{ margin: '12px auto', background: 'var(--color-surface-hover)', border: '1px dashed var(--color-border)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                   Active Code: {signupSession.otpCode}
@@ -293,21 +288,16 @@ export default function Login() {
               )}
 
               <form onSubmit={handleOtpVerifySubmit} className="flex flex-col gap-md">
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '6px', fontWeight: 500 }}>Enter 6-Digit OTP</label>
-                  <input 
-                    type="text" 
-                    required 
+                <FormField label="Verification code" hint="Leave blank in demo mode to auto-verify.">
+                  <FormInput
+                    type="text"
                     maxLength={6}
                     value={signupOtp}
                     onChange={(e) => setSignupOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456" 
-                    style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontFamily: 'inherit', letterSpacing: '8px', textAlign: 'center', fontSize: '1.5rem', fontWeight: 700 }} 
+                    placeholder="123456"
+                    style={{ letterSpacing: '8px', textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 }}
                   />
-                  <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '6px', textAlign: 'center' }}>
-                    Code expires in 10 minutes. Max 5 verification attempts.
-                  </p>
-                </div>
+                </FormField>
 
                 <Button variant="primary" type="submit" style={{ width: '100%', padding: '12px', fontWeight: 600 }}>
                   <Check size={18} /> Confirm Verification
@@ -336,12 +326,10 @@ export default function Login() {
           ) : (
             /* LOGIN AND WIZARD SIGNUP FORMS */
             <>
-              <div className="text-center" style={{ marginBottom: 'var(--spacing-lg)' }}>
-                <h1 style={{ fontSize: '1.75rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>
-                  {isSignup ? 'Become a Host' : 'Welcome to SafalEvent'}
-                </h1>
-                <p className="text-muted" style={{ fontSize: '0.9rem' }}>
-                  {isSignup ? 'Sign up to create, customize, and manage beautiful RSVPs.' : 'Log in securely with your contact details.'}
+              <div className="auth-header">
+                <h1>{isSignup ? 'Become a Host' : 'Welcome back'}</h1>
+                <p className="text-muted">
+                  {isSignup ? 'Share only what you want — all fields are optional.' : 'Sign in with email or phone. No password needed.'}
                 </p>
               </div>
 
@@ -356,308 +344,96 @@ export default function Login() {
                 /* HOST SIGNUP FORMS */
                 <form onSubmit={handleHostSignupSubmit} className="flex flex-col gap-md">
                   
-                  {/* Host Type Selector Toggle */}
-                  <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', marginBottom: '4px' }}>
-                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '8px', fontWeight: 600 }}>HOST REGISTRATION TYPE</label>
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: hostType === 'individual' ? 600 : 400 }}>
-                        <input 
-                          type="radio" 
-                          name="hostType" 
-                          checked={hostType === 'individual'} 
-                          onChange={() => { setHostType('individual'); setErrorMsg(''); }} 
-                          style={{ accentColor: 'var(--color-primary)' }}
-                        />
-                        <User size={16} /> Individual Host
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: hostType === 'organization' ? 600 : 400 }}>
-                        <input 
-                          type="radio" 
-                          name="hostType" 
-                          checked={hostType === 'organization'} 
-                          onChange={() => { setHostType('organization'); setErrorMsg(''); }} 
-                          style={{ accentColor: 'var(--color-primary)' }}
-                        />
-                        <Building2 size={16} /> Organization Host
-                      </label>
-                    </div>
+                  <div className="host-type-toggle">
+                    <label className={`host-type-option ${hostType === 'individual' ? 'selected' : ''}`}>
+                      <input type="radio" name="hostType" checked={hostType === 'individual'} onChange={() => { setHostType('individual'); setErrorMsg(''); }} />
+                      <User size={16} /> Individual
+                    </label>
+                    <label className={`host-type-option ${hostType === 'organization' ? 'selected' : ''}`}>
+                      <input type="radio" name="hostType" checked={hostType === 'organization'} onChange={() => { setHostType('organization'); setErrorMsg(''); }} />
+                      <Building2 size={16} /> Organization
+                    </label>
                   </div>
 
                   {hostType === 'individual' ? (
-                    /* INDIVIDUAL FIELDS */
                     <div className="flex flex-col gap-sm animate-fade-in">
                       <div className="grid-2">
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>First Name *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="Alex" 
-                            value={individualForm.firstName}
-                            onChange={(e) => setIndividualForm({ ...individualForm, firstName: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Last Name *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="Rivera" 
-                            value={individualForm.lastName}
-                            onChange={(e) => setIndividualForm({ ...individualForm, lastName: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
-                        </div>
+                        <FormField label="First name">
+                          <FormInput type="text" placeholder="Alex" value={individualForm.firstName} onChange={(e) => setIndividualForm({ ...individualForm, firstName: e.target.value })} />
+                        </FormField>
+                        <FormField label="Last name">
+                          <FormInput type="text" placeholder="Rivera" value={individualForm.lastName} onChange={(e) => setIndividualForm({ ...individualForm, lastName: e.target.value })} />
+                        </FormField>
                       </div>
-
                       <div className="grid-2">
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Email Address *</label>
-                          <input 
-                            type="email" 
-                            required 
-                            placeholder="alex@example.com" 
-                            value={individualForm.email}
-                            onChange={(e) => setIndividualForm({ ...individualForm, email: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Phone (US Only) *</label>
-                          <input 
-                            type="tel" 
-                            required 
-                            placeholder="+1 (555) 000-0000" 
-                            value={individualForm.phone}
-                            onChange={(e) => setIndividualForm({ ...individualForm, phone: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
-                        </div>
+                        <FormField label="Email">
+                          <FormInput type="email" placeholder="alex@example.com" value={individualForm.email} onChange={(e) => setIndividualForm({ ...individualForm, email: e.target.value })} />
+                        </FormField>
+                        <FormField label="Phone">
+                          <FormInput type="tel" placeholder="+1 (555) 000-0000" value={individualForm.phone} onChange={(e) => setIndividualForm({ ...individualForm, phone: e.target.value })} />
+                        </FormField>
                       </div>
-
-                      <div className="grid-2">
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Country *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            readOnly
-                            value={individualForm.country}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-hover)', color: 'var(--color-text-muted)' }} 
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>City (Optional)</label>
-                          <input 
-                            type="text" 
-                            placeholder="New York" 
-                            value={individualForm.city}
-                            onChange={(e) => setIndividualForm({ ...individualForm, city: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Choose Password *</label>
-                        <input 
-                          type="password" 
-                          required 
-                          placeholder="••••••••" 
-                          value={individualForm.password}
-                          onChange={(e) => setIndividualForm({ ...individualForm, password: e.target.value })}
-                          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                        />
-                      </div>
-
-                      <label style={{ display: 'flex', gap: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', cursor: 'pointer' }}>
-                        <input 
-                          type="checkbox" 
-                          required
-                          checked={individualForm.agreeTerms}
-                          onChange={(e) => setIndividualForm({ ...individualForm, agreeTerms: e.target.checked })}
-                          style={{ marginTop: '2px', accentColor: 'var(--color-primary)' }}
-                        />
-                        <span>I agree to the [Terms &amp; Conditions](file:///terms) and [Privacy Policy](file:///privacy). *</span>
+                      <FormField label="City">
+                        <FormInput type="text" placeholder="New York" value={individualForm.city} onChange={(e) => setIndividualForm({ ...individualForm, city: e.target.value })} />
+                      </FormField>
+                      <FormField label="Password" hint="Optional — OTP login is used by default.">
+                        <FormInput type="password" placeholder="••••••••" value={individualForm.password} onChange={(e) => setIndividualForm({ ...individualForm, password: e.target.value })} />
+                      </FormField>
+                      <label style={{ display: 'flex', gap: '8px', fontSize: '0.8rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={individualForm.agreeTerms} onChange={(e) => setIndividualForm({ ...individualForm, agreeTerms: e.target.checked })} style={{ marginTop: '2px', accentColor: 'var(--color-primary)' }} />
+                        <span>I agree to the Terms and Privacy Policy</span>
                       </label>
                     </div>
                   ) : (
-                    /* ORGANIZATION FIELDS */
                     <div className="flex flex-col gap-sm animate-fade-in">
                       <div className="grid-2">
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Organization Name *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="Temple Community Group" 
-                            value={orgForm.orgName}
-                            onChange={(e) => setOrgForm({ ...orgForm, orgName: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Org Type *</label>
-                          <select 
-                            value={orgForm.orgType}
-                            onChange={(e) => setOrgForm({ ...orgForm, orgType: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                          >
+                        <FormField label="Organization name">
+                          <FormInput type="text" placeholder="Temple Community Group" value={orgForm.orgName} onChange={(e) => setOrgForm({ ...orgForm, orgName: e.target.value })} />
+                        </FormField>
+                        <FormField label="Organization type">
+                          <FormSelect value={orgForm.orgType} onChange={(e) => setOrgForm({ ...orgForm, orgType: e.target.value })}>
                             <option value="NGO">NGO (Non-Profit)</option>
-                            <option value="Temple">Temple / religious</option>
+                            <option value="Temple">Temple / Religious</option>
                             <option value="Community">Community / Club</option>
                             <option value="Company">Company / Corporate</option>
                             <option value="Other">Other</option>
-                          </select>
-                        </div>
+                          </FormSelect>
+                        </FormField>
                       </div>
-
                       <div className="grid-2">
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Website (Optional)</label>
-                          <input 
-                            type="url" 
-                            placeholder="https://templegroup.org" 
-                            value={orgForm.website}
-                            onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
+                        <FormField label="Website">
+                          <FormInput type="url" placeholder="https://yoursite.org" value={orgForm.website} onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })} />
+                        </FormField>
+                        <FormField label="City">
+                          <FormInput type="text" placeholder="San Francisco" value={orgForm.city} onChange={(e) => setOrgForm({ ...orgForm, city: e.target.value })} />
+                        </FormField>
+                      </div>
+                      <div className="settings-card flex flex-col gap-sm">
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>Primary contact</span>
+                        <div className="grid-2">
+                          <FormField label="First name">
+                            <FormInput type="text" placeholder="Alex" value={orgForm.firstName} onChange={(e) => setOrgForm({ ...orgForm, firstName: e.target.value })} />
+                          </FormField>
+                          <FormField label="Last name">
+                            <FormInput type="text" placeholder="Rivera" value={orgForm.lastName} onChange={(e) => setOrgForm({ ...orgForm, lastName: e.target.value })} />
+                          </FormField>
                         </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>State *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="California" 
-                            value={orgForm.state}
-                            onChange={(e) => setOrgForm({ ...orgForm, state: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
+                        <div className="grid-2">
+                          <FormField label="Email">
+                            <FormInput type="email" placeholder="alex@org.com" value={orgForm.email} onChange={(e) => setOrgForm({ ...orgForm, email: e.target.value })} />
+                          </FormField>
+                          <FormField label="Phone">
+                            <FormInput type="tel" placeholder="+1 (555) 777-6666" value={orgForm.phone} onChange={(e) => setOrgForm({ ...orgForm, phone: e.target.value })} />
+                          </FormField>
                         </div>
                       </div>
-
-                      <div className="grid-2">
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>Country *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            readOnly
-                            value={orgForm.country}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-hover)', color: 'var(--color-text-muted)' }} 
-                          />
+                      <FormField label="Organization document" hint="PDF, JPG, or PNG — optional for demo.">
+                        <div style={{ position: 'relative', border: '2px dashed var(--color-border)', borderRadius: '8px', padding: '14px', textAlign: 'center', background: 'var(--color-surface-hover)', cursor: 'pointer' }}>
+                          <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileChange} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }} />
+                          <Upload size={20} style={{ color: 'var(--color-primary)', margin: '0 auto 4px' }} />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{uploadedFileName || 'Tap to upload a document'}</span>
                         </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 500 }}>City *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="San Francisco" 
-                            value={orgForm.city}
-                            onChange={(e) => setOrgForm({ ...orgForm, city: e.target.value })}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} 
-                          />
-                        </div>
-                      </div>
-
-                      {/* Contact Person */}
-                      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', marginTop: '4px' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>PRIMARY CONTACT PERSON</span>
-                        
-                        <div className="flex flex-col gap-sm">
-                          <div className="grid-2">
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '4px', fontWeight: 500 }}>First Name *</label>
-                              <input 
-                                type="text" 
-                                required 
-                                placeholder="Alex" 
-                                value={orgForm.firstName}
-                                onChange={(e) => setOrgForm({ ...orgForm, firstName: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} 
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '4px', fontWeight: 500 }}>Last Name *</label>
-                              <input 
-                                type="text" 
-                                required 
-                                placeholder="Rivera" 
-                                value={orgForm.lastName}
-                                onChange={(e) => setOrgForm({ ...orgForm, lastName: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} 
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid-2">
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '4px', fontWeight: 500 }}>Email Address *</label>
-                              <input 
-                                type="email" 
-                                required 
-                                placeholder="alex@templegroup.org" 
-                                value={orgForm.email}
-                                onChange={(e) => setOrgForm({ ...orgForm, email: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} 
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '4px', fontWeight: 500 }}>Phone (US Only) *</label>
-                              <input 
-                                type="tel" 
-                                required 
-                                placeholder="+1 (555) 777-6666" 
-                                value={orgForm.phone}
-                                onChange={(e) => setOrgForm({ ...orgForm, phone: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} 
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Documents Upload */}
-                      <div style={{ marginTop: '4px' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 600 }}>Upload Organization Document *</label>
-                        <div style={{ position: 'relative', border: '2px dashed var(--color-border)', borderRadius: '8px', padding: '14px', textAlign: 'center', background: 'var(--color-surface-hover)', transition: 'border-color 0.2s', cursor: 'pointer' }}>
-                          <input 
-                            type="file" 
-                            accept=".pdf,.png,.jpg,.jpeg"
-                            onChange={handleFileChange}
-                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0, cursor: 'pointer', width: '100%' }}
-                          />
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <Upload size={20} style={{ color: 'var(--color-primary)' }} />
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{uploadedFileName || 'Select Registration Certificate / EIN Letter'}</span>
-                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>Supports PDF, JPG, PNG (Max 5MB)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-xs" style={{ marginTop: '4px' }}>
-                        <label style={{ display: 'flex', gap: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                          <input 
-                            type="checkbox" 
-                            required
-                            checked={orgForm.agreeRepresentation}
-                            onChange={(e) => setOrgForm({ ...orgForm, agreeRepresentation: e.target.checked })}
-                            style={{ marginTop: '2px', accentColor: 'var(--color-primary)' }}
-                          />
-                          <span>I confirm that I am authorised to represent this organization. *</span>
-                        </label>
-                        <label style={{ display: 'flex', gap: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                          <input 
-                            type="checkbox" 
-                            required
-                            checked={orgForm.agreeTerms}
-                            onChange={(e) => setOrgForm({ ...orgForm, agreeTerms: e.target.checked })}
-                            style={{ marginTop: '2px', accentColor: 'var(--color-primary)' }}
-                          />
-                          <span>I agree to the [Terms &amp; Conditions](file:///terms) and [Privacy Policy](file:///privacy). *</span>
-                        </label>
-                      </div>
+                      </FormField>
                     </div>
                   )}
 
@@ -674,36 +450,13 @@ export default function Login() {
                 /* LOGIN FORM */
                 <form onSubmit={handleLoginSubmit} className="flex flex-col gap-md">
                   {!showOtp ? (
-                    <div>
-                      <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Email Address or Phone Number</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={inputVal}
-                        onChange={(e) => setInputVal(e.target.value)}
-                        placeholder="Enter email or phone" 
-                        style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }} 
-                      />
-                    </div>
+                    <FormField label="Email or phone" hint="Or use a demo profile below to skip this step.">
+                      <FormInput type="text" value={inputVal} onChange={(e) => setInputVal(e.target.value)} placeholder="you@email.com" />
+                    </FormField>
                   ) : (
-                    <div>
-                      <div className="flex justify-between items-center" style={{ marginBottom: 'var(--spacing-xs)' }}>
-                        <label style={{ fontWeight: 500 }}>Enter 6-Digit OTP</label>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>Sent to {inputVal}</span>
-                      </div>
-                      <input 
-                        type="text" 
-                        required 
-                        maxLength={6}
-                        value={otpVal}
-                        onChange={(e) => setOtpVal(e.target.value.replace(/\D/g, ''))}
-                        placeholder="123456" 
-                        style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', fontFamily: 'inherit', letterSpacing: '4px', textAlign: 'center', fontSize: '1.5rem', fontWeight: 700 }} 
-                      />
-                      <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '6px', textAlign: 'center' }}>
-                        Tip: Enter the code dispatched in the alert window to log in.
-                      </p>
-                    </div>
+                    <FormField label="Verification code" hint={`Sent to ${inputVal}. Use 123456 in demo mode.`}>
+                      <FormInput type="text" maxLength={6} value={otpVal} onChange={(e) => setOtpVal(e.target.value.replace(/\D/g, ''))} placeholder="123456" style={{ letterSpacing: '4px', textAlign: 'center', fontSize: '1.25rem', fontWeight: 700 }} />
+                    </FormField>
                   )}
 
                   <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-sm)', padding: '12px', fontWeight: 600 }}>
@@ -722,30 +475,13 @@ export default function Login() {
 
         {/* Demo Quick Logins Card */}
         {!isSignup && !signupSuccess && (
-          <Card style={{ padding: 'var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <Card compact>
             <div className="flex items-center gap-xs" style={{ marginBottom: '12px', color: 'var(--color-primary)' }}>
               <Sparkles size={16} />
-              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Demo Quick Login Profiles</span>
+              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Try a demo profile</span>
             </div>
             <div className="flex flex-col gap-sm">
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('host')} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  padding: '10px 14px', 
-                  borderRadius: 'var(--radius-md)', 
-                  border: '1px solid var(--color-border)', 
-                  background: 'var(--color-surface-hover)', 
-                  color: 'var(--color-text)',
-                  textAlign: 'left',
-                  transition: 'border-color var(--transition-fast)'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
-              >
+              <button type="button" onClick={() => handleQuickLogin('host')} className="demo-login-btn">
                 <div className="flex items-center gap-sm">
                   <User size={18} style={{ color: 'var(--color-primary)' }} />
                   <div>
@@ -756,24 +492,7 @@ export default function Login() {
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-primary)', padding: '2px 8px', background: 'rgba(79,70,229,0.1)', borderRadius: 'var(--radius-full)' }}>Host Dashboard</span>
               </button>
 
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('admin')} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  padding: '10px 14px', 
-                  borderRadius: 'var(--radius-md)', 
-                  border: '1px solid var(--color-border)', 
-                  background: 'var(--color-surface-hover)', 
-                  color: 'var(--color-text)',
-                  textAlign: 'left',
-                  transition: 'border-color var(--transition-fast)'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
-              >
+              <button type="button" onClick={() => handleQuickLogin('admin')} className="demo-login-btn">
                 <div className="flex items-center gap-sm">
                   <Lock size={18} style={{ color: '#0ea5e9' }} />
                   <div>
@@ -784,24 +503,7 @@ export default function Login() {
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0ea5e9', padding: '2px 8px', background: 'rgba(14,165,233,0.1)', borderRadius: 'var(--radius-full)' }}>Admin Portal</span>
               </button>
               
-              <button 
-                type="button" 
-                onClick={() => handleQuickLogin('guest')} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  padding: '10px 14px', 
-                  borderRadius: 'var(--radius-md)', 
-                  border: '1px solid var(--color-border)', 
-                  background: 'var(--color-surface-hover)', 
-                  color: 'var(--color-text)',
-                  textAlign: 'left',
-                  transition: 'border-color var(--transition-fast)'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
-              >
+              <button type="button" onClick={() => handleQuickLogin('guest')} className="demo-login-btn">
                 <div className="flex items-center gap-sm">
                   <Users size={18} style={{ color: 'var(--color-accent)' }} />
                   <div>
