@@ -7,6 +7,8 @@ import GuestDashboard from './pages/GuestDashboard'
 import CreateEvent from './pages/CreateEvent'
 import EventPage from './pages/EventPage'
 import RsvpFlow from './pages/RsvpFlow'
+import FeedbackPage from './pages/FeedbackPage'
+import AdminDashboard from './pages/AdminDashboard'
 import { mockStore } from './utils/mockStore'
 import { Sparkles } from 'lucide-react'
 
@@ -36,6 +38,8 @@ function DashboardWrapper() {
   const toggleRole = (role) => {
     const updated = role === 'host' 
       ? { role: 'host', name: 'Alex Rivera', email: 'alex@safalevent.com', phone: '+1 (555) 999-8888' }
+      : role === 'admin'
+      ? { role: 'admin', name: 'Super Admin', email: 'admin@safalevent.com', phone: '+1 (555) 000-0000' }
       : { role: 'guest', name: 'Alice Vance', email: 'alice@example.com', phone: '+1 (555) 123-4567' };
     
     mockStore.setCurrentUser(updated);
@@ -50,6 +54,8 @@ function DashboardWrapper() {
     <div style={{ position: 'relative' }}>
       {user.role === 'host' ? (
         <HostDashboard onLogout={handleLogout} />
+      ) : user.role === 'admin' ? (
+        <AdminDashboard onLogout={handleLogout} />
       ) : (
         <GuestDashboard onLogout={handleLogout} />
       )}
@@ -92,6 +98,22 @@ function DashboardWrapper() {
           Host
         </button>
         <button 
+          onClick={() => toggleRole('admin')} 
+          style={{ 
+            background: user.role === 'admin' ? '#0ea5e9' : 'none', 
+            color: user.role === 'admin' ? 'white' : 'var(--color-text)', 
+            border: '1px solid var(--color-border)', 
+            borderRadius: 'var(--radius-sm)', 
+            padding: '5px 10px', 
+            fontSize: '0.75rem', 
+            cursor: 'pointer', 
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
+        >
+          Admin
+        </button>
+        <button 
           onClick={() => toggleRole('guest')} 
           style={{ 
             background: user.role === 'guest' ? 'var(--color-accent)' : 'none', 
@@ -121,6 +143,7 @@ function App() {
       <Route path="/create" element={<CreateEvent />} />
       <Route path="/e/:eventId" element={<EventPage />} />
       <Route path="/rsvp/:eventId" element={<RsvpFlow />} />
+      <Route path="/feedback/:eventId" element={<FeedbackPage />} />
     </Routes>
   )
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, HelpCircle, MessageSquare, ArrowRight, X, CheckCircle, Smile, Plus, ArrowLeft, Send } from 'lucide-react';
+import { Calendar, MapPin, Users, HelpCircle, MessageSquare, ArrowRight, X, CheckCircle, Smile, Plus, ArrowLeft, Send, Check, Timer } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -28,6 +28,24 @@ export default function EventPage() {
   });
   const [authError, setAuthError] = useState('');
   const [verificationSuccess, setVerificationSuccess] = useState(false);
+
+  // New Guest OTP States
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [rsvpSession, setRsvpSession] = useState(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [rsvpOtp, setRsvpOtp] = useState('');
+
+  // Resend Cooldown Effect
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
   const [isWaitlisted, setIsWaitlisted] = useState(false);
 
   // Guest actions state (if logged in/already RSVP'd)
@@ -101,9 +119,13 @@ export default function EventPage() {
   const isRsvpClosed = event.rsvpStatus === 'Closed' || deadlinePassed;
 
   const handleOpenRsvpDrawer = () => {
-    // If logged in, skip Auth step
     const user = mockStore.getCurrentUser();
     if (user && user.email && user.role === 'guest') {
+      const names = user.name.split(' ');
+      setFirstName(names[0] || '');
+      setLastName(names.slice(1).join(' ') || '');
+      setEmail(user.email);
+      setPhone(user.phone || '');
       setRsvpForm({
         ...rsvpForm,
         emailOrPhone: user.email,
@@ -112,51 +134,114 @@ export default function EventPage() {
       setDrawerStep(2);
     } else {
       setDrawerStep(1);
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setPhone('');
+      setRsvpSession(null);
+      setRsvpOtp('');
     }
+    setAuthError('');
     setShowDrawer(true);
   };
 
-  const handleAuthSubmit = (e) => {
+  const handleContactSubmit = (e) => {
     e.preventDefault();
-    if (rsvpForm.otp === '123456' || rsvpForm.otp.length >= 4) {
-      // Mock successful verification
-      setVerificationSuccess(true);
-      setTimeout(() => {
-        setVerificationSuccess(false);
-        setDrawerStep(2);
-      }, 1000);
-    } else {
-      setAuthError('Invalid OTP. Enter any 6-digit code to log in.');
+    setAuthError('');
+
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim()) {
+      setAuthError('Please fill in all contact fields.');
+      return;
     }
+
+    // OTP Bypass check: loginless behavior
+    const skipOtp = mockStore.checkRecentRsvpVerification(event.id, email.trim(), phone.trim());
+    if (skipOtp) {
+      setRsvpForm(prev => ({
+        ...prev,
+        name: `${firstName} ${lastName}`,
+        emailOrPhone: email
+      }));
+      setDrawerStep(2);
+      return;
+    }
+
+    const session = mockStore.createRsvpSession(event.id, {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      phone: phone.trim()
+    });
+
+    setRsvpSession(session);
+    setResendCooldown(30);
+    setRsvpOtp('');
+    setDrawerStep(1.5);
+
+    alert(`[Simulated Multi-Channel Delivery]\nVerification code sent to:\nEmail (${email}) & SMS (${phone})\n\nOTP Code: ${session.otpCode}`);
+  };
+
+  const handleRsvpOtpVerifySubmit = (e) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (rsvpOtp.trim().length !== 6) {
+      setAuthError('Please enter a valid 6-digit OTP code.');
+      return;
+    }
+
+    const res = mockStore.verifyRsvpSession(rsvpSession.id, rsvpOtp);
+    if (!res.success) {
+      setAuthError(res.error);
+      return;
+    }
+
+    setRsvpForm(prev => ({
+      ...prev,
+      name: `${firstName} ${lastName}`,
+      emailOrPhone: email
+    }));
+
+    setVerificationSuccess(true);
+    setTimeout(() => {
+      setVerificationSuccess(false);
+      setDrawerStep(2);
+    }, 1000);
+  };
+
+  const handleResendRsvpOtp = () => {
+    if (resendCooldown > 0 || !rsvpSession) return;
+
+    const newSession = mockStore.createRsvpSession(event.id, rsvpSession.guestData);
+    setRsvpSession(newSession);
+    setResendCooldown(30);
+    setRsvpOtp('');
+    setAuthError('');
+
+    alert(`[SMS/Email Resent] OTP Code: ${newSession.otpCode}`);
   };
 
   const handleConfirmRsvpSubmit = (e) => {
     e.preventDefault();
     
-    // Set user session if not exists
     mockStore.setCurrentUser({
       role: 'guest',
-      name: rsvpForm.name,
-      email: rsvpForm.emailOrPhone.includes('@') ? rsvpForm.emailOrPhone : `${rsvpForm.name.toLowerCase().replace(/\s+/g, '')}@example.com`,
-      phone: !rsvpForm.emailOrPhone.includes('@') ? rsvpForm.emailOrPhone : '+1 (555) 123-4567'
+      name: `${firstName} ${lastName}`,
+      email: email,
+      phone: phone
     });
 
-    const userEmail = rsvpForm.emailOrPhone.includes('@') ? rsvpForm.emailOrPhone : `${rsvpForm.name.toLowerCase().replace(/\s+/g, '')}@example.com`;
-    const userPhone = !rsvpForm.emailOrPhone.includes('@') ? rsvpForm.emailOrPhone : '+1 (555) 123-4567';
-
-    // Determine status (waitlist if host approval required and status is 'going')
     const finalStatus = (event.approvalRequired && rsvpForm.status === 'going') ? 'waitlist' : rsvpForm.status;
 
     mockStore.addRSVP(event.id, {
-      name: rsvpForm.name,
-      email: userEmail,
-      phone: userPhone,
+      name: `${firstName} ${lastName}`,
+      email: email,
+      phone: phone,
       status: finalStatus,
       answers: rsvpForm.answers
     });
 
     setShowDrawer(false);
-    // Reload
     loadEventData();
   };
 
@@ -531,40 +616,146 @@ export default function EventPage() {
               <button onClick={() => setShowDrawer(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={24} /></button>
             </div>
 
-            {/* Drawer Step 1: Authentication */}
+            {/* Drawer Step 1: Guest Contact details */}
             {drawerStep === 1 && (
-              <form onSubmit={handleAuthSubmit} className="flex flex-col gap-md">
-                <p className="text-muted" style={{ fontSize: '0.875rem' }}>We verify your spot via a quick OTP code sent to your email or phone.</p>
+              <form onSubmit={handleContactSubmit} className="flex flex-col gap-md">
+                <p className="text-muted" style={{ fontSize: '0.875rem' }}>We verify your spot via a quick OTP code sent to your email and phone.</p>
                 
-                <div>
-                  <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Email Address or Mobile Number</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="guest@example.com or +1 (555) 123-4567"
-                    value={rsvpForm.emailOrPhone}
-                    onChange={(e) => setRsvpForm({ ...rsvpForm, emailOrPhone: e.target.value })}
-                    style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
-                  />
+                {authError && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid #ef4444', color: '#ef4444', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    {authError}
+                  </div>
+                )}
+
+                <div className="grid-2">
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>First Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Alice"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Last Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Vance"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Verify 6-Digit OTP</label>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Email Address *</label>
+                  <input 
+                    type="email" 
+                    required 
+                    placeholder="alice@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                <div className="grid-2">
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Phone (US Only) *</label>
+                    <input 
+                      type="tel" 
+                      required 
+                      placeholder="+1 (555) 123-4567"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', fontWeight: 500 }}>Country *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      readOnly
+                      value="USA"
+                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', background: '#f8fafc', color: 'var(--color-text-muted)' }}
+                    />
+                  </div>
+                </div>
+
+                <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-sm)', padding: '12px' }}>
+                  Continue to Verification
+                </Button>
+              </form>
+            )}
+
+            {/* Drawer Step 1.5: OTP Verification */}
+            {drawerStep === 1.5 && rsvpSession && (
+              <form onSubmit={handleRsvpOtpVerifySubmit} className="flex flex-col gap-md">
+                <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                  <p className="text-muted" style={{ fontSize: '0.875rem' }}>
+                    Enter the 6-digit verification code we sent to your email and phone.
+                  </p>
+                  <div style={{ margin: '12px auto', background: 'rgba(79, 70, 229, 0.06)', border: '1px dashed rgba(79, 70, 229, 0.3)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                    Active Code: {rsvpSession.otpCode}
+                  </div>
+                </div>
+
+                {authError && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid #ef4444', color: '#ef4444', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    {authError}
+                  </div>
+                )}
+
+                {verificationSuccess && (
+                  <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', color: '#22c55e', padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                    <Check size={16} /> Spot Verified! Loading RSVP details...
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', fontWeight: 500 }}>6-Digit OTP *</label>
                   <input 
                     type="text" 
                     required 
-                    placeholder="123456"
-                    value={rsvpForm.otp}
-                    onChange={(e) => setRsvpForm({ ...rsvpForm, otp: e.target.value })}
-                    style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', textAlign: 'center', letterSpacing: '4px' }}
+                    maxLength={6}
+                    value={rsvpOtp}
+                    onChange={(e) => setRsvpOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456" 
+                    style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', letterSpacing: '8px', textAlign: 'center', fontSize: '1.5rem', fontWeight: 700 }} 
                   />
-                  {authError && <p style={{ color: 'var(--color-accent)', fontSize: '0.75rem', marginTop: '4px' }}>{authError}</p>}
-                  <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '4px' }}>Note: Enter any 6-digit code to bypass during testing.</p>
+                  <p className="text-muted" style={{ fontSize: '0.75rem', marginTop: '6px', textAlign: 'center' }}>
+                    Max 5 attempts. Resending code invalidates the previous OTP.
+                  </p>
                 </div>
 
-                <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-sm)' }}>
+                <Button variant="primary" type="submit" style={{ width: '100%', padding: '12px', fontWeight: 600 }}>
                   Verify Verification Code
                 </Button>
+
+                <div className="flex justify-between items-center" style={{ marginTop: '8px', fontSize: '0.8rem' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => { setDrawerStep(1); setAuthError(''); }}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <ArrowLeft size={14} /> Back to details
+                  </button>
+
+                  <button 
+                    type="button" 
+                    disabled={resendCooldown > 0}
+                    onClick={handleResendRsvpOtp}
+                    style={{ background: 'none', border: 'none', color: resendCooldown > 0 ? 'var(--color-text-muted)' : 'var(--color-primary)', fontWeight: 600, cursor: resendCooldown > 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Timer size={14} /> {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                  </button>
+                </div>
               </form>
             )}
 

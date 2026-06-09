@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X, 
-  Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw, BarChart, ToggleLeft
+  Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw, BarChart, ToggleLeft,
+  Compass, Star
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -16,7 +17,11 @@ export default function HostDashboard({ onLogout }) {
   // State for events, RSVPs, global stats
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(null); // Managed event ID
-  const [selectedEventTab, setSelectedEventTab] = useState('overview'); // overview, guests, polls, comments, edit
+  const [selectedEventTab, setSelectedEventTab] = useState('overview'); // overview, guests, polls, comments, edit, notifications
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState('rsvp'); // rsvp, reminder, feedback
+  const [previewMode, setPreviewMode] = useState('email'); // email or sms
+  const [viewLogDetail, setViewLogDetail] = useState(null);
+  const [schedulerRunResult, setSchedulerRunResult] = useState(null);
   
   // Dialog state
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
@@ -56,7 +61,23 @@ export default function HostDashboard({ onLogout }) {
     allowPhotoUploads: false,
     enablePayments: false,
     ticketPrice: 0,
-    questions: []
+    questions: [],
+    
+    // Notification engine defaults
+    sendRsvpConfirmationEmail: true,
+    sendRsvpConfirmationSms: true,
+    sendPreEventReminders: true,
+    sendPostEventFeedbackEmail: true,
+    sendPostEventFeedbackSms: false,
+    reminder1Offset: 24,
+    reminder2Enabled: false,
+    reminder2Offset: 3,
+    feedbackDelay: 3,
+    templates: {
+      rsvp: { subject: "", body: "" },
+      reminder: { subject: "", body: "" },
+      feedback: { subject: "", body: "" }
+    }
   });
 
   const loadDashboardData = () => {
@@ -139,7 +160,23 @@ export default function HostDashboard({ onLogout }) {
         allowPhotoUploads: evt.allowPhotoUploads !== undefined ? evt.allowPhotoUploads : false,
         enablePayments: evt.enablePayments !== undefined ? evt.enablePayments : false,
         ticketPrice: evt.ticketPrice || 0,
-        questions: evt.questions || []
+        questions: evt.questions || [],
+        
+        // Notification settings
+        sendRsvpConfirmationEmail: evt.sendRsvpConfirmationEmail !== undefined ? evt.sendRsvpConfirmationEmail : true,
+        sendRsvpConfirmationSms: evt.sendRsvpConfirmationSms !== undefined ? evt.sendRsvpConfirmationSms : true,
+        sendPreEventReminders: evt.sendPreEventReminders !== undefined ? evt.sendPreEventReminders : true,
+        sendPostEventFeedbackEmail: evt.sendPostEventFeedbackEmail !== undefined ? evt.sendPostEventFeedbackEmail : true,
+        sendPostEventFeedbackSms: evt.sendPostEventFeedbackSms !== undefined ? evt.sendPostEventFeedbackSms : false,
+        reminder1Offset: evt.reminder1Offset !== undefined ? evt.reminder1Offset : 24,
+        reminder2Enabled: evt.reminder2Enabled !== undefined ? evt.reminder2Enabled : false,
+        reminder2Offset: evt.reminder2Offset !== undefined ? evt.reminder2Offset : 3,
+        feedbackDelay: evt.feedbackDelay !== undefined ? evt.feedbackDelay : 3,
+        templates: evt.templates || {
+          rsvp: { subject: "", body: "" },
+          reminder: { subject: "", body: "" },
+          feedback: { subject: "", body: "" }
+        }
       });
     }
   };
@@ -178,6 +215,28 @@ export default function HostDashboard({ onLogout }) {
   // Broadcast Message
   const handleSendBroadcast = (e) => {
     e.preventDefault();
+    
+    // Log broadcast to notification logs for all targeted guests
+    const targetGuests = managedEventRsvps.filter(r => {
+      if (broadcastTarget === 'all') return r.status === 'going' || r.status === 'maybe';
+      if (broadcastTarget === 'going') return r.status === 'going';
+      if (broadcastTarget === 'maybe') return r.status === 'maybe';
+      return r.email === broadcastTarget; // Individual guest
+    });
+
+    targetGuests.forEach(guest => {
+      const subject = mockStore.renderTemplate(broadcastSubject, managedEvent, guest);
+      const body = mockStore.renderTemplate(broadcastMessage, managedEvent, guest);
+      mockStore.addNotificationLog(selectedEventId, {
+        rsvpId: guest.id,
+        guestEmail: guest.email,
+        type: 'broadcast',
+        channel: 'Email',
+        subject,
+        body
+      });
+    });
+
     setBroadcastSent(true);
     setTimeout(() => {
       setShowBroadcastModal(false);
@@ -219,10 +278,42 @@ export default function HostDashboard({ onLogout }) {
     loadDashboardData();
 
     if (dateChanged || locationChanged) {
+      const goingGuests = eventRsvps.filter(r => r.status === 'going' || r.status === 'maybe');
+      goingGuests.forEach(guest => {
+        const subject = `Event Updated: ${editEventForm.title}`;
+        const body = `Hi ${guest.name},\n\nWe wanted to let you know that the details for the event "${editEventForm.title}" have been updated.\n\nNew Details:\nDate: ${editEventForm.date}\nTime: ${editEventForm.time}\nLocation: ${editEventForm.location}\n\nManage RSVP: http://localhost:5173/dashboard`;
+        
+        mockStore.addNotificationLog(selectedEventId, {
+          rsvpId: guest.id,
+          guestEmail: guest.email,
+          type: 'broadcast',
+          channel: 'Email',
+          subject,
+          body
+        });
+      });
       alert('Event details updated successfully! 📧 An automatic email update has been broadcast to all registered guests notifying them of the new schedule or venue.');
     } else {
       alert('Event settings updated successfully!');
     }
+  };
+
+  const handleNotificationsSubmit = (e) => {
+    e.preventDefault();
+    mockStore.updateEvent(selectedEventId, {
+      sendRsvpConfirmationEmail: editEventForm.sendRsvpConfirmationEmail,
+      sendRsvpConfirmationSms: editEventForm.sendRsvpConfirmationSms,
+      sendPreEventReminders: editEventForm.sendPreEventReminders,
+      sendPostEventFeedbackEmail: editEventForm.sendPostEventFeedbackEmail,
+      sendPostEventFeedbackSms: editEventForm.sendPostEventFeedbackSms,
+      reminder1Offset: editEventForm.reminder1Offset,
+      reminder2Enabled: editEventForm.reminder2Enabled,
+      reminder2Offset: editEventForm.reminder2Offset,
+      feedbackDelay: editEventForm.feedbackDelay,
+      templates: editEventForm.templates
+    });
+    loadDashboardData();
+    alert('Notification settings and templates saved successfully!');
   };
 
   const handleDuplicateEvent = (eventId) => {
@@ -497,6 +588,7 @@ export default function HostDashboard({ onLogout }) {
               <button onClick={() => setSelectedEventTab('polls')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'polls' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'polls' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Polls ({managedEventPolls.length})</button>
               <button onClick={() => setSelectedEventTab('comments')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Comments ({managedEventComments.length})</button>
               <button onClick={() => setSelectedEventTab('edit')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'edit' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'edit' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Details Editor</button>
+              <button onClick={() => setSelectedEventTab('notifications')} style={{ background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem', color: selectedEventTab === 'notifications' ? 'var(--color-primary)' : 'var(--color-text-muted)', borderBottom: selectedEventTab === 'notifications' ? '2px solid var(--color-primary)' : '2px solid transparent' }}>Notifications</button>
             </div>
 
             {/* --- Event Sub-Tab Content --- */}
@@ -577,6 +669,84 @@ export default function HostDashboard({ onLogout }) {
                     </div>
                   </Card>
                 </div>
+
+                {/* Event Feedback Section */}
+                {(() => {
+                  const eventFeedback = mockStore.getFeedbackResponses(managedEvent.id);
+                  if (eventFeedback.length > 0) {
+                    const avgEventRating = (eventFeedback.reduce((sum, f) => sum + f.rating, 0) / eventFeedback.length).toFixed(1);
+                    return (
+                      <div style={{ marginTop: '24px' }}>
+                        <h4 style={{ fontSize: '1.1rem', marginBottom: '12px', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <MessageSquare size={18} /> Guest Feedback & Satisfaction
+                        </h4>
+                        <div className="grid-2">
+                          <Card style={{ padding: '16px' }}>
+                            <h5 style={{ fontSize: '0.95rem', marginBottom: '12px', fontWeight: 600 }}>Ratings Breakdown</h5>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                              <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fbbf24', lineHeight: 1 }}>
+                                  {avgEventRating}
+                                </div>
+                                <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', marginTop: '6px' }}>
+                                  {[1, 2, 3, 4, 5].map(star => {
+                                    const active = star <= Math.round(Number(avgEventRating));
+                                    return <Star key={star} size={12} fill={active ? '#fbbf24' : 'none'} stroke={active ? '#fbbf24' : '#cbd5e1'} />;
+                                  })}
+                                </div>
+                                <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '4px' }}>{eventFeedback.length} responses</div>
+                              </div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {[5, 4, 3, 2, 1].map(stars => {
+                                  const count = eventFeedback.filter(fb => fb.rating === stars).length;
+                                  const pct = (count / eventFeedback.length) * 100;
+                                  return (
+                                    <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem' }}>
+                                      <span style={{ width: '30px', textAlign: 'right', fontWeight: 500 }}>{stars} ★</span>
+                                      <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${pct}%`, height: '100%', background: '#fbbf24' }}></div>
+                                      </div>
+                                      <span style={{ width: '20px', color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>{count}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </Card>
+
+                          <Card style={{ padding: '16px' }}>
+                            <h5 style={{ fontSize: '0.95rem', marginBottom: '12px', fontWeight: 600 }}>Review Comments</h5>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px' }}>
+                              {eventFeedback.map(fb => (
+                                <div key={fb.id} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', fontSize: '0.8rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, marginBottom: '2px' }}>
+                                    <span>{fb.name}</span>
+                                    <div style={{ display: 'flex', gap: '1px' }}>
+                                      {[1, 2, 3, 4, 5].map(star => (
+                                        <Star key={star} size={8} fill={star <= fb.rating ? '#fbbf24' : 'none'} stroke={star <= fb.rating ? '#fbbf24' : '#cbd5e1'} />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {fb.comments && <p style={{ margin: '4px 0 0 0', color: '#475569', fontStyle: 'italic', fontSize: '0.75rem' }}>"{fb.comments}"</p>}
+                                </div>
+                              ))}
+                            </div>
+                          </Card>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ marginTop: '24px' }}>
+                      <h4 style={{ fontSize: '1.1rem', marginBottom: '12px', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <MessageSquare size={18} /> Guest Feedback & Satisfaction
+                      </h4>
+                      <Card style={{ padding: '24px', textAlign: 'center' }}>
+                        <p className="text-muted" style={{ fontSize: '0.875rem', margin: 0 }}>No guest feedback responses received for this event yet.</p>
+                      </Card>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -1264,6 +1434,444 @@ export default function HostDashboard({ onLogout }) {
                 </form>
               </div>
             )}
+
+            {selectedEventTab === 'notifications' && (
+              <div>
+                <form onSubmit={handleNotificationsSubmit} className="flex flex-col gap-md">
+                  <div className="grid-2">
+                    
+                    {/* LEFT COLUMN: Controls & Simulator */}
+                    <div className="flex flex-col gap-md">
+                      
+                      {/* Toggles */}
+                      <Card style={{ padding: 'var(--spacing-md)' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
+                          <Bell size={18} /> General Channels Toggles
+                        </h4>
+                        
+                        <div className="flex flex-col gap-sm" style={{ fontSize: '0.875rem' }}>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span style={{ fontWeight: 600 }}>Send RSVP Confirmation Emails</span>
+                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Instantly email booking ID and details to guest on RSVP.</p>
+                            </div>
+                            <label className="switch">
+                              <input 
+                                type="checkbox" 
+                                checked={editEventForm.sendRsvpConfirmationEmail} 
+                                onChange={(e) => setEditEventForm({ ...editEventForm, sendRsvpConfirmationEmail: e.target.checked })}
+                              />
+                              <span className="slider"></span>
+                            </label>
+                          </div>
+
+                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
+                            <div>
+                              <span style={{ fontWeight: 600 }}>Send RSVP Confirmation SMS</span>
+                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Send confirmation text to guest's phone number.</p>
+                            </div>
+                            <label className="switch">
+                              <input 
+                                type="checkbox" 
+                                checked={editEventForm.sendRsvpConfirmationSms} 
+                                onChange={(e) => setEditEventForm({ ...editEventForm, sendRsvpConfirmationSms: e.target.checked })}
+                              />
+                              <span className="slider"></span>
+                            </label>
+                          </div>
+
+                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
+                            <div>
+                              <span style={{ fontWeight: 600 }}>Send Pre-Event Reminders</span>
+                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Send automated emails before the event starts.</p>
+                            </div>
+                            <label className="switch">
+                              <input 
+                                type="checkbox" 
+                                checked={editEventForm.sendPreEventReminders} 
+                                onChange={(e) => setEditEventForm({ ...editEventForm, sendPreEventReminders: e.target.checked })}
+                              />
+                              <span className="slider"></span>
+                            </label>
+                          </div>
+
+                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
+                            <div>
+                              <span style={{ fontWeight: 600 }}>Send Post-Event Feedback Email</span>
+                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Automatically ask for feedback and star ratings after the event.</p>
+                            </div>
+                            <label className="switch">
+                              <input 
+                                type="checkbox" 
+                                checked={editEventForm.sendPostEventFeedbackEmail} 
+                                onChange={(e) => setEditEventForm({ ...editEventForm, sendPostEventFeedbackEmail: e.target.checked })}
+                              />
+                              <span className="slider"></span>
+                            </label>
+                          </div>
+
+                          <div className="flex justify-between items-center" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
+                            <div>
+                              <span style={{ fontWeight: 600 }}>Send Post-Event Feedback SMS</span>
+                              <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Send text survey link to attendee phone numbers.</p>
+                            </div>
+                            <label className="switch">
+                              <input 
+                                type="checkbox" 
+                                checked={editEventForm.sendPostEventFeedbackSms} 
+                                onChange={(e) => setEditEventForm({ ...editEventForm, sendPostEventFeedbackSms: e.target.checked })}
+                              />
+                              <span className="slider"></span>
+                            </label>
+                          </div>
+                        </div>
+                      </Card>
+
+                      {/* Schedule Controls */}
+                      <Card style={{ padding: 'var(--spacing-md)' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
+                          <Calendar size={18} /> Schedule Timing Controls
+                        </h4>
+                        
+                        <div className="flex flex-col gap-md" style={{ fontSize: '0.875rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Reminder 1 timing</label>
+                            <select 
+                              value={editEventForm.reminder1Offset}
+                              onChange={(e) => setEditEventForm({ ...editEventForm, reminder1Offset: Number(e.target.value) })}
+                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                              disabled={!editEventForm.sendPreEventReminders}
+                            >
+                              <option value="48">48 hours before start</option>
+                              <option value="24">24 hours before start</option>
+                              <option value="12">12 hours before start</option>
+                              <option value="3">3 hours before start</option>
+                            </select>
+                          </div>
+
+                          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
+                            <div className="flex justify-between items-center" style={{ marginBottom: '8px' }}>
+                              <span style={{ fontWeight: 600 }}>Enable Second Reminder</span>
+                              <label className="switch">
+                                <input 
+                                  type="checkbox" 
+                                  checked={editEventForm.reminder2Enabled} 
+                                  onChange={(e) => setEditEventForm({ ...editEventForm, reminder2Enabled: e.target.checked })}
+                                  disabled={!editEventForm.sendPreEventReminders}
+                                />
+                                <span className="slider"></span>
+                              </label>
+                            </div>
+
+                            {editEventForm.reminder2Enabled && (
+                              <div>
+                                <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Reminder 2 timing</label>
+                                <select 
+                                  value={editEventForm.reminder2Offset}
+                                  onChange={(e) => setEditEventForm({ ...editEventForm, reminder2Offset: Number(e.target.value) })}
+                                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                                  disabled={!editEventForm.sendPreEventReminders}
+                                >
+                                  <option value="12">12 hours before start</option>
+                                  <option value="6">6 hours before start</option>
+                                  <option value="3">3 hours before start</option>
+                                  <option value="1">1 hour before start</option>
+                                </select>
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
+                            <label style={{ display: 'block', fontWeight: 600, marginBottom: '4px' }}>Post-event Feedback delay</label>
+                            <select 
+                              value={editEventForm.feedbackDelay}
+                              onChange={(e) => setEditEventForm({ ...editEventForm, feedbackDelay: Number(e.target.value) })}
+                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                              disabled={!editEventForm.sendPostEventFeedbackEmail}
+                            >
+                              <option value="2">2 hours after event ends</option>
+                              <option value="3">3 hours after event ends</option>
+                              <option value="12">12 hours after event ends</option>
+                              <option value="24">24 hours after event ends</option>
+                              <option value="48">48 hours after event ends</option>
+                            </select>
+                          </div>
+                        </div>
+                      </Card>
+
+                      {/* Virtual Cron Simulator */}
+                      <Card style={{ padding: 'var(--spacing-md)', background: 'rgba(79,70,229,0.02)', border: '1px dashed var(--color-primary)' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
+                          <RefreshCw size={18} /> System Scheduler Simulator
+                        </h4>
+                        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '12px' }}>
+                          SafalEvents dispatches scheduled reminders hourly. Click below to simulate running the cron job runner for this event right now.
+                        </p>
+                        
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const dispatched = mockStore.runScheduledJobs(managedEvent.id);
+                            setSchedulerRunResult({ count: dispatched.length, logs: dispatched });
+                            loadDashboardData();
+                          }}
+                          className="btn btn-outline"
+                          style={{ width: '100%', padding: '10px', fontSize: '0.875rem' }}
+                        >
+                          Trigger virtual cron job check
+                        </button>
+
+                        {schedulerRunResult && (
+                          <div style={{ marginTop: '12px', padding: '10px', borderRadius: '6px', background: schedulerRunResult.count > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(148,163,184,0.08)', border: schedulerRunResult.count > 0 ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(148,163,184,0.2)', fontSize: '0.8rem' }}>
+                            {schedulerRunResult.count > 0 ? (
+                              <span>🎉 Successfully dispatched <strong>{schedulerRunResult.count}</strong> notifications:
+                                <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                                  {schedulerRunResult.logs.map((log, i) => (
+                                    <li key={i}>{log.channel} {log.type} to {log.guestEmail}</li>
+                                  ))}
+                                </ul>
+                              </span>
+                            ) : (
+                              <span>ℹ️ Virtual cron ran. No notifications were due to send at this time. (Check dates and templates)</span>
+                            )}
+                          </div>
+                        )}
+                      </Card>
+
+                    </div>
+
+                    {/* RIGHT COLUMN: Template Editor & Realtime Live Preview */}
+                    <div className="flex flex-col gap-md">
+                      
+                      {/* Template Editor */}
+                      <Card style={{ padding: 'var(--spacing-md)' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '12px' }}>Template Text Customizer</h4>
+                        
+                        {/* Selector Tabs */}
+                        <div className="flex gap-xs" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '12px', paddingBottom: '8px' }}>
+                          {['rsvp', 'reminder', 'feedback'].map(key => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setSelectedTemplateKey(key)}
+                              style={{
+                                background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer',
+                                fontSize: '0.8rem', fontWeight: 600,
+                                color: selectedTemplateKey === key ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                borderBottom: selectedTemplateKey === key ? '2px solid var(--color-primary)' : '2px solid transparent'
+                              }}
+                            >
+                              {key === 'rsvp' ? 'RSVP Confirm' : key === 'reminder' ? 'Reminder 24h/3h' : 'Post-Event Feedback'}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Subject & Wording inputs */}
+                        <div className="flex flex-col gap-sm">
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Subject Line</label>
+                            <input 
+                              type="text"
+                              value={editEventForm.templates[selectedTemplateKey]?.subject || ''}
+                              onChange={(e) => {
+                                const updated = { ...editEventForm.templates };
+                                updated[selectedTemplateKey].subject = e.target.value;
+                                setEditEventForm({ ...editEventForm, templates: updated });
+                              }}
+                              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Wording Text</label>
+                            <textarea 
+                              rows="6"
+                              value={editEventForm.templates[selectedTemplateKey]?.body || ''}
+                              onChange={(e) => {
+                                const updated = { ...editEventForm.templates };
+                                updated[selectedTemplateKey].body = e.target.value;
+                                setEditEventForm({ ...editEventForm, templates: updated });
+                              }}
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                              required
+                            ></textarea>
+                          </div>
+
+                          {/* Placeholder Variables Cheat Sheet */}
+                          <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                            <strong style={{ color: 'var(--color-primary)' }}>Dynamic Placeholders:</strong>
+                            <div className="flex gap-xs" style={{ flexWrap: 'wrap', marginTop: '4px' }}>
+                              {['{{guest_name}}', '{{event_name}}', '{{event_date}}', '{{event_start_time}}', '{{booking_id}}', '{{manage_rsvp_link}}', '{{feedback_survey_link}}'].map(v => (
+                                <code key={v} style={{ background: 'white', padding: '2px 4px', borderRadius: '3px', border: '1px solid #e2e8f0', color: '#0f172a' }}>{v}</code>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+
+                      {/* Realtime Live rendering Viewport */}
+                      <Card style={{ padding: 'var(--spacing-md)', background: '#f8fafc' }}>
+                        <div className="flex justify-between items-center" style={{ marginBottom: '12px' }}>
+                          <h4 style={{ fontSize: '0.9rem', fontWeight: 600 }}>Real-Time Dispatch Preview</h4>
+                          <div className="flex gap-xs">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewMode('email')}
+                              style={{
+                                background: previewMode === 'email' ? 'var(--color-primary)' : 'white',
+                                color: previewMode === 'email' ? 'white' : 'var(--color-text-muted)',
+                                border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer'
+                              }}
+                            >
+                              Email Client
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewMode('sms')}
+                              style={{
+                                background: previewMode === 'sms' ? 'var(--color-primary)' : 'white',
+                                color: previewMode === 'sms' ? 'white' : 'var(--color-text-muted)',
+                                border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer'
+                              }}
+                            >
+                              SMS Bubble
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Rendering Preview */}
+                        {(() => {
+                          const dummyGuest = { name: "Alice Vance", email: "alice@example.com", phone: "+1 (555) 123-4567", id: "rsvp-alice" };
+                          const templateSubject = editEventForm.templates[selectedTemplateKey]?.subject || '';
+                          const templateBody = editEventForm.templates[selectedTemplateKey]?.body || '';
+                          
+                          const resolvedSubject = mockStore.renderTemplate(templateSubject, managedEvent, dummyGuest);
+                          const resolvedBody = mockStore.renderTemplate(templateBody, managedEvent, dummyGuest);
+
+                          if (previewMode === 'email') {
+                            return (
+                              <div style={{ background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                                <div style={{ background: '#f1f5f9', padding: '6px 12px', borderBottom: '1px solid #cbd5e1', fontSize: '0.75rem', color: '#64748b', textAlign: 'left' }}>
+                                  <strong>To:</strong> {dummyGuest.email} <br/>
+                                  <strong>Subject:</strong> {resolvedSubject || 'Event Update'}
+                                </div>
+                                <div style={{ padding: '16px', fontSize: '0.8rem', color: '#334155', whiteSpace: 'pre-line', minHeight: '120px', textAlign: 'left' }}>
+                                  {resolvedBody}
+                                  
+                                  {selectedTemplateKey === 'rsvp' && (
+                                    <div style={{ marginTop: '16px' }}>
+                                      <a href="#" onClick={(e) => e.preventDefault()} style={{ display: 'inline-block', padding: '8px 16px', background: 'var(--color-primary)', color: 'white', borderRadius: '6px', textDecoration: 'none', fontWeight: 600 }}>Manage My RSVP</a>
+                                    </div>
+                                  )}
+                                  {selectedTemplateKey === 'feedback' && (
+                                    <div style={{ marginTop: '16px' }}>
+                                      <a href="#" onClick={(e) => e.preventDefault()} style={{ display: 'inline-block', padding: '8px 16px', background: '#16a34a', color: 'white', borderRadius: '6px', textDecoration: 'none', fontWeight: 600 }}>Submit Feedback Survey</a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            // SMS Bubble preview
+                            return (
+                              <div style={{ maxWidth: '320px', margin: '0 auto', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '16px 8px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                                <div style={{ textAlign: 'center', fontSize: '0.7rem', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                                  iMessage / SMS Conversation
+                                </div>
+                                <div style={{
+                                  alignSelf: 'flex-start',
+                                  background: '#e5e5ea',
+                                  color: '#000',
+                                  padding: '8px 12px',
+                                  borderRadius: '16px',
+                                  fontSize: '0.75rem',
+                                  maxWidth: '85%',
+                                  whiteSpace: 'pre-line',
+                                  textAlign: 'left'
+                                }}>
+                                  {resolvedBody.length > 180 ? resolvedBody.substring(0, 177) + '...' : resolvedBody}
+                                </div>
+                              </div>
+                            );
+                          }
+                        })()}
+                      </Card>
+
+                    </div>
+
+                  </div>
+
+                  {/* Save button footer */}
+                  <div className="flex gap-sm justify-end" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', marginTop: '12px' }}>
+                    <Button variant="ghost" type="button" onClick={() => setSelectedEventId(null)}>Cancel</Button>
+                    <Button variant="primary" type="submit">Save Notification Configuration</Button>
+                  </div>
+                </form>
+
+                {/* DISPATCH LOGS SECTION */}
+                <div style={{ marginTop: '24px' }}>
+                  <Card style={{ padding: 0 }} className="glass-surface">
+                    <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                      <h4 style={{ fontSize: '1.1rem', margin: 0 }}>Notification Dispatch History Logs</h4>
+                      <p className="text-muted" style={{ fontSize: '0.8rem', margin: '2px 0 0 0' }}>Logs of all triggers and broadcast deliveries executed for this event.</p>
+                    </div>
+
+                    {mockStore.getNotificationLogs(managedEvent.id).length > 0 ? (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="premium-table">
+                          <thead>
+                            <tr>
+                              <th>Date Sent</th>
+                              <th>Recipient Email</th>
+                              <th>Channel</th>
+                              <th>Alert Type</th>
+                              <th>Subject</th>
+                              <th>Details</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {mockStore.getNotificationLogs(managedEvent.id).map(log => (
+                              <tr key={log.id}>
+                                <td>{new Date(log.sentAt).toLocaleString()}</td>
+                                <td>{log.guestEmail}</td>
+                                <td>
+                                  <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(79,70,229,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
+                                    {log.channel}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '0.75rem', textTransform: 'capitalize', fontWeight: 500 }}>
+                                    {log.type}
+                                  </span>
+                                </td>
+                                <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {log.subject}
+                                </td>
+                                <td>
+                                  <Button 
+                                    variant="ghost" 
+                                    onClick={() => setViewLogDetail(log)}
+                                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                                  >
+                                    View Message
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted" style={{ padding: '24px 0' }}>
+                        No dispatched notifications logged yet. (Submit a guest RSVP to generate logs)
+                      </div>
+                    )}
+                  </Card>
+                </div>
+                
+              </div>
+            )}
           </div>
         )}
 
@@ -1391,6 +1999,96 @@ export default function HostDashboard({ onLogout }) {
                 </div>
               </Card>
             </div>
+
+            {/* Global Feedback Survey Analytics */}
+            {(() => {
+              const allEvents = mockStore.getEvents();
+              const allFeedback = allEvents.reduce((acc, evt) => {
+                const evFeedbacks = mockStore.getFeedbackResponses(evt.id).map(fb => ({ ...fb, eventTitle: evt.title }));
+                return [...acc, ...evFeedbacks];
+              }, []);
+
+              if (allFeedback.length > 0) {
+                const avgRating = (allFeedback.reduce((sum, fb) => sum + fb.rating, 0) / allFeedback.length).toFixed(1);
+                return (
+                  <div style={{ marginTop: '24px' }}>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Guest Feedback & Satisfaction (Aggregate)</h3>
+                    <div className="grid-2">
+                      <Card style={{ padding: 'var(--spacing-md)' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', fontWeight: 600 }}>Ratings Overview</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '16px' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '3rem', fontWeight: 800, color: '#fbbf24', lineHeight: 1 }}>
+                              {avgRating}
+                            </div>
+                            <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', margin: '8px 0 4px 0' }}>
+                              {[1, 2, 3, 4, 5].map(star => {
+                                const active = star <= Math.round(Number(avgRating));
+                                return <Star key={star} size={14} fill={active ? '#fbbf24' : 'none'} stroke={active ? '#fbbf24' : '#cbd5e1'} />;
+                              })}
+                            </div>
+                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>{allFeedback.length} reviews</span>
+                          </div>
+
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {[5, 4, 3, 2, 1].map(stars => {
+                              const count = allFeedback.filter(fb => fb.rating === stars).length;
+                              const pct = (count / allFeedback.length) * 100;
+                              return (
+                                <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
+                                  <span style={{ width: '40px', textAlign: 'right', fontWeight: 500 }}>{stars} ★</span>
+                                  <div style={{ flex: 1, height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${pct}%`, height: '100%', background: '#fbbf24', borderRadius: '4px' }}></div>
+                                  </div>
+                                  <span style={{ width: '24px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{count}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </Card>
+
+                      <Card style={{ padding: 'var(--spacing-md)' }}>
+                        <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-sm)', fontWeight: 600 }}>Recent Feedback Reviews</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                          {allFeedback.slice().reverse().map(fb => (
+                            <div key={fb.id} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '10px', fontSize: '0.85rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <span style={{ fontWeight: 600 }}>{fb.name}</span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{new Date(fb.submittedAt).toLocaleDateString()}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', gap: '1px' }}>
+                                  {[1, 2, 3, 4, 5].map(star => (
+                                    <Star key={star} size={10} fill={star <= fb.rating ? '#fbbf24' : 'none'} stroke={star <= fb.rating ? '#fbbf24' : '#cbd5e1'} />
+                                  ))}
+                                </div>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '6px' }}>on "{fb.eventTitle}"</span>
+                              </div>
+                              {fb.comments && <p style={{ color: '#475569', margin: '4px 0 0 0', fontStyle: 'italic', fontSize: '0.8rem' }}>"{fb.comments}"</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div style={{ marginTop: '24px' }}>
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Guest Feedback & Satisfaction (Aggregate)</h3>
+                  <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(79,70,229,0.1)', color: 'var(--color-primary)', marginBottom: '12px' }}>
+                      <MessageSquare size={24} />
+                    </div>
+                    <h4 style={{ fontSize: '1rem', margin: '0 0 4px 0', fontWeight: 600 }}>No Guest Feedback Yet</h4>
+                    <p className="text-muted" style={{ fontSize: '0.85rem', maxWidth: '360px', margin: '0 auto' }}>
+                      Feedback surveys are automatically sent after events complete. Responses will show up here.
+                    </p>
+                  </Card>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1495,6 +2193,95 @@ export default function HostDashboard({ onLogout }) {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Message Details Modal */}
+      {viewLogDetail && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '600px',
+            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: '16px',
+            maxHeight: '85vh'
+          }}>
+            <div className="flex justify-between items-center" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+                  <span>Message Details</span>
+                  <span style={{ 
+                    fontSize: '0.7rem', 
+                    padding: '2px 8px', 
+                    borderRadius: '9999px', 
+                    background: viewLogDetail.channel === 'Email' ? 'rgba(79,70,229,0.1)' : 'rgba(34,197,94,0.1)', 
+                    color: viewLogDetail.channel === 'Email' ? 'var(--color-primary)' : '#16a34a',
+                    fontWeight: 600
+                  }}>
+                    {viewLogDetail.channel}
+                  </span>
+                  <span style={{ 
+                    fontSize: '0.7rem', 
+                    padding: '2px 8px', 
+                    borderRadius: '9999px', 
+                    background: '#f1f5f9', 
+                    color: '#475569',
+                    fontWeight: 500,
+                    textTransform: 'capitalize'
+                  }}>
+                    {viewLogDetail.type}
+                  </span>
+                </h3>
+                <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>
+                  Sent to {viewLogDetail.guestEmail} on {new Date(viewLogDetail.sentAt).toLocaleString()}
+                </p>
+              </div>
+              <button onClick={() => setViewLogDetail(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
+              {viewLogDetail.channel === 'Email' ? (
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ background: '#f8fafc', padding: '12px', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem', textAlign: 'left' }}>
+                    <div><strong>From:</strong> Alex Rivera &lt;alex@safalevent.com&gt;</div>
+                    <div><strong>To:</strong> {viewLogDetail.guestEmail}</div>
+                    <div style={{ marginTop: '4px' }}><strong>Subject:</strong> {viewLogDetail.subject}</div>
+                  </div>
+                  <div style={{ padding: '16px', background: '#fff', fontSize: '0.85rem', whiteSpace: 'pre-wrap', color: '#334155', minHeight: '150px', textAlign: 'left' }}>
+                    {viewLogDetail.body}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ maxWidth: '360px', margin: '0 auto', width: '100%' }}>
+                  <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                    <div style={{ textAlign: 'center', fontSize: '0.7rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
+                      iMessage / SMS Conversation
+                    </div>
+                    <div style={{
+                      alignSelf: 'flex-start',
+                      background: '#e5e5ea',
+                      color: '#000',
+                      padding: '10px 14px',
+                      borderRadius: '18px',
+                      fontSize: '0.8rem',
+                      maxWidth: '85%',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: '1.4',
+                      textAlign: 'left'
+                    }}>
+                      {viewLogDetail.body}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px', display: 'flex', justifyContent: 'end' }}>
+              <Button variant="ghost" onClick={() => setViewLogDetail(null)}>Close</Button>
+            </div>
           </div>
         </div>
       )}

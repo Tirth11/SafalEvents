@@ -183,22 +183,139 @@ const defaultAnalytics = {
   }
 };
 
+const defaultTemplates = {
+  rsvp: {
+    subject: "You're going to {{event_name}} on {{event_date}}",
+    body: "Hey {{guest_name}},\n\nYour spot is confirmed for {{event_name}}! Here are the details:\n\nDate: {{event_date}}\nTime: {{event_start_time}}\nLocation: {{event_location}}\nGuests: {{guest_guest_count}}\nBooking ID: {{booking_id}}\n\nManage your RSVP here:\n{{manage_rsvp_link}}\n\nBest,\n{{host_name}}"
+  },
+  reminder: {
+    subject: "Reminder: {{event_name}} starts soon!",
+    body: "Hey {{guest_name}},\n\nThis is a quick reminder that {{event_name}} is starting soon.\n\nDate: {{event_date}}\nTime: {{event_start_time}}\nLocation: {{event_location}}\n\nIf you need to change your RSVP status, you can do so here:\n{{manage_rsvp_link}}\n\nSee you there!\n{{host_name}}"
+  },
+  feedback: {
+    subject: "How was {{event_name}}?",
+    body: "Hey {{guest_name}},\n\nThank you for attending {{event_name}}! We would love to know how your experience was. Please take 2 minutes to fill out our short feedback survey:\n\n{{feedback_survey_link}}\n\nThank you,\n{{host_name}}"
+  }
+};
+
+const defaultUsers = [
+  {
+    id: 'u1',
+    role: 'host',
+    name: 'Alex Rivera',
+    email: 'alex@safalevent.com',
+    phone: '+1 (555) 999-8888',
+    password: 'password123',
+    hostType: 'individual',
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'u2',
+    role: 'admin',
+    name: 'Super Admin',
+    email: 'admin@safalevent.com',
+    phone: '+1 (555) 000-0000',
+    password: 'password123',
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString()
+  }
+];
+
 // Initialize DB if not present
 const getDB = () => {
   const data = localStorage.getItem(STORE_KEY);
+  let db;
   if (!data) {
-    const initialDB = {
+    db = {
       events: defaultEvents,
       rsvps: defaultRSVPs,
       polls: defaultPolls,
       comments: defaultComments,
       currentUser: defaultUser,
-      analytics: defaultAnalytics
+      analytics: defaultAnalytics,
+      notificationLogs: [],
+      feedbackResponses: [],
+      users: defaultUsers,
+      signupSessions: [],
+      rsvpSessions: [],
+      verificationLogs: []
     };
-    localStorage.setItem(STORE_KEY, JSON.stringify(initialDB));
-    return initialDB;
+  } else {
+    try {
+      db = JSON.parse(data);
+    } catch (e) {
+      db = {
+        events: defaultEvents,
+        rsvps: defaultRSVPs,
+        polls: defaultPolls,
+        comments: defaultComments,
+        currentUser: defaultUser,
+        analytics: defaultAnalytics,
+        notificationLogs: [],
+        feedbackResponses: [],
+        users: defaultUsers,
+        signupSessions: [],
+        rsvpSessions: [],
+        verificationLogs: []
+      };
+    }
   }
-  return JSON.parse(data);
+
+  // Database Migrations for Notification Engine
+  if (!db.notificationLogs) {
+    db.notificationLogs = [];
+  }
+  if (!db.feedbackResponses) {
+    db.feedbackResponses = [];
+  }
+  if (!db.users) {
+    db.users = defaultUsers;
+  }
+  if (!db.signupSessions) {
+    db.signupSessions = [];
+  }
+  if (!db.rsvpSessions) {
+    db.rsvpSessions = [];
+  }
+  if (!db.verificationLogs) {
+    db.verificationLogs = [];
+  }
+
+  db.events = db.events.map(event => {
+    const defaults = {
+      sendRsvpConfirmationEmail: true,
+      sendRsvpConfirmationSms: true,
+      sendPreEventReminders: true,
+      sendPostEventFeedbackEmail: true,
+      sendPostEventFeedbackSms: false,
+      reminder1Offset: 24,
+      reminder2Enabled: false,
+      reminder2Offset: 3,
+      feedbackDelay: 3
+    };
+
+    Object.keys(defaults).forEach(key => {
+      if (event[key] === undefined) {
+        event[key] = defaults[key];
+      }
+    });
+
+    if (!event.templates) {
+      event.templates = { ...defaultTemplates };
+    } else {
+      ['rsvp', 'reminder', 'feedback'].forEach(tKey => {
+        if (!event.templates[tKey]) {
+          event.templates[tKey] = { ...defaultTemplates[tKey] };
+        }
+      });
+    }
+
+    return event;
+  });
+
+  localStorage.setItem(STORE_KEY, JSON.stringify(db));
+  return db;
 };
 
 const saveDB = (db) => {
@@ -242,6 +359,19 @@ export const mockStore = {
       reminderSchedule: '24h',
       hostAlerts: true,
       enablePayments: false,
+      
+      // Default notification settings
+      sendRsvpConfirmationEmail: true,
+      sendRsvpConfirmationSms: true,
+      sendPreEventReminders: true,
+      sendPostEventFeedbackEmail: true,
+      sendPostEventFeedbackSms: false,
+      reminder1Offset: 24,
+      reminder2Enabled: false,
+      reminder2Offset: 3,
+      feedbackDelay: 3,
+      templates: { ...defaultTemplates },
+      
       ...eventData
     };
     db.events.unshift(newEvent); // Add to beginning
@@ -300,6 +430,36 @@ export const mockStore = {
     };
     db.rsvps.push(newRsvp);
     saveDB(db);
+
+    // Dynamic Trigger for RSVP Confirmation
+    const event = db.events.find(e => e.id === eventId);
+    if (event) {
+      const templates = event.templates || defaultTemplates;
+      if (event.sendRsvpConfirmationEmail) {
+        const subject = mockStore.renderTemplate(templates.rsvp?.subject || defaultTemplates.rsvp.subject, event, newRsvp);
+        const body = mockStore.renderTemplate(templates.rsvp?.body || defaultTemplates.rsvp.body, event, newRsvp);
+        mockStore.addNotificationLog(eventId, {
+          rsvpId: newRsvp.id,
+          guestEmail: newRsvp.email,
+          type: 'rsvp',
+          channel: 'Email',
+          subject,
+          body
+        });
+      }
+      if (event.sendRsvpConfirmationSms) {
+        const body = mockStore.renderTemplate(templates.rsvp?.body || defaultTemplates.rsvp.body, event, newRsvp);
+        mockStore.addNotificationLog(eventId, {
+          rsvpId: newRsvp.id,
+          guestEmail: newRsvp.email,
+          type: 'rsvp',
+          channel: 'SMS',
+          subject: 'RSVP Confirmation',
+          body: body.length > 160 ? body.substring(0, 157) + '...' : body
+        });
+      }
+    }
+
     return newRsvp;
   },
 
@@ -425,5 +585,521 @@ export const mockStore = {
   getAllViews: () => {
     const db = getDB();
     return db.analytics.views;
+  },
+
+  // --- Notification Engine API ---
+  getNotificationLogs: (eventId) => {
+    const db = getDB();
+    if (!db.notificationLogs) db.notificationLogs = [];
+    return db.notificationLogs.filter(log => log.eventId === eventId);
+  },
+
+  addNotificationLog: (eventId, logData) => {
+    const db = getDB();
+    if (!db.notificationLogs) db.notificationLogs = [];
+    const newLog = {
+      id: 'log_' + Math.random().toString(36).substr(2, 9),
+      eventId,
+      sentAt: new Date().toISOString(),
+      ...logData
+    };
+    db.notificationLogs.unshift(newLog);
+    saveDB(db);
+    return newLog;
+  },
+
+  getFeedbackResponses: (eventId) => {
+    const db = getDB();
+    if (!db.feedbackResponses) db.feedbackResponses = [];
+    return db.feedbackResponses.filter(fb => fb.eventId === eventId);
+  },
+
+  submitFeedback: (eventId, feedbackData) => {
+    const db = getDB();
+    if (!db.feedbackResponses) db.feedbackResponses = [];
+    const newFeedback = {
+      id: 'fb_' + Math.random().toString(36).substr(2, 9),
+      eventId,
+      submittedAt: new Date().toISOString(),
+      ...feedbackData
+    };
+    db.feedbackResponses.push(newFeedback);
+    saveDB(db);
+    return newFeedback;
+  },
+
+  renderTemplate: (templateText, event, guest, customVars = {}) => {
+    if (!templateText) return '';
+    let rendered = templateText;
+    
+    // Setup dynamic template parameters
+    const variables = {
+      '{{event_name}}': event.title || '',
+      '{{event_date}}': event.date || '',
+      '{{event_start_time}}': event.time || '',
+      '{{event_end_time}}': event.endTime || '22:00',
+      '{{event_location}}': event.location || '',
+      '{{event_online_link}}': event.location?.includes('http') ? event.location : `http://localhost:5173/e/${event.id}`,
+      '{{host_name}}': 'Alex Rivera',
+      '{{manage_rsvp_link}}': `http://localhost:5173/dashboard`,
+      '{{guest_name}}': guest?.name || 'Valued Guest',
+      '{{guest_guest_count}}': String(guest?.guestCount || 1),
+      '{{booking_id}}': guest?.id?.toUpperCase() || 'RSVP-123',
+      '{{feedback_survey_link}}': `http://localhost:5173/feedback/${event.id}`,
+      '{{safalevent_support_email}}': 'support@safalevent.com',
+      ...customVars
+    };
+
+    Object.keys(variables).forEach(placeholder => {
+      const escapedPlaceholder = placeholder.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      rendered = rendered.replace(new RegExp(escapedPlaceholder, 'g'), variables[placeholder]);
+    });
+
+    return rendered;
+  },
+
+  runScheduledJobs: (eventId = null) => {
+    const db = getDB();
+    if (!db.notificationLogs) db.notificationLogs = [];
+    
+    const eventsToProcess = eventId 
+      ? db.events.filter(e => e.id === eventId)
+      : db.events;
+      
+    let logsDispatched = [];
+
+    eventsToProcess.forEach(event => {
+      // Find all going guests for this event
+      const rsvps = db.rsvps.filter(r => r.eventId === event.id && r.status === 'going');
+      const templates = event.templates || defaultTemplates;
+      
+      const eventDateTime = new Date(`${event.date}T${event.time}`);
+      const now = new Date();
+      const hoursDiffToStart = (eventDateTime - now) / (1000 * 60 * 60);
+
+      // Estimate event end time as start time + 4 hours if not explicitly defined
+      const eventEndDateTime = new Date(eventDateTime.getTime() + 4 * 60 * 60 * 1000);
+      const hoursDiffFromEnd = (now - eventEndDateTime) / (1000 * 60 * 60);
+
+      rsvps.forEach(rsvp => {
+        // --- Reminder 1 (24h default before start) ---
+        if (event.sendPreEventReminders) {
+          const r1Offset = event.reminder1Offset || 24;
+          const alreadySentR1 = db.notificationLogs.some(
+            log => log.eventId === event.id && 
+                   log.rsvpId === rsvp.id && 
+                   log.type === 'reminder' && 
+                   log.subject.includes('Reminder 1')
+          );
+
+          if (hoursDiffToStart <= r1Offset && hoursDiffToStart > 0 && !alreadySentR1) {
+            const subject = 'Reminder 1: ' + mockStore.renderTemplate(templates.reminder?.subject || defaultTemplates.reminder.subject, event, rsvp);
+            const body = mockStore.renderTemplate(templates.reminder?.body || defaultTemplates.reminder.body, event, rsvp);
+            
+            const newLog = mockStore.addNotificationLog(event.id, {
+              rsvpId: rsvp.id,
+              guestEmail: rsvp.email,
+              type: 'reminder',
+              channel: 'Email',
+              subject,
+              body
+            });
+            logsDispatched.push(newLog);
+          }
+        }
+
+        // --- Reminder 2 (3h default before start) ---
+        if (event.sendPreEventReminders && event.reminder2Enabled) {
+          const r2Offset = event.reminder2Offset || 3;
+          const alreadySentR2 = db.notificationLogs.some(
+            log => log.eventId === event.id && 
+                   log.rsvpId === rsvp.id && 
+                   log.type === 'reminder' && 
+                   log.subject.includes('Reminder 2')
+          );
+
+          if (hoursDiffToStart <= r2Offset && hoursDiffToStart > 0 && !alreadySentR2) {
+            const subject = 'Reminder 2: ' + mockStore.renderTemplate(templates.reminder?.subject || defaultTemplates.reminder.subject, event, rsvp);
+            const body = mockStore.renderTemplate(templates.reminder?.body || defaultTemplates.reminder.body, event, rsvp);
+            
+            const newLog = mockStore.addNotificationLog(event.id, {
+              rsvpId: rsvp.id,
+              guestEmail: rsvp.email,
+              type: 'reminder',
+              channel: 'Email',
+              subject,
+              body
+            });
+            logsDispatched.push(newLog);
+          }
+        }
+
+        // --- Post-event Feedback request (3h default after end) ---
+        if (event.sendPostEventFeedbackEmail) {
+          const feedbackDelay = event.feedbackDelay || 3;
+          const alreadySentFeedback = db.notificationLogs.some(
+            log => log.eventId === event.id && 
+                   log.rsvpId === rsvp.id && 
+                   log.type === 'feedback'
+          );
+
+          if (hoursDiffFromEnd >= feedbackDelay && !alreadySentFeedback) {
+            const subject = mockStore.renderTemplate(templates.feedback?.subject || defaultTemplates.feedback.subject, event, rsvp);
+            const body = mockStore.renderTemplate(templates.feedback?.body || defaultTemplates.feedback.body, event, rsvp);
+            
+            const newLog = mockStore.addNotificationLog(event.id, {
+              rsvpId: rsvp.id,
+              guestEmail: rsvp.email,
+              type: 'feedback',
+              channel: 'Email',
+              subject,
+              body
+            });
+            logsDispatched.push(newLog);
+            
+            if (event.sendPostEventFeedbackSms && rsvp.phone) {
+              const shortSmsBody = `How was ${event.title}? Let us know: http://localhost:5173/feedback/${event.id}`;
+              mockStore.addNotificationLog(event.id, {
+                rsvpId: rsvp.id,
+                guestEmail: rsvp.email,
+                type: 'feedback',
+                channel: 'SMS',
+                subject: 'Event Feedback Survey',
+                body: shortSmsBody
+              });
+            }
+          }
+        }
+      });
+    });
+    
+    return logsDispatched;
+  },
+
+  // --- Users, Signup & OTP Verification ---
+  getUsers: () => {
+    const db = getDB();
+    return db.users || [];
+  },
+
+  createUser: (userData) => {
+    const db = getDB();
+    const newUser = {
+      id: 'u_' + Math.random().toString(36).substr(2, 9),
+      createdAt: new Date().toISOString(),
+      ...userData
+    };
+    db.users.push(newUser);
+    saveDB(db);
+    return newUser;
+  },
+
+  updateUserStatus: (userId, status, rejectReason = '') => {
+    const db = getDB();
+    db.users = db.users.map(u => u.id === userId ? { ...u, status, rejectReason } : u);
+    saveDB(db);
+    
+    const user = db.users.find(u => u.id === userId);
+    if (user) {
+      mockStore.addNotificationLog(null, {
+        rsvpId: null,
+        guestEmail: user.email,
+        type: 'broadcast',
+        channel: 'Email',
+        subject: `Your SafalEvent Host Application Status: ${status}`,
+        body: status === 'ACTIVE' 
+          ? `Hello ${user.name},\n\nWe are pleased to inform you that your application as a host has been APPROVED! You can now log in to your host dashboard.\n\nBest,\nSafalEvent Admin Team`
+          : `Hello ${user.name},\n\nUnfortunately, your application as a host was rejected.\n\nReason: ${rejectReason}\n\nPlease update your profile details and re-apply if needed.\n\nBest,\nSafalEvent Admin Team`
+      });
+    }
+    return db.users.find(u => u.id === userId);
+  },
+
+  createSignupSession: (hostType, formData) => {
+    const db = getDB();
+    db.signupSessions = db.signupSessions.filter(s => s.formData.email !== formData.email);
+    
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    
+    const newSession = {
+      id: 'sess_' + Math.random().toString(36).substr(2, 9),
+      hostType,
+      formData,
+      otpCode: code,
+      otpExpiry: expiry,
+      attempts: 0,
+      createdAt: new Date().toISOString()
+    };
+    db.signupSessions.push(newSession);
+    saveDB(db);
+
+    const emailSubject = "Verify your SafalEvent host registration";
+    const emailBody = `Your SafalEvent verification code is ${code}. Valid for 10 minutes.`;
+    const smsBody = `SafalEvent code: ${code}. Valid for 10 minutes.`;
+
+    mockStore.addNotificationLog(null, {
+      rsvpId: null,
+      guestEmail: formData.email,
+      type: 'rsvp',
+      channel: 'Email',
+      subject: emailSubject,
+      body: emailBody
+    });
+
+    mockStore.addNotificationLog(null, {
+      rsvpId: null,
+      guestEmail: formData.email,
+      type: 'rsvp',
+      channel: 'SMS',
+      subject: 'Host OTP Code',
+      body: smsBody
+    });
+
+    mockStore.logVerificationAttempt({
+      type: 'signup',
+      targetEmail: formData.email,
+      targetPhone: formData.phone,
+      otpCode: code,
+      success: true,
+      message: 'OTP Code Generated & Sent to Email + SMS'
+    });
+
+    return newSession;
+  },
+
+  verifySignupSession: (sessionId, code) => {
+    const db = getDB();
+    const session = db.signupSessions.find(s => s.id === sessionId);
+    if (!session) {
+      return { success: false, error: 'Session not found. Please try again.' };
+    }
+
+    if (new Date() > new Date(session.otpExpiry)) {
+      mockStore.logVerificationAttempt({
+        type: 'signup',
+        targetEmail: session.formData.email,
+        targetPhone: session.formData.phone,
+        otpCode: code,
+        success: false,
+        message: 'OTP Expired'
+      });
+      return { success: false, error: 'OTP expired. Please request a new code.' };
+    }
+
+    if (session.attempts >= 5) {
+      mockStore.logVerificationAttempt({
+        type: 'signup',
+        targetEmail: session.formData.email,
+        targetPhone: session.formData.phone,
+        otpCode: code,
+        success: false,
+        message: 'Max attempts exceeded'
+      });
+      return { success: false, error: 'Maximum verification attempts exceeded. Please sign up again.' };
+    }
+
+    session.attempts += 1;
+    db.signupSessions = db.signupSessions.map(s => s.id === sessionId ? session : s);
+    saveDB(db);
+
+    if (session.otpCode !== code) {
+      mockStore.logVerificationAttempt({
+        type: 'signup',
+        targetEmail: session.formData.email,
+        targetPhone: session.formData.phone,
+        otpCode: code,
+        success: false,
+        message: `Incorrect code (Attempt ${session.attempts}/5)`
+      });
+      return { success: false, error: `Invalid code. ${5 - session.attempts} attempts remaining.` };
+    }
+
+    const userStatus = session.hostType === 'individual' ? 'ACTIVE' : 'PENDING_ADMIN_APPROVAL';
+    
+    const newUser = {
+      id: 'u_' + Math.random().toString(36).substr(2, 9),
+      role: 'host',
+      name: `${session.formData.firstName} ${session.formData.lastName}`,
+      email: session.formData.email,
+      phone: session.formData.phone,
+      password: session.formData.password || 'password123',
+      hostType: session.hostType,
+      orgProfile: session.hostType === 'organization' ? {
+        orgName: session.formData.orgName,
+        orgType: session.formData.orgType,
+        website: session.formData.website,
+        country: session.formData.country,
+        city: session.formData.city,
+        state: session.formData.state,
+        docs: session.formData.docs || ['mock_org_ein_letter.pdf']
+      } : null,
+      status: userStatus,
+      createdAt: new Date().toISOString()
+    };
+    
+    db.users.push(newUser);
+    db.signupSessions = db.signupSessions.filter(s => s.id !== sessionId);
+    saveDB(db);
+
+    mockStore.logVerificationAttempt({
+      type: 'signup',
+      targetEmail: session.formData.email,
+      targetPhone: session.formData.phone,
+      otpCode: code,
+      success: true,
+      message: 'Verification Successful'
+    });
+
+    return { success: true, user: newUser };
+  },
+
+  createRsvpSession: (eventId, guestData) => {
+    const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    if (!event) return null;
+
+    db.rsvpSessions = db.rsvpSessions.filter(s => s.eventId !== eventId || s.guestData.email !== guestData.email);
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    const newSession = {
+      id: 'r_sess_' + Math.random().toString(36).substr(2, 9),
+      eventId,
+      guestData,
+      otpCode: code,
+      otpExpiry: expiry,
+      attempts: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    db.rsvpSessions.push(newSession);
+    saveDB(db);
+
+    const emailSubject = `Verification code for ${event.title}`;
+    const emailBody = `Your code for ${event.title} is ${code}. Valid for 10 minutes.`;
+    const smsBody = `Code ${code} for ${event.title} on SafalEvent.`;
+
+    mockStore.addNotificationLog(eventId, {
+      rsvpId: null,
+      guestEmail: guestData.email,
+      type: 'rsvp',
+      channel: 'Email',
+      subject: emailSubject,
+      body: emailBody
+    });
+
+    mockStore.addNotificationLog(eventId, {
+      rsvpId: null,
+      guestEmail: guestData.email,
+      type: 'rsvp',
+      channel: 'SMS',
+      subject: 'RSVP OTP Code',
+      body: smsBody
+    });
+
+    mockStore.logVerificationAttempt({
+      type: 'rsvp',
+      targetEmail: guestData.email,
+      targetPhone: guestData.phone,
+      otpCode: code,
+      success: true,
+      message: 'OTP Code Generated & Sent to Email + SMS'
+    });
+
+    return newSession;
+  },
+
+  verifyRsvpSession: (sessionId, code) => {
+    const db = getDB();
+    const session = db.rsvpSessions.find(s => s.id === sessionId);
+    if (!session) {
+      return { success: false, error: 'Session not found. Please restart RSVP.' };
+    }
+
+    if (new Date() > new Date(session.otpExpiry)) {
+      mockStore.logVerificationAttempt({
+        type: 'rsvp',
+        targetEmail: session.guestData.email,
+        targetPhone: session.guestData.phone,
+        otpCode: code,
+        success: false,
+        message: 'OTP Expired'
+      });
+      return { success: false, error: 'OTP expired. Please request a new code.' };
+    }
+
+    if (session.attempts >= 5) {
+      mockStore.logVerificationAttempt({
+        type: 'rsvp',
+        targetEmail: session.guestData.email,
+        targetPhone: session.guestData.phone,
+        otpCode: code,
+        success: false,
+        message: 'Max attempts exceeded'
+      });
+      return { success: false, error: 'Maximum attempts exceeded. Please request a new code.' };
+    }
+
+    session.attempts += 1;
+    db.rsvpSessions = db.rsvpSessions.map(s => s.id === sessionId ? session : s);
+    saveDB(db);
+
+    if (session.otpCode !== code) {
+      mockStore.logVerificationAttempt({
+        type: 'rsvp',
+        targetEmail: session.guestData.email,
+        targetPhone: session.guestData.phone,
+        otpCode: code,
+        success: false,
+        message: `Incorrect code (Attempt ${session.attempts}/5)`
+      });
+      return { success: false, error: `Invalid code. ${5 - session.attempts} attempts remaining.` };
+    }
+
+    session.verified = true;
+    db.rsvpSessions = db.rsvpSessions.map(s => s.id === sessionId ? session : s);
+    saveDB(db);
+
+    mockStore.logVerificationAttempt({
+      type: 'rsvp',
+      targetEmail: session.guestData.email,
+      targetPhone: session.guestData.phone,
+      otpCode: code,
+      success: true,
+      message: 'Verification Successful'
+    });
+
+    return { success: true, guestData: session.guestData };
+  },
+
+  checkRecentRsvpVerification: (eventId, email, phone) => {
+    const db = getDB();
+    const existing = db.rsvps.find(r => r.eventId === eventId && (r.email === email || r.phone === phone));
+    if (existing) {
+      return true;
+    }
+    return false;
+  },
+
+  logVerificationAttempt: (logData) => {
+    const db = getDB();
+    if (!db.verificationLogs) db.verificationLogs = [];
+    const newLog = {
+      id: 'vlog_' + Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toISOString(),
+      ip: '192.168.4.15',
+      device: navigator.userAgent.includes('Mobile') ? 'Mobile App (iOS)' : 'Desktop Browser (Chrome/Windows)',
+      ...logData
+    };
+    db.verificationLogs.unshift(newLog);
+    saveDB(db);
+    return newLog;
+  },
+
+  getVerificationLogs: () => {
+    const db = getDB();
+    return db.verificationLogs || [];
   }
 };

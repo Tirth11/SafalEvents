@@ -33,9 +33,15 @@ export default function CreateEvent() {
     cancellationCutoff: 24, // hours
     requireCancellationReason: false,
 
-    guestConfirmation: true,
-    reminderSchedule: '24h', // 24h, 3h, none
-    hostAlerts: true,
+    sendRsvpConfirmationEmail: true,
+    sendRsvpConfirmationSms: true,
+    sendPreEventReminders: true,
+    sendPostEventFeedbackEmail: true,
+    sendPostEventFeedbackSms: false,
+    reminder1Offset: 24,
+    reminder2Enabled: false,
+    reminder2Offset: 3,
+    feedbackDelay: 3,
     
     allowComments: true,
     enablePayments: false,
@@ -404,28 +410,41 @@ export default function CreateEvent() {
               </div>
 
               {/* Notifications */}
-              <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }} className="flex flex-col gap-xs">
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 600 }}>Notifications & Alerts Defaults</h4>
+              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }} className="flex flex-col gap-xs">
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Bell size={14} className="text-primary" /> Notifications & Reminders Setup
+                </h4>
                 
-                <div className="flex justify-between items-center">
-                  <span style={{ fontSize: '0.8rem' }}>Guest confirmation emails</span>
-                  <label className="switch">
-                    <input type="checkbox" checked={formData.guestConfirmation} onChange={(e) => setFormData({ ...formData, guestConfirmation: e.target.checked })} />
+                <div className="flex justify-between items-center" style={{ marginTop: '4px' }}>
+                  <span style={{ fontSize: '0.8rem' }}>Send RSVP Confirmation Emails</span>
+                  <label className="switch" style={{ transform: 'scale(0.8)' }}>
+                    <input type="checkbox" checked={formData.sendRsvpConfirmationEmail} onChange={(e) => setFormData({ ...formData, sendRsvpConfirmationEmail: e.target.checked })} />
                     <span className="slider"></span>
                   </label>
                 </div>
-                
-                <div className="flex justify-between items-center" style={{ marginTop: '4px' }}>
-                  <span style={{ fontSize: '0.8rem' }}>Reminder Schedule</span>
-                  <select 
-                    value={formData.reminderSchedule} 
-                    onChange={(e) => setFormData({ ...formData, reminderSchedule: e.target.value })}
-                    style={{ padding: '4px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-                  >
-                    <option value="24h">24 Hours Before</option>
-                    <option value="3h">3 Hours Before</option>
-                    <option value="none">No Automated Reminders</option>
-                  </select>
+
+                <div className="flex justify-between items-center">
+                  <span style={{ fontSize: '0.8rem' }}>Send RSVP Confirmation SMS</span>
+                  <label className="switch" style={{ transform: 'scale(0.8)' }}>
+                    <input type="checkbox" checked={formData.sendRsvpConfirmationSms} onChange={(e) => setFormData({ ...formData, sendRsvpConfirmationSms: e.target.checked })} />
+                    <span className="slider"></span>
+                  </label>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span style={{ fontSize: '0.8rem' }}>Send Pre-Event Reminders (24h)</span>
+                  <label className="switch" style={{ transform: 'scale(0.8)' }}>
+                    <input type="checkbox" checked={formData.sendPreEventReminders} onChange={(e) => setFormData({ ...formData, sendPreEventReminders: e.target.checked })} />
+                    <span className="slider"></span>
+                  </label>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span style={{ fontSize: '0.8rem' }}>Send Post-Event Feedback Email</span>
+                  <label className="switch" style={{ transform: 'scale(0.8)' }}>
+                    <input type="checkbox" checked={formData.sendPostEventFeedbackEmail} onChange={(e) => setFormData({ ...formData, sendPostEventFeedbackEmail: e.target.checked })} />
+                    <span className="slider"></span>
+                  </label>
                 </div>
               </div>
 
