@@ -368,7 +368,7 @@ export default function HostDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeSidebar === 'events' ? 'rgba(79,70,229,0.08)' : 'transparent', 
+              background: activeSidebar === 'events' ? 'rgba(0,113,227,0.08)' : 'transparent', 
               color: activeSidebar === 'events' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
@@ -382,7 +382,7 @@ export default function HostDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeSidebar === 'audience' ? 'rgba(79,70,229,0.08)' : 'transparent', 
+              background: activeSidebar === 'audience' ? 'rgba(0,113,227,0.08)' : 'transparent', 
               color: activeSidebar === 'audience' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
@@ -396,7 +396,7 @@ export default function HostDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeSidebar === 'analytics' ? 'rgba(79,70,229,0.08)' : 'transparent', 
+              background: activeSidebar === 'analytics' ? 'rgba(0,113,227,0.08)' : 'transparent', 
               color: activeSidebar === 'analytics' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
@@ -410,7 +410,7 @@ export default function HostDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeSidebar === 'settings' ? 'rgba(79,70,229,0.08)' : 'transparent', 
+              background: activeSidebar === 'settings' ? 'rgba(0,113,227,0.08)' : 'transparent', 
               color: activeSidebar === 'settings' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
@@ -503,7 +503,7 @@ export default function HostDashboard({ onLogout }) {
                           <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-md)', background: event.cover ? `url(${event.cover}) center/cover` : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', flexShrink: 0 }}></div>
                           <div>
                             <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: event.status === 'Published' ? 'rgba(79,70,229,0.1)' : 'rgba(100,116,139,0.1)', color: event.status === 'Published' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>{event.status}</span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: event.status === 'Published' ? 'rgba(0,113,227,0.1)' : 'rgba(100,116,139,0.1)', color: event.status === 'Published' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>{event.status}</span>
                               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Code: {event.id}</span>
                             </div>
                             <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>{event.title}</h3>
@@ -556,7 +556,7 @@ export default function HostDashboard({ onLogout }) {
               <div className="flex justify-between items-start" style={{ flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
                 <div>
                   <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(79,70,229,0.1)', color: 'var(--color-primary)' }}>{managedEvent.status}</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>{managedEvent.status}</span>
                     <span className="text-muted" style={{ fontSize: '0.85rem' }}>Invite URL: localhost:5173/e/{managedEvent.id}</span>
                   </div>
                   <h1 style={{ fontSize: '2rem' }}>{managedEvent.title}</h1>
@@ -754,7 +754,7 @@ export default function HostDashboard({ onLogout }) {
             {selectedEventTab === 'guests' && (
               <Card style={{ padding: 0 }} className="glass-surface">
                 <div style={{ padding: 'var(--spacing-md)', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
-                  <h4 style={{ fontSize: '1.1rem', margin: 0 }} className="flex items-center gap-xs">Guest Signups <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: 'rgba(79,70,229,0.1)', color: 'var(--color-primary)', borderRadius: '12px' }}>{managedEventRsvps.length} Total</span></h4>
+                  <h4 style={{ fontSize: '1.1rem', margin: 0 }} className="flex items-center gap-xs">Guest Signups <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', borderRadius: '12px' }}>{managedEventRsvps.length} Total</span></h4>
                 </div>
                 
                 {managedEventRsvps.length > 0 ? (
@@ -1601,7 +1601,7 @@ export default function HostDashboard({ onLogout }) {
                       </Card>
 
                       {/* Virtual Cron Simulator */}
-                      <Card style={{ padding: 'var(--spacing-md)', background: 'rgba(79,70,229,0.02)', border: '1px dashed var(--color-primary)' }}>
+                      <Card style={{ padding: 'var(--spacing-md)', background: 'rgba(0,113,227,0.02)', border: '1px dashed var(--color-primary)' }}>
                         <h4 style={{ fontSize: '1rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
                           <RefreshCw size={18} /> System Scheduler Simulator
                         </h4>
@@ -1837,7 +1837,7 @@ export default function HostDashboard({ onLogout }) {
                                 <td>{new Date(log.sentAt).toLocaleString()}</td>
                                 <td>{log.guestEmail}</td>
                                 <td>
-                                  <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(79,70,229,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
+                                  <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(0,113,227,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
                                     {log.channel}
                                   </span>
                                 </td>
@@ -1943,7 +1943,7 @@ export default function HostDashboard({ onLogout }) {
                       <span>Total Page Views</span>
                       <span style={{ fontWeight: 600 }}>{totalViews} (100%)</span>
                     </div>
-                    <div style={{ height: '24px', background: 'rgba(79,70,229,0.1)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ height: '24px', background: 'rgba(0,113,227,0.1)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
                       <div style={{ height: '100%', background: 'var(--color-primary)', width: '100%' }}></div>
                     </div>
                   </div>
@@ -1952,7 +1952,7 @@ export default function HostDashboard({ onLogout }) {
                       <span>RSVP Drawer Opened</span>
                       <span style={{ fontWeight: 600 }}>{Math.round(totalViews * 0.45)} (45%)</span>
                     </div>
-                    <div style={{ height: '24px', background: 'rgba(79,70,229,0.1)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ height: '24px', background: 'rgba(0,113,227,0.1)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
                       <div style={{ height: '100%', background: 'var(--color-primary)', width: '45%' }}></div>
                     </div>
                   </div>
@@ -2079,7 +2079,7 @@ export default function HostDashboard({ onLogout }) {
                 <div style={{ marginTop: '24px' }}>
                   <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Guest Feedback & Satisfaction (Aggregate)</h3>
                   <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
-                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(79,70,229,0.1)', color: 'var(--color-primary)', marginBottom: '12px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', marginBottom: '12px' }}>
                       <MessageSquare size={24} />
                     </div>
                     <h4 style={{ fontSize: '1rem', margin: '0 0 4px 0', fontWeight: 600 }}>No Guest Feedback Yet</h4>
@@ -2218,7 +2218,7 @@ export default function HostDashboard({ onLogout }) {
                     fontSize: '0.7rem', 
                     padding: '2px 8px', 
                     borderRadius: '9999px', 
-                    background: viewLogDetail.channel === 'Email' ? 'rgba(79,70,229,0.1)' : 'rgba(34,197,94,0.1)', 
+                    background: viewLogDetail.channel === 'Email' ? 'rgba(0,113,227,0.1)' : 'rgba(34,197,94,0.1)', 
                     color: viewLogDetail.channel === 'Email' ? 'var(--color-primary)' : '#16a34a',
                     fontWeight: 600
                   }}>
@@ -2228,8 +2228,8 @@ export default function HostDashboard({ onLogout }) {
                     fontSize: '0.7rem', 
                     padding: '2px 8px', 
                     borderRadius: '9999px', 
-                    background: '#f1f5f9', 
-                    color: '#475569',
+                    background: 'var(--color-surface-hover)', 
+                    color: 'var(--color-text-muted)',
                     fontWeight: 500,
                     textTransform: 'capitalize'
                   }}>

@@ -553,8 +553,7 @@ export default function CreateEvent() {
             borderRadius: '24px',
             color: 'var(--color-text)',
             overflow: 'hidden',
-            boxShadow: '0 20px 40px rgba(15, 23, 42, 0.12)',
-            border: '1px solid rgba(255, 255, 255, 0.4)'
+            boxShadow: '0 20px 40px rgba(15, 23, 42, 0.08)'
           }}>
             
             {/* Event Cover / Gradient Banner */}

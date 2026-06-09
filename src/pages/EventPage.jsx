@@ -382,7 +382,7 @@ export default function EventPage() {
                         <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#4f46e5', marginBottom: '6px' }}>Waitlist ({waitlistGuests.length})</p>
                         <div className="flex gap-xs" style={{ flexWrap: 'wrap' }}>
                           {waitlistGuests.map(g => (
-                            <span key={g.id} style={{ fontSize: '0.8rem', background: 'rgba(79,70,229,0.06)', border: '1px solid rgba(79,70,229,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
+                            <span key={g.id} style={{ fontSize: '0.8rem', background: 'rgba(0, 113, 227, 0.06)', border: '1px solid rgba(0, 113, 227, 0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
                               {g.name}
                             </span>
                           ))}
@@ -426,11 +426,11 @@ export default function EventPage() {
                               >
                                 <div style={{
                                   padding: '8px 12px', borderRadius: '6px', border: hasVoted ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                  background: hasVoted ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-surface)', transition: 'background var(--transition-fast)',
+                                  background: hasVoted ? 'rgba(0, 113, 227, 0.1)' : 'var(--color-surface)', transition: 'background var(--transition-fast)',
                                   position: 'relative', overflow: 'hidden'
                                 }}>
                                   {/* Progress fill */}
-                                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: 'rgba(59, 130, 246, 0.1)', zIndex: 1, borderRadius: '6px' }}></div>
+                                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: 'rgba(0, 113, 227, 0.1)', zIndex: 1, borderRadius: '6px' }}></div>
                                   <div className="flex justify-between items-center" style={{ position: 'relative', zIndex: 2, fontSize: '0.85rem' }}>
                                     <span style={{ fontWeight: hasVoted ? 600 : 500 }}>{opt.text}</span>
                                     <span className="text-muted" style={{ fontSize: '0.75rem' }}>{opt.votes} ({percent}%)</span>
@@ -685,7 +685,7 @@ export default function EventPage() {
                   <p className="text-muted" style={{ fontSize: '0.875rem' }}>
                     Enter the 6-digit verification code we sent to your email and phone.
                   </p>
-                  <div style={{ margin: '12px auto', background: 'rgba(59, 130, 246, 0.08)', border: '1px dashed rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  <div style={{ margin: '12px auto', background: 'rgba(0, 113, 227, 0.08)', border: '1px dashed rgba(0, 113, 227, 0.3)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                     Active Code: {rsvpSession.otpCode}
                   </div>
                 </div>
@@ -767,7 +767,7 @@ export default function EventPage() {
                       onClick={() => setRsvpForm({ ...rsvpForm, status: 'going' })}
                       style={{
                         flex: 1, padding: '12px', borderRadius: '8px', border: rsvpForm.status === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: rsvpForm.status === 'going' ? 'rgba(79,70,229,0.05)' : 'white', cursor: 'pointer', fontWeight: 600
+                        background: rsvpForm.status === 'going' ? 'rgba(0, 113, 227, 0.05)' : 'white', cursor: 'pointer', fontWeight: 600
                       }}
                     >
                       {event.approvalRequired ? 'Request to Join' : 'Going'}
@@ -777,7 +777,7 @@ export default function EventPage() {
                       onClick={() => setRsvpForm({ ...rsvpForm, status: 'maybe' })}
                       style={{
                         flex: 1, padding: '12px', borderRadius: '8px', border: rsvpForm.status === 'maybe' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: rsvpForm.status === 'maybe' ? 'rgba(79,70,229,0.05)' : 'white', cursor: 'pointer', fontWeight: 600
+                        background: rsvpForm.status === 'maybe' ? 'rgba(0, 113, 227, 0.05)' : 'white', cursor: 'pointer', fontWeight: 600
                       }}
                     >
                       Maybe

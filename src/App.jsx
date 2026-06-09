@@ -69,7 +69,7 @@ function DashboardWrapper() {
           zIndex: 9999, 
           background: 'rgba(255, 255, 255, 0.95)', 
           backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(79, 70, 229, 0.3)', 
+          border: '1px solid var(--color-border)', 
           borderRadius: 'var(--radius-md)', 
           padding: '10px 14px', 
           boxShadow: 'var(--shadow-lg)', 

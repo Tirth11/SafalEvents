@@ -60,7 +60,7 @@ export default function AdminDashboard({ onLogout }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px' }}>
           <img src="/logo.png" alt="SafalEvents" style={{ height: '40px', borderRadius: '6px' }} />
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, background: 'rgba(14,165,233,0.1)', color: '#0ea5e9', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>Superadmin</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, background: 'rgba(0, 113, 227, 0.1)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>Superadmin</span>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
@@ -69,7 +69,7 @@ export default function AdminDashboard({ onLogout }) {
             style={{
               display: 'flex', alignItems: 'center', gap: '10px',
               width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'pending' ? 'rgba(79,70,229,0.06)' : 'transparent',
+              background: activeTab === 'pending' ? 'rgba(0, 113, 227, 0.08)' : 'transparent',
               color: activeTab === 'pending' ? 'var(--color-primary)' : 'var(--color-text-muted)',
               fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
             }}
@@ -81,7 +81,7 @@ export default function AdminDashboard({ onLogout }) {
             style={{
               display: 'flex', alignItems: 'center', gap: '10px',
               width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'all' ? 'rgba(79,70,229,0.06)' : 'transparent',
+              background: activeTab === 'all' ? 'rgba(0, 113, 227, 0.08)' : 'transparent',
               color: activeTab === 'all' ? 'var(--color-primary)' : 'var(--color-text-muted)',
               fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
             }}
@@ -93,7 +93,7 @@ export default function AdminDashboard({ onLogout }) {
             style={{
               display: 'flex', alignItems: 'center', gap: '10px',
               width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'logs' ? 'rgba(79,70,229,0.06)' : 'transparent',
+              background: activeTab === 'logs' ? 'rgba(0, 113, 227, 0.08)' : 'transparent',
               color: activeTab === 'logs' ? 'var(--color-primary)' : 'var(--color-text-muted)',
               fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
             }}

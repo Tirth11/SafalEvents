@@ -157,7 +157,7 @@ export default function GuestDashboard({ onLogout }) {
         {/* Sidebar */}
         <aside style={{ width: '260px', background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)', padding: 'var(--spacing-lg) var(--spacing-md)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: 'var(--spacing-xl)', padding: '0 var(--spacing-sm)' }}>
-            <div className="text-gradient" style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>Guest Center</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}>Guest Center</div>
           </div>
 
         <nav className="flex flex-col gap-sm" style={{ flex: 1 }}>
@@ -167,8 +167,8 @@ export default function GuestDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeTab === 'tickets' ? 'rgba(244,63,94,0.08)' : 'transparent', 
-              color: activeTab === 'tickets' ? 'var(--color-accent)' : 'var(--color-text-muted)', 
+              background: activeTab === 'tickets' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
+              color: activeTab === 'tickets' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
           >
@@ -181,8 +181,8 @@ export default function GuestDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeTab === 'explore' ? 'rgba(244,63,94,0.08)' : 'transparent', 
-              color: activeTab === 'explore' ? 'var(--color-accent)' : 'var(--color-text-muted)', 
+              background: activeTab === 'explore' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
+              color: activeTab === 'explore' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
           >
@@ -195,8 +195,8 @@ export default function GuestDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeTab === 'past' ? 'rgba(244,63,94,0.08)' : 'transparent', 
-              color: activeTab === 'past' ? 'var(--color-accent)' : 'var(--color-text-muted)', 
+              background: activeTab === 'past' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
+              color: activeTab === 'past' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
           >
@@ -209,8 +209,8 @@ export default function GuestDashboard({ onLogout }) {
             style={{ 
               width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
               padding: '10px 16px', 
-              background: activeTab === 'profile' ? 'rgba(244,63,94,0.08)' : 'transparent', 
-              color: activeTab === 'profile' ? 'var(--color-accent)' : 'var(--color-text-muted)', 
+              background: activeTab === 'profile' ? 'rgba(0, 113, 227, 0.08)' : 'transparent', 
+              color: activeTab === 'profile' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
               borderRadius: 'var(--radius-md)', fontWeight: 600 
             }}
           >
@@ -288,7 +288,7 @@ export default function GuestDashboard({ onLogout }) {
                           {rsvp.status === 'going' ? '✓ Confirmed' : '? Maybe'}
                         </span>
                         {rsvp.checkedIn && (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(79,70,229,0.1)', color: 'var(--color-primary)' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(0, 113, 227, 0.1)', color: 'var(--color-primary)' }}>
                             Checked In
                           </span>
                         )}
@@ -384,7 +384,7 @@ export default function GuestDashboard({ onLogout }) {
                         fontSize: '0.75rem', 
                         padding: '4px 10px', 
                         borderRadius: 'var(--radius-full)',
-                        background: rsvp.status === 'going' ? 'rgba(79,70,229,0.1)' : 'rgba(100,116,139,0.1)',
+                        background: rsvp.status === 'going' ? 'rgba(0, 113, 227, 0.1)' : 'rgba(100,116,139,0.1)',
                         color: rsvp.status === 'going' ? 'var(--color-primary)' : 'var(--color-text-muted)'
                       }}>
                         {rsvp.status === 'going' ? 'Attended' : 'Declined RSVP'}
@@ -491,7 +491,7 @@ export default function GuestDashboard({ onLogout }) {
 
             {/* Ticket Header */}
             <div style={{
-              background: 'linear-gradient(135deg, var(--color-accent) 0%, #e11d48 100%)',
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, #005bb5 100%)',
               padding: 'var(--spacing-lg) var(--spacing-md)', color: 'white', textAlign: 'center'
             }}>
               <Ticket size={36} style={{ marginBottom: '8px' }} />
@@ -585,7 +585,7 @@ export default function GuestDashboard({ onLogout }) {
                   onClick={() => setEditRsvpStatus('going')}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    background: editRsvpStatus === 'going' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text)'
+                    background: editRsvpStatus === 'going' ? 'rgba(0, 113, 227, 0.1)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text)'
                   }}
                 >
                   Going
@@ -595,7 +595,7 @@ export default function GuestDashboard({ onLogout }) {
                   onClick={() => setEditRsvpStatus('maybe')}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'maybe' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    background: editRsvpStatus === 'maybe' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text)'
+                    background: editRsvpStatus === 'maybe' ? 'rgba(0, 113, 227, 0.1)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text)'
                   }}
                 >
                   Maybe

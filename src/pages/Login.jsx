@@ -281,7 +281,7 @@ export default function Login() {
                 <p className="text-muted" style={{ fontSize: '0.875rem' }}>
                   We sent a 6-digit OTP code to **{signupSession.formData.email}** and **{signupSession.formData.phone}**.
                 </p>
-                <div style={{ margin: '12px auto', background: 'rgba(79, 70, 229, 0.06)', border: '1px dashed rgba(79, 70, 229, 0.3)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                <div style={{ margin: '12px auto', background: 'var(--color-surface-hover)', border: '1px dashed var(--color-border)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                   Active Code: {signupSession.otpCode}
                 </div>
               </div>
@@ -722,7 +722,7 @@ export default function Login() {
 
         {/* Demo Quick Logins Card */}
         {!isSignup && !signupSuccess && (
-          <Card style={{ padding: 'var(--spacing-md)', background: 'rgba(17, 24, 39, 0.65)', border: '1px solid rgba(79, 70, 229, 0.3)' }}>
+          <Card style={{ padding: 'var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <div className="flex items-center gap-xs" style={{ marginBottom: '12px', color: 'var(--color-primary)' }}>
               <Sparkles size={16} />
               <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Demo Quick Login Profiles</span>
@@ -738,8 +738,8 @@ export default function Login() {
                   padding: '10px 14px', 
                   borderRadius: 'var(--radius-md)', 
                   border: '1px solid var(--color-border)', 
-                  background: 'rgba(255, 255, 255, 0.03)', 
-                  cursor: 'pointer',
+                  background: 'var(--color-surface-hover)', 
+                  color: 'var(--color-text)',
                   textAlign: 'left',
                   transition: 'border-color var(--transition-fast)'
                 }}
@@ -766,8 +766,8 @@ export default function Login() {
                   padding: '10px 14px', 
                   borderRadius: 'var(--radius-md)', 
                   border: '1px solid var(--color-border)', 
-                  background: 'rgba(255, 255, 255, 0.03)', 
-                  cursor: 'pointer',
+                  background: 'var(--color-surface-hover)', 
+                  color: 'var(--color-text)',
                   textAlign: 'left',
                   transition: 'border-color var(--transition-fast)'
                 }}
@@ -794,8 +794,8 @@ export default function Login() {
                   padding: '10px 14px', 
                   borderRadius: 'var(--radius-md)', 
                   border: '1px solid var(--color-border)', 
-                  background: 'rgba(255, 255, 255, 0.03)', 
-                  cursor: 'pointer',
+                  background: 'var(--color-surface-hover)', 
+                  color: 'var(--color-text)',
                   textAlign: 'left',
                   transition: 'border-color var(--transition-fast)'
                 }}

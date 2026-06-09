@@ -20,7 +20,7 @@ export default function LandingPage() {
               display: 'inline-flex', 
               alignItems: 'center', 
               gap: '8px', 
-              background: 'rgba(59, 130, 246, 0.1)', 
+              background: 'rgba(0, 113, 227, 0.08)', 
               color: 'var(--color-primary)', 
               padding: '6px 16px', 
               borderRadius: 'var(--radius-full)', 
@@ -33,28 +33,29 @@ export default function LandingPage() {
             
             <h1 style={{ 
               fontSize: 'clamp(2.75rem, 5vw, 4.5rem)', 
-              lineHeight: 1.05, 
-              fontWeight: 800,
+              lineHeight: 1.1, 
+              fontWeight: 700,
               fontFamily: 'var(--font-heading)',
-              letterSpacing: '-0.03em'
+              letterSpacing: '-0.03em',
+              color: 'var(--color-text)'
             }}>
-              Plan. Invite. <br />
-              <span className="text-gradient">RSVP. Done.</span>
+              Host events. <br />
+              Collect RSVPs. <span style={{ color: 'var(--color-primary)' }}>Easily.</span>
             </h1>
             
             <p className="text-muted" style={{ fontSize: '1.15rem', maxWidth: '540px', margin: '8px 0' }}>
-              The most beautiful and seamless way to collect RSVPs. Whether it's a corporate mixer, community meetup, or yoga workshop, SafalEvents keeps verification high and friction low.
+              Create a clean event page, share a single link, and see who’s coming — without spreadsheets or chaos.
             </p>
             
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '12px' }}>
               <Link to="/login?signup=true">
-                <Button variant="primary" style={{ padding: '14px 28px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  Create an Event <ArrowRight size={18} />
+                <Button variant="primary" style={{ background: '#000000', color: '#ffffff', padding: '14px 28px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Become a Host <ArrowRight size={18} />
                 </Button>
               </Link>
               <Link to="/e/1">
-                <Button variant="outline" style={{ padding: '14px 28px', fontSize: '1rem' }}>
-                  Explore Sample Invite
+                <Button variant="outline" style={{ background: 'transparent', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '14px 28px', fontSize: '1rem' }}>
+                  View Sample Event
                 </Button>
               </Link>
             </div>
@@ -85,16 +86,15 @@ export default function LandingPage() {
           
           {/* Visual Mockup - Custom stacked Event Cards */}
           <div className="animate-fade-in animate-delay-1" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ position: 'absolute', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)', zIndex: -1 }}></div>
+            <div style={{ position: 'absolute', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(0, 113, 227, 0.08) 0%, transparent 70%)', zIndex: -1 }}></div>
             
             <div style={{
               width: '100%',
               maxWidth: '440px',
-              background: 'rgba(17, 24, 39, 0.65)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: '#ffffff',
+              border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-lg)',
               padding: '24px',
-              backdropFilter: 'blur(12px)',
               boxShadow: 'var(--shadow-lg)',
               transform: 'perspective(1000px) rotateY(-8deg) rotateX(4deg) rotateZ(-2deg)',
               transition: 'transform var(--transition-normal)',
@@ -105,8 +105,8 @@ export default function LandingPage() {
               {/* Event Cover Image Mock */}
               <div style={{
                 height: '160px',
-                background: 'linear-gradient(135deg, #2563eb 0%, #f97316 100%)',
-                borderRadius: 'var(--radius-sm)',
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+                borderRadius: 'var(--radius-md)',
                 marginBottom: '16px',
                 display: 'flex',
                 alignItems: 'flex-end',
@@ -114,12 +114,12 @@ export default function LandingPage() {
                 color: 'white',
                 position: 'relative'
               }}>
-                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(9, 13, 22, 0.6)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(29, 29, 31, 0.7)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
                   August 15
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px' }}>Tech Mixer</span>
-                  <h3 style={{ fontSize: '1.25rem', margin: '4px 0 0 0', fontWeight: 700 }}>Summer Rooftop Networking</h3>
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.25)', padding: '2px 6px', borderRadius: '4px' }}>Tech Mixer</span>
+                  <h3 style={{ fontSize: '1.25rem', margin: '4px 0 0 0', fontWeight: 600, color: 'white' }}>Summer Rooftop Networking</h3>
                 </div>
               </div>
 
@@ -144,8 +144,8 @@ export default function LandingPage() {
               position: 'absolute',
               top: '-16px',
               right: '-12px',
-              background: 'rgba(17, 24, 39, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid var(--color-border)',
               borderRadius: '8px',
               padding: '8px 12px',
               fontSize: '0.75rem',
@@ -153,7 +153,8 @@ export default function LandingPage() {
               boxShadow: 'var(--shadow-md)',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              color: 'var(--color-text)'
             }}>
               <ShieldCheck size={14} style={{ color: '#22c55e' }} /> OTP Verified Details
             </div>
@@ -163,8 +164,8 @@ export default function LandingPage() {
               position: 'absolute',
               bottom: '10px',
               left: '-24px',
-              background: 'rgba(17, 24, 39, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid var(--color-border)',
               borderRadius: '8px',
               padding: '8px 12px',
               fontSize: '0.75rem',
@@ -172,7 +173,8 @@ export default function LandingPage() {
               boxShadow: 'var(--shadow-md)',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              color: 'var(--color-text)'
             }}>
               <QrCode size={14} style={{ color: 'var(--color-primary)' }} /> Mobile Ticket QR
             </div>
@@ -182,7 +184,7 @@ export default function LandingPage() {
         {/* How It Works Section */}
         <section id="how-it-works" style={{ padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)' }}>
           <div className="text-center" style={{ marginBottom: 'var(--spacing-xl)' }}>
-            <h2 style={{ fontSize: '2.25rem', marginBottom: '8px', fontWeight: 800 }}>How it works</h2>
+            <h2 style={{ fontSize: '2.25rem', marginBottom: '8px', fontWeight: 600, color: 'var(--color-text)' }}>How it works</h2>
             <p className="text-muted" style={{ fontSize: '1.1rem' }}>Three simple steps to planning and filling your rooms.</p>
           </div>
           
@@ -192,15 +194,15 @@ export default function LandingPage() {
               { icon: <Share2 size={28} />, title: "2. Dispatch Universal Link", desc: "Share one smart link via WhatsApp, SMS, or email. Returning guests skip OTP verification dynamically." },
               { icon: <Users size={28} />, title: "3. Monitor & Check-in", desc: "Manage waitlists, export CSV rosters, edit details, and run simulated offset reminder broadcasts." }
             ].map((feature, idx) => (
-              <Card key={idx} style={{ padding: 'var(--spacing-md)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Card key={idx} style={{ padding: 'var(--spacing-md)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px', background: '#ffffff', border: '1px solid var(--color-border)' }}>
                 <div style={{ 
                   width: '60px', height: '60px', margin: '0 auto', 
-                  background: 'rgba(59,130,246,0.1)', color: 'var(--color-primary)', 
+                  background: 'rgba(0,113,227,0.08)', color: 'var(--color-primary)', 
                   borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
                   {feature.icon}
                 </div>
-                <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>{feature.title}</h3>
+                <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 600 }}>{feature.title}</h3>
                 <p className="text-muted" style={{ fontSize: '0.9rem', margin: 0 }}>{feature.desc}</p>
               </Card>
             ))}
@@ -208,10 +210,10 @@ export default function LandingPage() {
         </section>
 
         {/* Dynamic Stripe section */}
-        <section id="features" style={{ background: '#0a0e17', padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
+        <section id="features" style={{ background: '#f9fafb', padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
           <div className="container grid-2" style={{ alignItems: 'center', gap: 'var(--spacing-xl)' }}>
             <div style={{ textAlign: 'left' }}>
-              <h2 style={{ fontSize: '2rem', marginBottom: '16px', fontWeight: 800 }}>Everything you need.<br /><span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Nothing you don't.</span></h2>
+              <h2 style={{ fontSize: '2rem', marginBottom: '16px', fontWeight: 600, color: 'var(--color-text)' }}>Everything you need.<br /><span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Nothing you don't.</span></h2>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '0.95rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -234,14 +236,14 @@ export default function LandingPage() {
             </div>
             
             <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Card style={{ padding: '24px', width: '180px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Card style={{ padding: '24px', width: '180px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px', background: '#ffffff', border: '1px solid var(--color-border)' }}>
                 <LayoutDashboard size={28} style={{ color: 'var(--color-primary)', margin: '0 auto' }} />
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Host Console</h4>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Host Console</h4>
                 <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Rosters &amp; Logs</p>
               </Card>
-              <Card style={{ padding: '24px', width: '180px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '24px' }}>
+              <Card style={{ padding: '24px', width: '180px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '24px', background: '#ffffff', border: '1px solid var(--color-border)' }}>
                 <QrCode size={28} style={{ color: 'var(--color-accent)', margin: '0 auto' }} />
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>QR Check-in</h4>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>QR Check-in</h4>
                 <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Instant Entry</p>
               </Card>
             </div>

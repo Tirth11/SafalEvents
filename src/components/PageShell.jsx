@@ -18,27 +18,29 @@ export default function PageShell({ children }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
-      {/* Premium Dark Header */}
+      {/* Apple Light Header */}
       <header style={{
         position: 'sticky',
         top: 0,
         zIndex: 500,
-        background: 'rgba(9, 13, 22, 0.85)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(255, 255, 255, 0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--color-border)',
         padding: '12px 0'
       }}>
         <div className="container flex justify-between items-center">
           {/* Logo & Brand */}
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img 
-              src="/logo.png" 
-              alt="SafalEvents" 
-              style={{ height: '36px', borderRadius: '6px', boxShadow: '0 2px 8px rgba(59,130,246,0.15)' }} 
-            />
-            <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.5px', fontFamily: 'var(--font-heading)' }}>
-              Safal<span className="text-gradient">Events</span>
+            <div style={{
+              height: '32px', width: '32px', borderRadius: '50%', background: '#000', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700,
+              fontFamily: 'var(--font-heading)'
+            }}>
+              SE
+            </div>
+            <span style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-0.5px', fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}>
+              Safal<span style={{ color: 'var(--color-primary)' }}>Events</span>
             </span>
           </Link>
 
@@ -117,11 +119,11 @@ export default function PageShell({ children }) {
         {children}
       </main>
 
-      {/* Premium Footer */}
+      {/* Apple Light Footer */}
       <footer style={{
         borderTop: '1px solid var(--color-border)',
         padding: '24px 0',
-        background: '#070a11',
+        background: 'var(--color-bg)',
         fontSize: '0.8rem',
         color: 'var(--color-text-muted)',
         marginTop: 'var(--spacing-xl)'
