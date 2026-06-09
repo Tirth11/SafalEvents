@@ -4,6 +4,7 @@ import { Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, Hi
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 
 export default function GuestDashboard({ onLogout }) {
   const navigate = useNavigate();
@@ -151,13 +152,13 @@ export default function GuestDashboard({ onLogout }) {
   const pastRsvps = myRsvps.filter(r => r.status === 'declined' || r.event.status === 'Completed');
 
   return (
-    <div className="flex" style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-      {/* Sidebar */}
-      <aside style={{ width: '260px', background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)', padding: 'var(--spacing-lg) var(--spacing-md)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ marginBottom: 'var(--spacing-xl)', padding: '0 var(--spacing-sm)' }}>
-          <img src="/logo.png" alt="SafalEvents" style={{ height: '40px', borderRadius: '8px', marginBottom: '8px' }} />
-          <div className="text-muted" style={{ fontSize: '0.875rem' }}>Guest Center</div>
-        </div>
+    <PageShell>
+      <div className="flex" style={{ minHeight: '80vh', background: 'var(--color-bg)' }}>
+        {/* Sidebar */}
+        <aside style={{ width: '260px', background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)', padding: 'var(--spacing-lg) var(--spacing-md)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: 'var(--spacing-xl)', padding: '0 var(--spacing-sm)' }}>
+            <div className="text-gradient" style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>Guest Center</div>
+          </div>
 
         <nav className="flex flex-col gap-sm" style={{ flex: 1 }}>
           <button 
@@ -478,8 +479,8 @@ export default function GuestDashboard({ onLogout }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: 'white', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '450px',
-            overflow: 'hidden', boxShadow: 'var(--shadow-lg)', position: 'relative'
+            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '450px',
+            overflow: 'hidden', boxShadow: 'var(--shadow-lg)', position: 'relative', border: '1px solid var(--color-border)', color: 'var(--color-text)'
           }}>
             <button 
               onClick={() => setSelectedTicket(null)} 
@@ -529,7 +530,7 @@ export default function GuestDashboard({ onLogout }) {
                   <span style={{ fontWeight: 600, color: 'var(--color-accent)' }}>{selectedTicket.status.toUpperCase()}</span>
                 </div>
                 {Object.keys(selectedTicket.answers || {}).map(q => (
-                  <div key={q} className="flex justify-between" style={{ marginTop: '4px', borderTop: '1px solid #e2e8f0', paddingTop: '4px' }}>
+                  <div key={q} className="flex justify-between" style={{ marginTop: '4px', borderTop: '1px solid var(--color-border)', paddingTop: '4px' }}>
                     <span className="text-muted" style={{ fontSize: '0.75rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '180px' }}>{q}:</span>
                     <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>{selectedTicket.answers[q]}</span>
                   </div>
@@ -570,8 +571,8 @@ export default function GuestDashboard({ onLogout }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001
         }}>
           <div style={{
-            background: 'white', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '450px',
-            padding: 'var(--spacing-md)', boxShadow: 'var(--shadow-lg)'
+            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '450px',
+            padding: 'var(--spacing-md)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
           }}>
             <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-sm)' }}>Edit RSVP Status</h3>
             <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>For "{selectedTicket.event.title}"</p>
@@ -584,7 +585,7 @@ export default function GuestDashboard({ onLogout }) {
                   onClick={() => setEditRsvpStatus('going')}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    background: editRsvpStatus === 'going' ? 'rgba(79,70,229,0.05)' : 'white', cursor: 'pointer', fontWeight: 600
+                    background: editRsvpStatus === 'going' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text)'
                   }}
                 >
                   Going
@@ -594,7 +595,7 @@ export default function GuestDashboard({ onLogout }) {
                   onClick={() => setEditRsvpStatus('maybe')}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'maybe' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    background: editRsvpStatus === 'maybe' ? 'rgba(79,70,229,0.05)' : 'white', cursor: 'pointer', fontWeight: 600
+                    background: editRsvpStatus === 'maybe' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 600, color: 'var(--color-text)'
                   }}
                 >
                   Maybe
@@ -621,6 +622,7 @@ export default function GuestDashboard({ onLogout }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PageShell>
   );
 }

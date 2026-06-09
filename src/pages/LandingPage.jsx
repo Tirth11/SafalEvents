@@ -1,172 +1,254 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarPlus, Share2, Users, MapPin, Sparkles, LayoutDashboard, QrCode } from 'lucide-react';
+import { 
+  CalendarPlus, Share2, Users, MapPin, Sparkles, LayoutDashboard, QrCode, 
+  ArrowRight, ShieldCheck, Zap, Heart, Check 
+} from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 
 export default function LandingPage() {
   return (
-    <div className="mesh-bg">
-      {/* Header */}
-      <header className="glass-surface" style={{ padding: 'var(--spacing-sm) 0', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div className="container flex justify-between items-center">
-          <div className="logo flex items-center gap-xs">
-            <img src="/logo.png" alt="SafalEvents" style={{ height: '44px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} />
-          </div>
-          
-          <nav className="desktop-only flex gap-lg items-center" style={{ fontWeight: 500 }}>
-            <a href="#how-it-works" className="text-muted hover:text-text">How it works</a>
-            <a href="#features" className="text-muted hover:text-text">Features</a>
-            <a href="#faq" className="text-muted hover:text-text">FAQ</a>
-          </nav>
-          
-          <div className="flex gap-sm">
-            <Link to="/login">
-              <Button variant="ghost">Log in</Button>
-            </Link>
-            <Link to="/login?signup=true">
-              <Button variant="primary">Become a Host</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="hero container flex items-center" style={{ padding: 'var(--spacing-2xl) var(--spacing-sm)', minHeight: '90vh', gap: 'var(--spacing-xl)' }}>
-        <div className="flex-1 animate-fade-in">
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(244,63,94,0.1)', color: 'var(--color-accent)', padding: '6px 16px', borderRadius: 'var(--radius-full)', fontWeight: 600, marginBottom: 'var(--spacing-md)' }}>
-            <Sparkles size={16} /> Modern Event RSVPs
-          </div>
-          <h1 style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', marginBottom: 'var(--spacing-md)' }}>
-            Plan. Invite. <br />
-            <span className="text-gradient">RSVP. Done.</span>
-          </h1>
-          <p className="text-muted" style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-lg)', maxWidth: '540px' }}>
-            The most beautiful way to collect RSVPs. Whether it's a house party, corporate offsite, or cultural festival, SafalEvent makes every gathering successful.
-          </p>
-          <div className="flex gap-sm items-center">
-            <Link to="/login?signup=true">
-              <Button variant="primary" style={{ padding: '16px 32px', fontSize: '1.125rem' }}>Create your first event</Button>
-            </Link>
-          </div>
-          <div className="flex gap-md items-center" style={{ marginTop: 'var(--spacing-lg)', opacity: 0.8 }}>
-            <div className="flex -gap-xs">
-              {[1,2,3,4].map(i => (
-                <div key={i} style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e2e8f0', border: '3px solid white', marginLeft: i > 1 ? '-12px' : 0, backgroundImage: `url(https://i.pravatar.cc/100?img=${i+10})`, backgroundSize: 'cover' }}></div>
-              ))}
-            </div>
-            <span className="text-muted" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Join 10,000+ successful hosts</span>
-          </div>
-        </div>
+    <PageShell>
+      <div className="mesh-bg" style={{ overflow: 'hidden' }}>
         
-        <div className="flex-1 flex justify-center animate-fade-in animate-delay-1" style={{ position: 'relative' }}>
-          <div style={{ position: 'absolute', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(79,70,229,0.2) 0%, transparent 70%)', zIndex: -1 }}></div>
-          <img 
-            src="/hero_mockup.jpg" 
-            alt="SafalEvent RSVP Mockup" 
-            style={{
-              width: '100%', 
-              maxWidth: '600px', 
+        {/* Hero Section */}
+        <section className="container grid-2" style={{ padding: 'var(--spacing-xl) 0', minHeight: '80vh', alignItems: 'center', gap: 'var(--spacing-xl)' }}>
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              background: 'rgba(59, 130, 246, 0.1)', 
+              color: 'var(--color-primary)', 
+              padding: '6px 16px', 
+              borderRadius: 'var(--radius-full)', 
+              fontWeight: 600, 
+              width: 'fit-content',
+              fontSize: '0.85rem'
+            }}>
+              <Sparkles size={14} /> Modern Event RSVPs
+            </div>
+            
+            <h1 style={{ 
+              fontSize: 'clamp(2.75rem, 5vw, 4.5rem)', 
+              lineHeight: 1.05, 
+              fontWeight: 800,
+              fontFamily: 'var(--font-heading)',
+              letterSpacing: '-0.03em'
+            }}>
+              Plan. Invite. <br />
+              <span className="text-gradient">RSVP. Done.</span>
+            </h1>
+            
+            <p className="text-muted" style={{ fontSize: '1.15rem', maxWidth: '540px', margin: '8px 0' }}>
+              The most beautiful and seamless way to collect RSVPs. Whether it's a corporate mixer, community meetup, or yoga workshop, SafalEvents keeps verification high and friction low.
+            </p>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '12px' }}>
+              <Link to="/login?signup=true">
+                <Button variant="primary" style={{ padding: '14px 28px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Create an Event <ArrowRight size={18} />
+                </Button>
+              </Link>
+              <Link to="/e/1">
+                <Button variant="outline" style={{ padding: '14px 28px', fontSize: '1rem' }}>
+                  Explore Sample Invite
+                </Button>
+              </Link>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px', opacity: 0.9 }}>
+              <div style={{ display: 'flex', marginLeft: '6px' }}>
+                {[1, 2, 3, 4].map(i => (
+                  <div 
+                    key={i} 
+                    style={{ 
+                      width: '32px', 
+                      height: '32px', 
+                      borderRadius: '50%', 
+                      background: '#1e293b', 
+                      border: '2px solid var(--color-bg)', 
+                      marginLeft: i > 1 ? '-10px' : 0, 
+                      backgroundImage: `url(https://i.pravatar.cc/100?img=${i + 22})`, 
+                      backgroundSize: 'cover' 
+                    }}
+                  />
+                ))}
+              </div>
+              <span className="text-muted" style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                Trusted by <strong>10,000+</strong> hosts and event planners
+              </span>
+            </div>
+          </div>
+          
+          {/* Visual Mockup - Custom stacked Event Cards */}
+          <div className="animate-fade-in animate-delay-1" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)', zIndex: -1 }}></div>
+            
+            <div style={{
+              width: '100%',
+              maxWidth: '440px',
+              background: 'rgba(17, 24, 39, 0.65)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              backdropFilter: 'blur(12px)',
               boxShadow: 'var(--shadow-lg)',
-              transform: 'perspective(1000px) rotateY(-5deg) rotateX(5deg)',
+              transform: 'perspective(1000px) rotateY(-8deg) rotateX(4deg) rotateZ(-2deg)',
               transition: 'transform var(--transition-normal)',
             }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'perspective(1000px) rotateY(-5deg) rotateX(5deg)'}
-          />
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section id="how-it-works" className="container" style={{ padding: 'var(--spacing-2xl) var(--spacing-sm)' }}>
-        <div className="text-center animate-fade-in animate-delay-2" style={{ marginBottom: 'var(--spacing-xl)' }}>
-          <h2 style={{ fontSize: '3rem', marginBottom: 'var(--spacing-xs)' }}>How it works</h2>
-          <p className="text-muted" style={{ fontSize: '1.25rem' }}>Three simple steps to a successful gathering.</p>
-        </div>
-        
-        <div className="flex gap-lg justify-center animate-fade-in animate-delay-3" style={{ flexWrap: 'wrap' }}>
-          {[
-            { icon: <CalendarPlus size={40} />, title: "1. Create an event", desc: "Fill in details, upload an image, and set capacity rules in our gorgeous editor." },
-            { icon: <Share2 size={40} />, title: "2. Share your invite", desc: "Share one universal link across WhatsApp, SMS, email, and social media." },
-            { icon: <Users size={40} />, title: "3. Manage RSVPs", desc: "See exactly who's coming, manage cancellations, and send broadcast updates." }
-          ].map((feature, idx) => (
-            <Card key={idx} className="flex-1 text-center" style={{ minWidth: '300px', transition: 'all 0.3s ease', cursor: 'pointer' }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-10px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-              <div style={{ 
-                width: '80px', height: '80px', margin: '0 auto var(--spacing-md)', 
-                background: 'rgba(79,70,229,0.1)', color: 'var(--color-primary)', 
-                borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transform: 'rotate(-5deg)'
+            onMouseOver={(e) => e.currentTarget.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) rotateZ(0deg)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'perspective(1000px) rotateY(-8deg) rotateX(4deg) rotateZ(-2deg)'}
+            >
+              {/* Event Cover Image Mock */}
+              <div style={{
+                height: '160px',
+                background: 'linear-gradient(135deg, #2563eb 0%, #f97316 100%)',
+                borderRadius: 'var(--radius-sm)',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'flex-end',
+                padding: '16px',
+                color: 'white',
+                position: 'relative'
               }}>
-                {feature.icon}
+                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(9, 13, 22, 0.6)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                  August 15
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px' }}>Tech Mixer</span>
+                  <h3 style={{ fontSize: '1.25rem', margin: '4px 0 0 0', fontWeight: 700 }}>Summer Rooftop Networking</h3>
+                </div>
               </div>
-              <h3 style={{ marginBottom: 'var(--spacing-xs)', fontSize: '1.5rem' }}>{feature.title}</h3>
-              <p className="text-muted">{feature.desc}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
 
-      {/* Features Strip */}
-      <section id="features" style={{ background: 'var(--color-surface)', padding: 'var(--spacing-2xl) 0', marginTop: 'var(--spacing-xl)', borderTop: '1px solid var(--color-border)' }}>
-        <div className="container">
-          <div className="flex justify-between items-center" style={{ flexWrap: 'wrap', gap: 'var(--spacing-lg)' }}>
-            <div className="flex-1" style={{ minWidth: '300px' }}>
-              <h2 style={{ fontSize: '2.5rem', marginBottom: 'var(--spacing-md)' }}>Everything you need. <br/><span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Nothing you don't.</span></h2>
-              <div className="flex flex-col gap-sm">
-                <div className="flex items-center gap-sm"><CheckIcon /> Visual event pages that wow guests</div>
-                <div className="flex items-center gap-sm"><CheckIcon /> Custom RSVP questions & forms</div>
-                <div className="flex items-center gap-sm"><CheckIcon /> Self-edit & cancellation for guests</div>
-                <div className="flex items-center gap-sm"><CheckIcon /> 100% Free for personal events</div>
+              {/* Event Details mock */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--color-text-muted)', borderBottom: '1px dashed var(--color-border)', paddingBottom: '16px', marginBottom: '16px', textAlign: 'left' }}>
+                <div style={{ display: 'flex', gap: '8px' }}><MapPin size={16} /> Penthouse Lounge, New York</div>
+                <div style={{ display: 'flex', gap: '8px' }}><Users size={16} /> 64 Attending (Capacity: 100)</div>
               </div>
-            </div>
-            <div className="flex-1 flex gap-md justify-center">
-              <div style={{ padding: 'var(--spacing-md)', background: 'var(--color-bg)', borderRadius: 'var(--radius-lg)', textAlign: 'center', width: '200px' }}>
-                <LayoutDashboard size={32} style={{ color: 'var(--color-primary)', margin: '0 auto var(--spacing-sm)' }} />
-                <h4 style={{ marginBottom: '4px' }}>Host Dashboard</h4>
-                <p className="text-muted" style={{ fontSize: '0.875rem' }}>Analytics & Guest list</p>
-              </div>
-              <div style={{ padding: 'var(--spacing-md)', background: 'var(--color-bg)', borderRadius: 'var(--radius-lg)', textAlign: 'center', width: '200px', transform: 'translateY(30px)' }}>
-                <QrCode size={32} style={{ color: 'var(--color-accent)', margin: '0 auto var(--spacing-sm)' }} />
-                <h4 style={{ marginBottom: '4px' }}>QR Check-in</h4>
-                <p className="text-muted" style={{ fontSize: '0.875rem' }}>Fast door entry</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0F172A', color: 'white', padding: 'var(--spacing-xl) 0' }}>
-        <div className="container flex justify-between" style={{ flexWrap: 'wrap', gap: 'var(--spacing-lg)' }}>
-          <div>
-            <div className="logo flex items-center gap-xs" style={{ marginBottom: 'var(--spacing-sm)' }}>
-              <img src="/logo.png" alt="SafalEvents" style={{ height: '36px', borderRadius: '6px' }} />
+              {/* Interactive RSVP Mock form */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }}></span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>RSVP Status: Open</span>
+                </div>
+                <Button variant="primary" style={{ padding: '8px 18px', fontSize: '0.85rem' }}>RSVP Now</Button>
+              </div>
             </div>
-            <p style={{ color: '#94A3B8', maxWidth: '300px' }}>Make every event successful with beautiful RSVPs and effortless hosting.</p>
+
+            {/* Float badge 1 */}
+            <div style={{
+              position: 'absolute',
+              top: '-16px',
+              right: '-12px',
+              background: 'rgba(17, 24, 39, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              boxShadow: 'var(--shadow-md)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <ShieldCheck size={14} style={{ color: '#22c55e' }} /> OTP Verified Details
+            </div>
+            
+            {/* Float badge 2 */}
+            <div style={{
+              position: 'absolute',
+              bottom: '10px',
+              left: '-24px',
+              background: 'rgba(17, 24, 39, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              boxShadow: 'var(--shadow-md)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <QrCode size={14} style={{ color: 'var(--color-primary)' }} /> Mobile Ticket QR
+            </div>
           </div>
-          <div className="flex gap-xl">
-            <div className="flex flex-col gap-xs">
-              <h4 style={{ color: 'white', marginBottom: '8px' }}>Product</h4>
-              <a href="#" style={{ color: '#94A3B8' }}>Features</a>
-              <a href="#" style={{ color: '#94A3B8' }}>Pricing</a>
+        </section>
+
+        {/* How It Works Section */}
+        <section id="how-it-works" style={{ padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)' }}>
+          <div className="text-center" style={{ marginBottom: 'var(--spacing-xl)' }}>
+            <h2 style={{ fontSize: '2.25rem', marginBottom: '8px', fontWeight: 800 }}>How it works</h2>
+            <p className="text-muted" style={{ fontSize: '1.1rem' }}>Three simple steps to planning and filling your rooms.</p>
+          </div>
+          
+          <div className="container grid-3" style={{ gap: 'var(--spacing-md)' }}>
+            {[
+              { icon: <CalendarPlus size={28} />, title: "1. Create Invitation", desc: "Define details, themes, and configure notification settings in our split-screen live preview builder." },
+              { icon: <Share2 size={28} />, title: "2. Dispatch Universal Link", desc: "Share one smart link via WhatsApp, SMS, or email. Returning guests skip OTP verification dynamically." },
+              { icon: <Users size={28} />, title: "3. Monitor & Check-in", desc: "Manage waitlists, export CSV rosters, edit details, and run simulated offset reminder broadcasts." }
+            ].map((feature, idx) => (
+              <Card key={idx} style={{ padding: 'var(--spacing-md)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ 
+                  width: '60px', height: '60px', margin: '0 auto', 
+                  background: 'rgba(59,130,246,0.1)', color: 'var(--color-primary)', 
+                  borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {feature.icon}
+                </div>
+                <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>{feature.title}</h3>
+                <p className="text-muted" style={{ fontSize: '0.9rem', margin: 0 }}>{feature.desc}</p>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Dynamic Stripe section */}
+        <section id="features" style={{ background: '#0a0e17', padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
+          <div className="container grid-2" style={{ alignItems: 'center', gap: 'var(--spacing-xl)' }}>
+            <div style={{ textAlign: 'left' }}>
+              <h2 style={{ fontSize: '2rem', marginBottom: '16px', fontWeight: 800 }}>Everything you need.<br /><span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Nothing you don't.</span></h2>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '0.95rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '4px', borderRadius: '50%' }}><Check size={14} /></div>
+                  Visual event invitation templates that wow guests
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '4px', borderRadius: '50%' }}><Check size={14} /></div>
+                  Same-code multi-channel OTP verification (Email + SMS)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '4px', borderRadius: '50%' }}><Check size={14} /></div>
+                  Self-edit and cancellation cutoff rules for guests
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '4px', borderRadius: '50%' }}><Check size={14} /></div>
+                  Simulated cron reminders scheduler simulator
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col gap-xs">
-              <h4 style={{ color: 'white', marginBottom: '8px' }}>Company</h4>
-              <a href="#" style={{ color: '#94A3B8' }}>About</a>
-              <a href="#" style={{ color: '#94A3B8' }}>Contact</a>
+            
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Card style={{ padding: '24px', width: '180px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <LayoutDashboard size={28} style={{ color: 'var(--color-primary)', margin: '0 auto' }} />
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Host Console</h4>
+                <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Rosters &amp; Logs</p>
+              </Card>
+              <Card style={{ padding: '24px', width: '180px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '24px' }}>
+                <QrCode size={28} style={{ color: 'var(--color-accent)', margin: '0 auto' }} />
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>QR Check-in</h4>
+                <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Instant Entry</p>
+              </Card>
             </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </section>
+
+      </div>
+    </PageShell>
   );
-}
-
-function CheckIcon() {
-  return (
-    <div style={{ background: 'rgba(79,70,229,0.1)', color: 'var(--color-primary)', borderRadius: '50%', padding: '4px' }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-    </div>
-  )
 }

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 import { mockStore } from '../utils/mockStore';
 
 export default function HostDashboard({ onLogout }) {
@@ -352,13 +353,13 @@ export default function HostDashboard({ onLogout }) {
   });
 
   return (
-    <div className="flex" style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-      {/* Sidebar */}
-      <aside style={{ width: '260px', background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)', padding: 'var(--spacing-lg) var(--spacing-md)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ marginBottom: 'var(--spacing-xl)', padding: '0 var(--spacing-sm)' }}>
-          <img src="/logo.png" alt="SafalEvents" style={{ height: '40px', borderRadius: '8px', marginBottom: '8px' }} />
-          <div className="text-muted" style={{ fontSize: '0.875rem' }}>Host Portal</div>
-        </div>
+    <PageShell>
+      <div className="flex" style={{ minHeight: '80vh', background: 'var(--color-bg)' }}>
+        {/* Sidebar */}
+        <aside style={{ width: '260px', background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)', padding: 'var(--spacing-lg) var(--spacing-md)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: 'var(--spacing-xl)', padding: '0 var(--spacing-sm)' }}>
+            <div className="text-gradient" style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>Host Portal</div>
+          </div>
 
         <nav className="flex flex-col gap-sm" style={{ flex: 1 }}>
           <button 
@@ -428,7 +429,7 @@ export default function HostDashboard({ onLogout }) {
       </aside>
 
       {/* Main Content Pane */}
-      <main style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)', overflowY: 'auto', height: '100vh' }}>
+      <main style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)' }}>
         
         {/* --- GLOBAL SIDEBAR NAVIGATION --- */}
         {activeSidebar === 'events' && !selectedEventId && (
@@ -1133,7 +1134,7 @@ export default function HostDashboard({ onLogout }) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px' }}>
                       <div>
                         <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Show Guest List Social Proof</span>
                         <p className="text-muted" style={{ fontSize: '0.75rem', margin: 0 }}>Renders attendee avatars & names on public page. Turn off for anonymous counts only.</p>
@@ -1208,7 +1209,7 @@ export default function HostDashboard({ onLogout }) {
                       <CheckSquare size={18} /> 4. Guest Self-Service Policies
                     </h4>
 
-                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div className="flex justify-between items-center">
                         <div>
                           <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Allow Guest Self-Edit RSVP details</span>
@@ -1699,11 +1700,11 @@ export default function HostDashboard({ onLogout }) {
                           </div>
 
                           {/* Placeholder Variables Cheat Sheet */}
-                          <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                          <div style={{ background: 'var(--color-surface-hover)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
                             <strong style={{ color: 'var(--color-primary)' }}>Dynamic Placeholders:</strong>
                             <div className="flex gap-xs" style={{ flexWrap: 'wrap', marginTop: '4px' }}>
                               {['{{guest_name}}', '{{event_name}}', '{{event_date}}', '{{event_start_time}}', '{{booking_id}}', '{{manage_rsvp_link}}', '{{feedback_survey_link}}'].map(v => (
-                                <code key={v} style={{ background: 'white', padding: '2px 4px', borderRadius: '3px', border: '1px solid #e2e8f0', color: '#0f172a' }}>{v}</code>
+                                <code key={v} style={{ background: 'var(--color-surface)', padding: '2px 4px', borderRadius: '3px', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}>{v}</code>
                               ))}
                             </div>
                           </div>
@@ -1711,7 +1712,7 @@ export default function HostDashboard({ onLogout }) {
                       </Card>
 
                       {/* Realtime Live rendering Viewport */}
-                      <Card style={{ padding: 'var(--spacing-md)', background: '#f8fafc' }}>
+                      <Card style={{ padding: 'var(--spacing-md)', background: 'var(--color-surface-hover)' }}>
                         <div className="flex justify-between items-center" style={{ marginBottom: '12px' }}>
                           <h4 style={{ fontSize: '0.9rem', fontWeight: 600 }}>Real-Time Dispatch Preview</h4>
                           <div className="flex gap-xs">
@@ -1719,7 +1720,7 @@ export default function HostDashboard({ onLogout }) {
                               type="button"
                               onClick={() => setPreviewMode('email')}
                               style={{
-                                background: previewMode === 'email' ? 'var(--color-primary)' : 'white',
+                                background: previewMode === 'email' ? 'var(--color-primary)' : 'var(--color-surface)',
                                 color: previewMode === 'email' ? 'white' : 'var(--color-text-muted)',
                                 border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer'
                               }}
@@ -1730,7 +1731,7 @@ export default function HostDashboard({ onLogout }) {
                               type="button"
                               onClick={() => setPreviewMode('sms')}
                               style={{
-                                background: previewMode === 'sms' ? 'var(--color-primary)' : 'white',
+                                background: previewMode === 'sms' ? 'var(--color-primary)' : 'var(--color-surface)',
                                 color: previewMode === 'sms' ? 'white' : 'var(--color-text-muted)',
                                 border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer'
                               }}
@@ -1751,12 +1752,12 @@ export default function HostDashboard({ onLogout }) {
 
                           if (previewMode === 'email') {
                             return (
-                              <div style={{ background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                                <div style={{ background: '#f1f5f9', padding: '6px 12px', borderBottom: '1px solid #cbd5e1', fontSize: '0.75rem', color: '#64748b', textAlign: 'left' }}>
+                              <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', overflow: 'hidden', color: 'var(--color-text)' }}>
+                                <div style={{ background: 'var(--color-surface-hover)', padding: '6px 12px', borderBottom: '1px solid var(--color-border)', fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'left' }}>
                                   <strong>To:</strong> {dummyGuest.email} <br/>
                                   <strong>Subject:</strong> {resolvedSubject || 'Event Update'}
                                 </div>
-                                <div style={{ padding: '16px', fontSize: '0.8rem', color: '#334155', whiteSpace: 'pre-line', minHeight: '120px', textAlign: 'left' }}>
+                                <div style={{ padding: '16px', fontSize: '0.8rem', color: 'var(--color-text)', whiteSpace: 'pre-line', minHeight: '120px', textAlign: 'left' }}>
                                   {resolvedBody}
                                   
                                   {selectedTemplateKey === 'rsvp' && (
@@ -1775,14 +1776,14 @@ export default function HostDashboard({ onLogout }) {
                           } else {
                             // SMS Bubble preview
                             return (
-                              <div style={{ maxWidth: '320px', margin: '0 auto', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '16px 8px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                                <div style={{ textAlign: 'center', fontSize: '0.7rem', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                              <div style={{ maxWidth: '320px', margin: '0 auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '24px', padding: '16px 8px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'var(--shadow-md)' }}>
+                                <div style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--color-text-muted)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
                                   iMessage / SMS Conversation
                                 </div>
                                 <div style={{
                                   alignSelf: 'flex-start',
-                                  background: '#e5e5ea',
-                                  color: '#000',
+                                  background: 'var(--color-surface-hover)',
+                                  color: 'var(--color-text)',
                                   padding: '8px 12px',
                                   borderRadius: '16px',
                                   fontSize: '0.75rem',
@@ -2139,8 +2140,8 @@ export default function HostDashboard({ onLogout }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: 'white', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '500px',
-            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)'
+            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '500px',
+            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
           }}>
             <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
               <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Mail size={20} /> Broadcast message</h3>
@@ -2205,9 +2206,9 @@ export default function HostDashboard({ onLogout }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: 'white', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '600px',
+            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '600px',
             padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: '16px',
-            maxHeight: '85vh'
+            maxHeight: '85vh', border: '1px solid var(--color-border)', color: 'var(--color-text)'
           }}>
             <div className="flex justify-between items-center" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
               <div>
@@ -2244,26 +2245,26 @@ export default function HostDashboard({ onLogout }) {
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
               {viewLogDetail.channel === 'Email' ? (
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                  <div style={{ background: '#f8fafc', padding: '12px', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem', textAlign: 'left' }}>
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderBottom: '1px solid var(--color-border)', fontSize: '0.8rem', textAlign: 'left' }}>
                     <div><strong>From:</strong> Alex Rivera &lt;alex@safalevent.com&gt;</div>
                     <div><strong>To:</strong> {viewLogDetail.guestEmail}</div>
                     <div style={{ marginTop: '4px' }}><strong>Subject:</strong> {viewLogDetail.subject}</div>
                   </div>
-                  <div style={{ padding: '16px', background: '#fff', fontSize: '0.85rem', whiteSpace: 'pre-wrap', color: '#334155', minHeight: '150px', textAlign: 'left' }}>
+                  <div style={{ padding: '16px', background: 'var(--color-bg)', fontSize: '0.85rem', whiteSpace: 'pre-wrap', color: 'var(--color-text)', minHeight: '150px', textAlign: 'left' }}>
                     {viewLogDetail.body}
                   </div>
                 </div>
               ) : (
                 <div style={{ maxWidth: '360px', margin: '0 auto', width: '100%' }}>
-                  <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                    <div style={{ textAlign: 'center', fontSize: '0.7rem', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
+                  <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '24px', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'var(--shadow-md)' }}>
+                    <div style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--color-text-muted)', borderBottom: '1px solid var(--color-border)', paddingBottom: '4px' }}>
                       iMessage / SMS Conversation
                     </div>
                     <div style={{
                       alignSelf: 'flex-start',
-                      background: '#e5e5ea',
-                      color: '#000',
+                      background: 'var(--color-surface-hover)',
+                      color: 'var(--color-text)',
                       padding: '10px 14px',
                       borderRadius: '18px',
                       fontSize: '0.8rem',
@@ -2285,6 +2286,7 @@ export default function HostDashboard({ onLogout }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PageShell>
   );
 }

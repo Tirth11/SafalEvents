@@ -6,6 +6,7 @@ import {
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 
 export default function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('pending'); // pending, all, logs
@@ -46,11 +47,12 @@ export default function AdminDashboard({ onLogout }) {
   const rejectedHosts = users.filter(u => u.role === 'host' && u.status === 'REJECTED');
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
+    <PageShell>
+      <div style={{ display: 'flex', minHeight: '80vh', background: 'var(--color-bg)' }}>
       {/* Sidebar navigation */}
       <aside style={{
         width: '280px',
-        background: 'white',
+        background: 'var(--color-surface)',
         borderRight: '1px solid var(--color-border)',
         display: 'flex',
         flexDirection: 'column',
@@ -141,7 +143,7 @@ export default function AdminDashboard({ onLogout }) {
                           <Compass size={14} /> Org Type: {host.orgProfile?.orgType} | Website: <a href={host.orgProfile?.website} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>{host.orgProfile?.website || 'N/A'}</a>
                         </p>
 
-                        <div className="grid-3" style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', margin: '10px 0', fontSize: '0.8rem' }}>
+                        <div className="grid-3" style={{ background: 'var(--color-surface-hover)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', margin: '10px 0', fontSize: '0.8rem' }}>
                           <div>
                             <strong>Contact Name:</strong><br />{host.name}
                           </div>
@@ -160,7 +162,7 @@ export default function AdminDashboard({ onLogout }) {
                               <button 
                                 key={idx}
                                 onClick={() => setDocumentPreview(doc)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.75rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'white', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 600 }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.75rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 600 }}
                               >
                                 <FileText size={12} /> {doc} <Eye size={12} />
                               </button>
@@ -293,7 +295,7 @@ export default function AdminDashboard({ onLogout }) {
                             {log.targetPhone && <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{log.targetPhone}</div>}
                           </td>
                           <td>
-                            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600, padding: '2px 6px', background: '#f1f5f9', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600, padding: '2px 6px', background: 'var(--color-surface-hover)', borderRadius: '4px' }}>
                               {log.type}
                             </span>
                           </td>
@@ -333,8 +335,8 @@ export default function AdminDashboard({ onLogout }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: 'white', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '450px',
-            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)'
+            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '450px',
+            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
           }}>
             <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }} className="flex items-center gap-xs">
@@ -373,8 +375,9 @@ export default function AdminDashboard({ onLogout }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: 'white', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '600px',
-            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: '16px'
+            background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '600px',
+            padding: 'var(--spacing-lg)', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: '16px',
+            border: '1px solid var(--color-border)', color: 'var(--color-text)'
           }}>
             <div className="flex justify-between items-center" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }} className="flex items-center gap-xs">
@@ -385,7 +388,7 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Simulated document representation */}
             <div style={{
-              background: '#f8fafc', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '32px 16px',
+              background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '32px 16px',
               textAlign: 'center', flex: 1, minHeight: '200px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '12px'
             }}>
               <FileText size={48} style={{ color: 'var(--color-primary)', opacity: 0.8 }} />
@@ -405,6 +408,7 @@ export default function AdminDashboard({ onLogout }) {
         </div>
       )}
 
-    </div>
+      </div>
+    </PageShell>
   );
 }

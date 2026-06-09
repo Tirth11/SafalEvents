@@ -4,6 +4,7 @@ import { Calendar, MapPin, Users, HelpCircle, MessageSquare, ArrowRight, X, Chec
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 
 export default function EventPage() {
   const { eventId } = useParams();
@@ -276,27 +277,10 @@ export default function EventPage() {
   };
 
   return (
-    <div className="mesh-bg" style={{ minHeight: '100vh', paddingBottom: 'var(--spacing-xl)' }}>
-      
-      {/* Mini top bar header */}
-      <header style={{ padding: '16px 0', borderBottom: '1px solid rgba(15, 23, 42, 0.05)', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', sticky: 'top', zIndex: 10 }}>
-        <div className="container flex justify-between items-center">
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-            <ArrowLeft size={16} /> Home
-          </Link>
-          <div>
-            <img src="/logo.png" alt="SafalEvents" style={{ height: '36px', borderRadius: '6px' }} />
-          </div>
-          {currentUser && currentUser.role ? (
-            <Link to="/dashboard"><Button variant="outline" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>Dashboard</Button></Link>
-          ) : (
-            <Link to="/login"><Button variant="primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>Log In</Button></Link>
-          )}
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <div className="container flex flex-col items-center animate-fade-in" style={{ marginTop: 'var(--spacing-md)' }}>
+    <PageShell>
+      <div className="mesh-bg" style={{ minHeight: '80vh', paddingBottom: 'var(--spacing-xl)' }}>
+        {/* Main Container */}
+        <div className="container flex flex-col items-center animate-fade-in" style={{ marginTop: 'var(--spacing-md)' }}>
         
         {/* Banner Cover */}
         <div style={{
@@ -410,7 +394,7 @@ export default function EventPage() {
                   <p className="text-muted" style={{ fontSize: '0.85rem' }}>No RSVPs yet. Be the first to join!</p>
                 )
               ) : (
-                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', fontSize: '0.85rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '12px', fontSize: '0.85rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   🔒 The host has kept the guest list private.
                 </div>
               )}
@@ -424,7 +408,7 @@ export default function EventPage() {
                   {polls.map(poll => {
                     const totalVotes = poll.options.reduce((acc, curr) => acc + curr.votes, 0);
                     return (
-                      <div key={poll.id} style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px', border: '1px solid var(--color-border)' }}>
+                      <div key={poll.id} style={{ background: 'var(--color-surface-hover)', borderRadius: '12px', padding: '14px', border: '1px solid var(--color-border)' }}>
                         <h5 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '8px' }}>Q: {poll.question}</h5>
                         <div className="flex flex-col gap-xs">
                           {poll.options.map(opt => {
@@ -442,11 +426,11 @@ export default function EventPage() {
                               >
                                 <div style={{
                                   padding: '8px 12px', borderRadius: '6px', border: hasVoted ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                  background: hasVoted ? 'rgba(79,70,229,0.05)' : 'white', transition: 'background var(--transition-fast)',
+                                  background: hasVoted ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-surface)', transition: 'background var(--transition-fast)',
                                   position: 'relative', overflow: 'hidden'
                                 }}>
                                   {/* Progress fill */}
-                                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: 'rgba(79,70,229,0.06)', zIndex: 1, borderRadius: '6px' }}></div>
+                                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: 'rgba(59, 130, 246, 0.1)', zIndex: 1, borderRadius: '6px' }}></div>
                                   <div className="flex justify-between items-center" style={{ position: 'relative', zIndex: 2, fontSize: '0.85rem' }}>
                                     <span style={{ fontWeight: hasVoted ? 600 : 500 }}>{opt.text}</span>
                                     <span className="text-muted" style={{ fontSize: '0.75rem' }}>{opt.votes} ({percent}%)</span>
@@ -471,7 +455,7 @@ export default function EventPage() {
                 </h3>
 
                 {/* Add Comment Form */}
-                <form onSubmit={handleCommentSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '20px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                <form onSubmit={handleCommentSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '20px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                   {!currentUser || !currentUser.name ? (
                     <div className="flex gap-xs" style={{ marginBottom: '4px' }}>
                       <input 
@@ -550,7 +534,7 @@ export default function EventPage() {
                   <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '16px' }}>
                     Status: <strong style={{ color: 'var(--color-primary)' }}>{existingRsvp.status.toUpperCase()}</strong>
                   </p>
-                  <p style={{ fontSize: '0.8rem', background: '#f8fafc', padding: '10px', borderRadius: '8px', marginBottom: '16px' }}>
+                  <p style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', marginBottom: '16px' }}>
                     Show your event ticket pass at the door for entry check-in.
                   </p>
                   <Link to="/dashboard">
@@ -683,7 +667,7 @@ export default function EventPage() {
                       required 
                       readOnly
                       value="USA"
-                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', background: '#f8fafc', color: 'var(--color-text-muted)' }}
+                      style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', background: 'var(--color-surface-hover)', color: 'var(--color-text-muted)' }}
                     />
                   </div>
                 </div>
@@ -701,7 +685,7 @@ export default function EventPage() {
                   <p className="text-muted" style={{ fontSize: '0.875rem' }}>
                     Enter the 6-digit verification code we sent to your email and phone.
                   </p>
-                  <div style={{ margin: '12px auto', background: 'rgba(79, 70, 229, 0.06)', border: '1px dashed rgba(79, 70, 229, 0.3)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  <div style={{ margin: '12px auto', background: 'rgba(59, 130, 246, 0.08)', border: '1px dashed rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                     Active Code: {rsvpSession.otpCode}
                   </div>
                 </div>
@@ -830,6 +814,7 @@ export default function EventPage() {
         </>
       )}
 
-    </div>
+      </div>
+    </PageShell>
   );
 }

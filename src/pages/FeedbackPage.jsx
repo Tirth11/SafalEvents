@@ -4,6 +4,7 @@ import { Star, CheckCircle2, MessageSquare, Calendar, MapPin, ArrowLeft } from '
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 
 export default function FeedbackPage() {
   const { eventId } = useParams();
@@ -86,7 +87,8 @@ export default function FeedbackPage() {
     : (themes[event.theme] || themes['mesh-gradient-sunset']);
 
   return (
-    <div className="mesh-bg" style={{ minHeight: '100vh', padding: 'var(--spacing-lg) var(--spacing-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <PageShell>
+      <div className="mesh-bg" style={{ minHeight: '80vh', padding: 'var(--spacing-lg) var(--spacing-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       
       {/* Event Banner Header */}
       <div style={{ width: '100%', maxWidth: '600px', marginBottom: '24px' }}>
@@ -169,7 +171,7 @@ export default function FeedbackPage() {
                           border: 'none',
                           cursor: 'pointer',
                           padding: '4px',
-                          color: active ? '#fbbf24' : '#cbd5e1',
+                          color: active ? '#fbbf24' : 'var(--color-border)',
                           transform: active ? 'scale(1.15)' : 'scale(1)',
                           transition: 'all 0.15s ease'
                         }}
@@ -179,7 +181,7 @@ export default function FeedbackPage() {
                     );
                   })}
                 </div>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, minHeight: '20px', color: '#475569' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, minHeight: '20px', color: 'var(--color-text-muted)' }}>
                   {rating === 1 && 'Poor'}
                   {rating === 2 && 'Fair'}
                   {rating === 3 && 'Good'}
@@ -232,6 +234,7 @@ export default function FeedbackPage() {
         </Card>
       </div>
 
-    </div>
+      </div>
+    </PageShell>
   );
 }

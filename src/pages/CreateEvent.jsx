@@ -4,6 +4,7 @@ import { ArrowLeft, Sparkles, Image, CheckSquare, Calendar, MapPin, Users, HelpC
 import { mockStore } from '../utils/mockStore';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 
 export default function CreateEvent() {
   const navigate = useNavigate();
@@ -100,18 +101,19 @@ export default function CreateEvent() {
   const selectedTheme = themes.find(t => t.id === formData.theme) || themes[0];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
-      
-      {/* LEFT COLUMN: Form Wizard */}
-      <div style={{ flex: 1, padding: 'var(--spacing-md) var(--spacing-lg)', maxWidth: '650px', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', height: '100vh' }}>
-        <div style={{ marginBottom: 'var(--spacing-sm)' }}>
-          <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '0.9rem', marginBottom: '12px' }}>
-            <ArrowLeft size={16} /> Back to Dashboard
-          </Link>
-          
-          <h1 style={{ fontSize: '1.75rem' }}>Create Event</h1>
-          <p className="text-muted" style={{ fontSize: '0.9rem' }}>Configure details, privacy, rules, and communication workflows.</p>
-        </div>
+    <PageShell>
+      <div style={{ display: 'flex', minHeight: '80vh', background: 'var(--color-bg)' }}>
+        
+        {/* LEFT COLUMN: Form Wizard */}
+        <div style={{ flex: 1, padding: 'var(--spacing-md) var(--spacing-lg)', maxWidth: '650px', borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: 'var(--spacing-sm)' }}>
+            <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '0.9rem', marginBottom: '12px' }}>
+              <ArrowLeft size={16} /> Back to Dashboard
+            </Link>
+            
+            <h1 style={{ fontSize: '1.75rem' }}>Create Event</h1>
+            <p className="text-muted" style={{ fontSize: '0.9rem' }}>Configure details, privacy, rules, and communication workflows.</p>
+          </div>
 
         {/* Form Steps Indicators */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: 'var(--spacing-md)' }}>
@@ -368,7 +370,7 @@ export default function CreateEvent() {
               <h3 style={{ fontSize: '1.15rem' }} className="flex items-center gap-xs"><Shield size={18} className="text-primary" /> 4. Rules & Notifications</h3>
               
               {/* Self service */}
-              <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }} className="flex flex-col gap-xs">
+              <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }} className="flex flex-col gap-xs">
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 600 }}>Guest Self-Service Policies</h4>
                 
                 <div className="flex justify-between items-center" style={{ margin: '4px 0' }}>
@@ -410,7 +412,7 @@ export default function CreateEvent() {
               </div>
 
               {/* Notifications */}
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }} className="flex flex-col gap-xs">
+              <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }} className="flex flex-col gap-xs">
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Bell size={14} className="text-primary" /> Notifications & Reminders Setup
                 </h4>
@@ -450,7 +452,7 @@ export default function CreateEvent() {
 
               {/* Comments & Payments */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <div className="flex justify-between items-center">
                     <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Allow Comments</span>
                     <label className="switch">
@@ -460,7 +462,7 @@ export default function CreateEvent() {
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                   <div className="flex justify-between items-center" style={{ marginBottom: '4px' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Paid Ticket</span>
                     <label className="switch">
@@ -537,7 +539,7 @@ export default function CreateEvent() {
       </div>
 
       {/* RIGHT COLUMN: Sticky Live Invitation Preview */}
-      <div style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)', background: 'var(--color-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'sticky', top: '70px', height: 'calc(100vh - 120px)', overflowY: 'auto' }}>
         <div style={{ width: '100%', maxWidth: '420px', position: 'relative' }}>
           
           <div className="text-center" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600 }}>
@@ -546,8 +548,10 @@ export default function CreateEvent() {
           
           {/* Mock Public Event Page wrapper */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
             borderRadius: '24px',
+            color: 'var(--color-text)',
             overflow: 'hidden',
             boxShadow: '0 20px 40px rgba(15, 23, 42, 0.12)',
             border: '1px solid rgba(255, 255, 255, 0.4)'
@@ -600,7 +604,7 @@ export default function CreateEvent() {
 
               {/* RSVP Form Widget */}
               <div style={{
-                background: '#f8fafc',
+                background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',
                 borderRadius: '16px',
                 padding: '16px',
@@ -633,7 +637,7 @@ export default function CreateEvent() {
                     {formData.questions.map((q, i) => q.trim() !== '' && (
                       <div key={i} style={{ marginBottom: '6px' }}>
                         <span style={{ fontSize: '0.75rem', display: 'block', color: 'var(--color-text)', fontWeight: 500 }}>{q}</span>
-                        <input type="text" disabled placeholder="Guest answer..." style={{ width: '100%', padding: '6px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'white' }} />
+                        <input type="text" disabled placeholder="Guest answer..." style={{ width: '100%', padding: '6px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-bg)' }} />
                       </div>
                     ))}
                   </div>
@@ -642,7 +646,7 @@ export default function CreateEvent() {
 
               {/* Guest list social proof toggle in preview */}
               {!formData.showGuestList && (
-                <div style={{ background: '#f1f5f9', border: '1px solid var(--color-border)', padding: '8px', borderRadius: '8px', fontSize: '0.75rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', padding: '8px', borderRadius: '8px', fontSize: '0.75rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   🔒 Guest list is set to private.
                 </div>
               )}
@@ -651,6 +655,7 @@ export default function CreateEvent() {
         </div>
       </div>
       
-    </div>
+      </div>
+    </PageShell>
   );
 }

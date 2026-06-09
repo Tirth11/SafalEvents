@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PageShell from '../components/PageShell';
 import { 
   CheckCircle2, ArrowLeft, ShieldAlert, Sparkles, User, Users, 
   Building2, Upload, FileText, Check, Lock, Timer, AlertCircle 
@@ -250,15 +251,10 @@ export default function Login() {
   };
 
   return (
-    <div className="container flex justify-center items-center" style={{ minHeight: '100vh', padding: 'var(--spacing-xl) 0' }}>
-      
-      {/* Back button */}
-      <Link to="/" style={{ position: 'absolute', top: 'var(--spacing-sm)', left: 'var(--spacing-sm)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-        <ArrowLeft size={18} /> Back to Home
-      </Link>
-
-      <div style={{ width: '100%', maxWidth: '540px' }} className="flex flex-col gap-md">
-        <Card style={{ padding: 'var(--spacing-xl)' }} className="glass-surface">
+    <PageShell>
+      <div className="container flex justify-center items-center" style={{ minHeight: '80vh', padding: 'var(--spacing-xl) 0' }}>
+        <div style={{ width: '100%', maxWidth: '540px' }} className="flex flex-col gap-md">
+          <Card style={{ padding: 'var(--spacing-xl)' }} className="glass-surface">
           
           {signupSuccess ? (
             <div className="text-center" style={{ padding: 'var(--spacing-sm) 0' }}>
@@ -448,7 +444,7 @@ export default function Login() {
                             required 
                             readOnly
                             value={individualForm.country}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: '#f8fafc', color: 'var(--color-text-muted)' }} 
+                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-hover)', color: 'var(--color-text-muted)' }} 
                           />
                         </div>
                         <div>
@@ -549,7 +545,7 @@ export default function Login() {
                             required 
                             readOnly
                             value={orgForm.country}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: '#f8fafc', color: 'var(--color-text-muted)' }} 
+                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface-hover)', color: 'var(--color-text-muted)' }} 
                           />
                         </div>
                         <div>
@@ -566,7 +562,7 @@ export default function Login() {
                       </div>
 
                       {/* Contact Person */}
-                      <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', marginTop: '4px' }}>
+                      <div style={{ background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', marginTop: '4px' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>PRIMARY CONTACT PERSON</span>
                         
                         <div className="flex flex-col gap-sm">
@@ -625,7 +621,7 @@ export default function Login() {
                       {/* Documents Upload */}
                       <div style={{ marginTop: '4px' }}>
                         <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 600 }}>Upload Organization Document *</label>
-                        <div style={{ position: 'relative', border: '2px dashed var(--color-border)', borderRadius: '8px', padding: '14px', textAlign: 'center', background: '#f8fafc', transition: 'border-color 0.2s', cursor: 'pointer' }}>
+                        <div style={{ position: 'relative', border: '2px dashed var(--color-border)', borderRadius: '8px', padding: '14px', textAlign: 'center', background: 'var(--color-surface-hover)', transition: 'border-color 0.2s', cursor: 'pointer' }}>
                           <input 
                             type="file" 
                             accept=".pdf,.png,.jpg,.jpeg"
@@ -726,7 +722,7 @@ export default function Login() {
 
         {/* Demo Quick Logins Card */}
         {!isSignup && !signupSuccess && (
-          <Card style={{ padding: 'var(--spacing-md)', background: 'rgba(255, 255, 255, 0.9)', border: '1px solid rgba(79, 70, 229, 0.2)' }}>
+          <Card style={{ padding: 'var(--spacing-md)', background: 'rgba(17, 24, 39, 0.65)', border: '1px solid rgba(79, 70, 229, 0.3)' }}>
             <div className="flex items-center gap-xs" style={{ marginBottom: '12px', color: 'var(--color-primary)' }}>
               <Sparkles size={16} />
               <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Demo Quick Login Profiles</span>
@@ -742,7 +738,7 @@ export default function Login() {
                   padding: '10px 14px', 
                   borderRadius: 'var(--radius-md)', 
                   border: '1px solid var(--color-border)', 
-                  background: 'white', 
+                  background: 'rgba(255, 255, 255, 0.03)', 
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'border-color var(--transition-fast)'
@@ -770,7 +766,7 @@ export default function Login() {
                   padding: '10px 14px', 
                   borderRadius: 'var(--radius-md)', 
                   border: '1px solid var(--color-border)', 
-                  background: 'white', 
+                  background: 'rgba(255, 255, 255, 0.03)', 
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'border-color var(--transition-fast)'
@@ -798,7 +794,7 @@ export default function Login() {
                   padding: '10px 14px', 
                   borderRadius: 'var(--radius-md)', 
                   border: '1px solid var(--color-border)', 
-                  background: 'white', 
+                  background: 'rgba(255, 255, 255, 0.03)', 
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'border-color var(--transition-fast)'
@@ -818,7 +814,8 @@ export default function Login() {
             </div>
           </Card>
         )}
+        </div>
       </div>
-    </div>
+    </PageShell>
   );
 }
