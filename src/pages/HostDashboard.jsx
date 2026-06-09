@@ -360,82 +360,52 @@ export default function HostDashboard({ onLogout }) {
 
   return (
     <PageShell>
-      <div className="flex" style={{ minHeight: '80vh', background: 'var(--color-bg)' }}>
+      <div className="dashboard-layout">
         {/* Sidebar */}
-        <aside style={{ width: '260px', background: 'var(--color-surface)', borderRight: '1px solid var(--color-border)', padding: 'var(--spacing-lg) var(--spacing-md)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: 'var(--spacing-xl)', padding: '0 var(--spacing-sm)' }}>
-            <div className="text-gradient" style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>Host Portal</div>
-          </div>
+        <aside className="dashboard-sidebar">
+          <div className="dashboard-sidebar-title">Host Portal</div>
 
-        <nav className="flex flex-col gap-sm" style={{ flex: 1 }}>
-          <button 
-            onClick={() => { setActiveSidebar('events'); setSelectedEventId(null); }} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeSidebar === 'events' ? 'rgba(0,113,227,0.08)' : 'transparent', 
-              color: activeSidebar === 'events' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
-          >
-            <Calendar size={20} /> My Events
-          </button>
-          
-          <button 
-            onClick={() => { setActiveSidebar('audience'); setSelectedEventId(null); }} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeSidebar === 'audience' ? 'rgba(0,113,227,0.08)' : 'transparent', 
-              color: activeSidebar === 'audience' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
-          >
-            <Users size={20} /> Audience
-          </button>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+            <button 
+              onClick={() => { setActiveSidebar('events'); setSelectedEventId(null); }} 
+              className={`dashboard-nav-btn ${activeSidebar === 'events' ? 'active' : ''}`}
+            >
+              <Calendar size={18} /> My Events
+            </button>
+            
+            <button 
+              onClick={() => { setActiveSidebar('audience'); setSelectedEventId(null); }} 
+              className={`dashboard-nav-btn ${activeSidebar === 'audience' ? 'active' : ''}`}
+            >
+              <Users size={18} /> Audience
+            </button>
 
-          <button 
-            onClick={() => { setActiveSidebar('analytics'); setSelectedEventId(null); }} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeSidebar === 'analytics' ? 'rgba(0,113,227,0.08)' : 'transparent', 
-              color: activeSidebar === 'analytics' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
-          >
-            <BarChart2 size={20} /> Analytics
-          </button>
+            <button 
+              onClick={() => { setActiveSidebar('analytics'); setSelectedEventId(null); }} 
+              className={`dashboard-nav-btn ${activeSidebar === 'analytics' ? 'active' : ''}`}
+            >
+              <BarChart2 size={18} /> Analytics
+            </button>
+
+            <button 
+              onClick={() => { setActiveSidebar('settings'); setSelectedEventId(null); }} 
+              className={`dashboard-nav-btn ${activeSidebar === 'settings' ? 'active' : ''}`}
+            >
+              <Settings size={18} /> Settings
+            </button>
+          </nav>
 
           <button 
-            onClick={() => { setActiveSidebar('settings'); setSelectedEventId(null); }} 
-            className="flex items-center gap-sm" 
-            style={{ 
-              width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-              padding: '10px 16px', 
-              background: activeSidebar === 'settings' ? 'rgba(0,113,227,0.08)' : 'transparent', 
-              color: activeSidebar === 'settings' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
-              borderRadius: 'var(--radius-md)', fontWeight: 600 
-            }}
+            onClick={onLogout} 
+            className="dashboard-nav-btn"
+            style={{ marginTop: 'auto', border: '1px solid var(--color-border)' }}
           >
-            <Settings size={20} /> Settings
+            <LogOut size={18} /> Log Out
           </button>
-        </nav>
+        </aside>
 
-        <button 
-          onClick={onLogout} 
-          className="flex items-center gap-sm text-muted" 
-          style={{ padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 500 }}
-        >
-          <LogOut size={20} /> Log Out
-        </button>
-      </aside>
-
-      {/* Main Content Pane */}
-      <main style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)' }}>
+        {/* Main Content Pane */}
+        <main className="dashboard-main">
         
         {/* --- GLOBAL SIDEBAR NAVIGATION --- */}
         {activeSidebar === 'events' && !selectedEventId && (

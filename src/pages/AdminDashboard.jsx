@@ -48,75 +48,46 @@ export default function AdminDashboard({ onLogout }) {
 
   return (
     <PageShell>
-      <div style={{ display: 'flex', minHeight: '80vh', background: 'var(--color-bg)' }}>
+      <div className="dashboard-layout">
       {/* Sidebar navigation */}
-      <aside style={{
-        width: '280px',
-        background: 'var(--color-surface)',
-        borderRight: '1px solid var(--color-border)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: 'var(--spacing-md)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px' }}>
-          <img src="/logo.png" alt="SafalEvents" style={{ height: '40px', borderRadius: '6px' }} />
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, background: 'rgba(0, 113, 227, 0.1)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>Superadmin</span>
+      <aside className="dashboard-sidebar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '0 4px' }}>
+          <span style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}>Admin Portal</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(0, 113, 227, 0.1)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>Superadmin</span>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
           <button 
             onClick={() => setActiveTab('pending')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'pending' ? 'rgba(0, 113, 227, 0.08)' : 'transparent',
-              color: activeTab === 'pending' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
-            }}
+            className={`dashboard-nav-btn ${activeTab === 'pending' ? 'active' : ''}`}
           >
-            <Building2 size={18} /> Pending Approvals ({pendingHosts.length})
+            <Building2 size={18} /> Pending ({pendingHosts.length})
           </button>
           <button 
             onClick={() => setActiveTab('all')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'all' ? 'rgba(0, 113, 227, 0.08)' : 'transparent',
-              color: activeTab === 'all' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
-            }}
+            className={`dashboard-nav-btn ${activeTab === 'all' ? 'active' : ''}`}
           >
-            <UserCheck size={18} /> Hosts Directory ({activeHosts.length})
+            <UserCheck size={18} /> Directory ({activeHosts.length})
           </button>
           <button 
             onClick={() => setActiveTab('logs')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'logs' ? 'rgba(0, 113, 227, 0.08)' : 'transparent',
-              color: activeTab === 'logs' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              fontWeight: 600, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
-            }}
+            className={`dashboard-nav-btn ${activeTab === 'logs' ? 'active' : ''}`}
           >
-            <History size={18} /> Verification Audit Logs ({vlogs.length})
+            <History size={18} /> Audit Logs ({vlogs.length})
           </button>
         </nav>
 
         <button 
           onClick={onLogout}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--color-border)',
-            background: 'none', color: 'var(--color-text-muted)',
-            fontWeight: 600, cursor: 'pointer', marginTop: 'auto'
-          }}
+          className="dashboard-nav-btn"
+          style={{ marginTop: 'auto', border: '1px solid var(--color-border)' }}
         >
           <LogOut size={18} /> Exit Admin Portal
         </button>
       </aside>
 
       {/* Main dashboard content */}
-      <main style={{ flex: 1, padding: 'var(--spacing-lg) var(--spacing-xl)', overflowY: 'auto' }}>
+      <main className="dashboard-main">
         
         {/* --- PENDING APPLICATIONS VIEW --- */}
         {activeTab === 'pending' && (
