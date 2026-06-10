@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X,
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
-  Compass, Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
+  Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
   UserCheck, AlertCircle, Copy, Share2, ArrowRight, DollarSign, Ticket, TrendingUp,
-  MapPin, Eye
+  MapPin, Eye, Webhook
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -15,10 +15,24 @@ import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/imag
 
 export default function HostDashboard({ onLogout }) {
   const navigate = useNavigate();
-  
+
+  // Get current user from mockStore to check if org host
+  const currentUser = mockStore.getCurrentUser();
+  const isOrgHost = currentUser?.hostType === 'organization';
+
   // Navigation: dashboard, events, earnings, messages, audience, settings
   const [activeSidebar, setActiveSidebar] = useState('dashboard');
-  
+
+  // Org document upload state
+  const [orgDocsUploaded, setOrgDocsUploaded] = useState(false);
+  const [uploadedDocuments, setUploadedDocuments] = useState([]);
+  const [showOrgDocModal, setShowOrgDocModal] = useState(isOrgHost && !orgDocsUploaded);
+
+  // Integrations state
+  const [connectedIntegrations, setConnectedIntegrations] = useState([]);
+  const [integrationForm, setIntegrationForm] = useState({ platform: 'jotform', apiKey: '' });
+  const [showIntegrationModal, setShowIntegrationModal] = useState(false);
+
   // My Events sub-tab: live, today, thisWeek, upcoming, past, drafts
   const [activeEventTab, setActiveEventTab] = useState('thisWeek');
   
@@ -175,6 +189,44 @@ export default function HostDashboard({ onLogout }) {
   const loadDashboardData = () => {
     const allEvents = mockStore.getEvents();
     setEvents(allEvents);
+  };
+
+  const handleOrgDocUpload = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setUploadedDocuments([...uploadedDocuments, ...files.map(f => f.name)]);
+    }
+  };
+
+  const handleOrgDocSubmit = () => {
+    if (uploadedDocuments.length > 0) {
+      setOrgDocsUploaded(true);
+      setShowOrgDocModal(false);
+      alert('Organization documents uploaded successfully! Your account is now fully activated.');
+    } else {
+      alert('Please upload at least one document.');
+    }
+  };
+
+  const handleConnectIntegration = (e) => {
+    e.preventDefault();
+    if (!integrationForm.apiKey.trim()) {
+      alert('Please enter an API key or token.');
+      return;
+    }
+    setConnectedIntegrations([...connectedIntegrations, {
+      id: Date.now(),
+      platform: integrationForm.platform,
+      status: 'connected',
+      connectedAt: new Date().toLocaleDateString()
+    }]);
+    setIntegrationForm({ platform: 'jotform', apiKey: '' });
+    setShowIntegrationModal(false);
+    alert(`${integrationForm.platform} connected successfully!`);
+  };
+
+  const handleDisconnectIntegration = (id) => {
+    setConnectedIntegrations(connectedIntegrations.filter(i => i.id !== id));
   };
 
   useEffect(() => {
@@ -797,11 +849,18 @@ export default function HostDashboard({ onLogout }) {
               <Users size={18} /> Audience
             </button>
 
-            <button 
-              onClick={() => { setActiveSidebar('settings'); setSelectedEventId(null); }} 
+            <button
+              onClick={() => { setActiveSidebar('settings'); setSelectedEventId(null); }}
               className={`dashboard-nav-btn ${activeSidebar === 'settings' ? 'active' : ''}`}
             >
               <Settings size={18} /> Settings
+            </button>
+
+            <button
+              onClick={() => { setActiveSidebar('integrations'); setSelectedEventId(null); }}
+              className={`dashboard-nav-btn ${activeSidebar === 'integrations' ? 'active' : ''}`}
+            >
+              <Webhook size={18} /> Integrations
             </button>
           </nav>
 
@@ -2953,6 +3012,179 @@ export default function HostDashboard({ onLogout }) {
                   <Button variant="primary" type="submit" style={{ marginTop: '10px', alignSelf: 'start' }}>Save Changes</Button>
                 </form>
               </Card>
+
+              {/* ORG DOCUMENT UPLOAD SECTION (only for org hosts) */}
+              {isOrgHost && (
+                <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left', marginTop: '24px', border: orgDocsUploaded ? '1px solid var(--color-border)' : '2px solid var(--color-primary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: '44px', height: '44px', borderRadius: 'var(--radius-md)',
+                      background: orgDocsUploaded ? 'rgba(0, 200, 83, 0.1)' : 'rgba(242, 84, 27, 0.1)',
+                      color: orgDocsUploaded ? 'var(--color-accent)' : 'var(--color-primary)'
+                    }}>
+                      <FileText size={22} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Organization Documents</h4>
+                      <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
+                        {orgDocsUploaded ? '✓ Verified and uploaded' : 'Required for account activation'}
+                      </p>
+                    </div>
+                    {orgDocsUploaded && (
+                      <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)' }}>
+                        <Check size={16} /> Verified
+                      </div>
+                    )}
+                  </div>
+
+                  {!orgDocsUploaded && (
+                    <>
+                      <div style={{
+                        background: 'var(--color-surface-hover)', border: '2px dashed var(--color-border)',
+                        borderRadius: 'var(--radius-md)', padding: '24px 16px', textAlign: 'center',
+                        marginBottom: '16px', cursor: 'pointer'
+                      }}>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          onChange={handleOrgDocUpload}
+                          style={{ display: 'none' }}
+                          id="settings-org-doc-upload"
+                        />
+                        <label htmlFor="settings-org-doc-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                          <div style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: '40px', height: '40px', borderRadius: '10px',
+                            background: 'rgba(242, 84, 27, 0.12)', color: 'var(--color-primary)'
+                          }}>
+                            <FileText size={20} />
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                            Click to upload documents
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            EIN letter, certificate, or legal document
+                          </div>
+                        </label>
+                      </div>
+
+                      {uploadedDocuments.length > 0 && (
+                        <div style={{ background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: '12px' }}>
+                          {uploadedDocuments.map((doc, idx) => (
+                            <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Check size={13} color='var(--color-accent)' /> {doc}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <Button
+                        variant="primary"
+                        onClick={handleOrgDocSubmit}
+                        disabled={uploadedDocuments.length === 0}
+                        style={{ width: '100%', padding: '11px', fontSize: '0.9rem', marginTop: '8px' }}
+                      >
+                        {uploadedDocuments.length === 0 ? 'Upload Documents' : `Upload & Verify (${uploadedDocuments.length})`}
+                      </Button>
+                    </>
+                  )}
+
+                  {orgDocsUploaded && (
+                    <div style={{
+                      background: 'rgba(0, 200, 83, 0.08)', border: '1px solid rgba(0, 200, 83, 0.3)',
+                      borderRadius: 'var(--radius-md)', padding: '12px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text)'
+                    }}>
+                      ✓ Your organization is verified and fully activated. You can now create unlimited events.
+                    </div>
+                  )}
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* INTEGRATIONS VIEW                                                        */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'integrations' && (
+            <div>
+              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Integrations</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Connect third-party tools and platforms to enhance your event management.</p>
+              </div>
+
+              {/* Connected Integrations */}
+              {connectedIntegrations.length > 0 && (
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--color-text)' }}>Connected Integrations</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                    {connectedIntegrations.map(int => (
+                      <Card key={int.id} style={{ padding: '18px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div>
+                            <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text)', textTransform: 'capitalize' }}>{int.platform}</h4>
+                            <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>Connected on {int.connectedAt}</p>
+                          </div>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', background: 'rgba(0, 200, 83, 0.1)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
+                            <Check size={13} /> Connected
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleDisconnectIntegration(int.id)}
+                          style={{
+                            background: 'transparent', border: '1px solid var(--color-border)', color: '#ef4444',
+                            padding: '8px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
+                          }}
+                        >
+                          Disconnect
+                        </button>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Available Integrations */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>Available Platforms</h3>
+                  <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                    <Webhook size={12} /> Connect via API
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                  {[
+                    { name: 'Jotform', desc: 'Sync form submissions directly to your events', icon: '📋' },
+                    { name: 'WhatsApp', desc: 'Send RSVP reminders and updates via WhatsApp', icon: '💬' },
+                    { name: 'Google Sheets', desc: 'Export guest lists and attendance to Sheets', icon: '📊' },
+                    { name: 'Slack', desc: 'Get real-time RSVP notifications in your Slack workspace', icon: '🔔' },
+                    { name: 'Mailchimp', desc: 'Sync guests to your email campaigns', icon: '📧' },
+                    { name: 'Zapier', desc: 'Automate workflows with 1000+ apps', icon: '⚡' },
+                    { name: 'HubSpot', desc: 'Manage guests and leads in HubSpot CRM', icon: '🎯' },
+                    { name: 'Twilio', desc: 'Send SMS reminders and notifications', icon: '📱' }
+                  ].map(platform => {
+                    const isConnected = connectedIntegrations.some(i => i.platform.toLowerCase() === platform.name.toLowerCase());
+                    return (
+                      <Card key={platform.name} style={{ padding: '18px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div>
+                          <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>{platform.icon}</div>
+                          <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>{platform.name}</h4>
+                          <p className="text-muted" style={{ fontSize: '0.8rem', margin: '6px 0 0 0', lineHeight: 1.4 }}>{platform.desc}</p>
+                        </div>
+                        <Button
+                          variant={isConnected ? 'ghost' : 'primary'}
+                          onClick={() => !isConnected && setShowIntegrationModal(true)}
+                          style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
+                          disabled={isConnected}
+                        >
+                          {isConnected ? '✓ Connected' : 'Connect'}
+                        </Button>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -3122,6 +3354,180 @@ export default function HostDashboard({ onLogout }) {
                   Cancel
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* INTEGRATION CONNECT MODAL */}
+        {showIntegrationModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
+          }}>
+            <div className="animate-fade-in" style={{
+              background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '480px',
+              padding: '32px', overflow: 'hidden', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: '56px', height: '56px', borderRadius: 'var(--radius-md)',
+                  background: 'rgba(242, 84, 27, 0.1)', color: 'var(--color-primary)', marginBottom: '16px'
+                }}>
+                  <Webhook size={28} />
+                </div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 8px 0', color: 'var(--color-text)' }}>
+                  Connect Integration
+                </h2>
+                <p className="text-muted" style={{ fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
+                  Enter your API key or token to connect {integrationForm.platform}
+                </p>
+              </div>
+
+              <form onSubmit={handleConnectIntegration} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: 'var(--color-text)' }}>Platform</label>
+                  <select
+                    value={integrationForm.platform}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, platform: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }}
+                  >
+                    <option value="jotform">Jotform</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="google-sheets">Google Sheets</option>
+                    <option value="slack">Slack</option>
+                    <option value="mailchimp">Mailchimp</option>
+                    <option value="zapier">Zapier</option>
+                    <option value="hubspot">HubSpot</option>
+                    <option value="twilio">Twilio</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: 'var(--color-text)' }}>API Key / Token</label>
+                  <input
+                    type="password"
+                    placeholder="Paste your API key here"
+                    value={integrationForm.apiKey}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, apiKey: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.9rem', fontFamily: 'monospace' }}
+                  />
+                  <p className="text-muted" style={{ fontSize: '0.75rem', margin: '6px 0 0 0' }}>Your token is encrypted and never stored in plain text.</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => setShowIntegrationModal(false)}
+                    style={{ padding: '10px 16px', fontSize: '0.9rem' }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                  >
+                    Connect Integration
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ORG DOCUMENT UPLOAD MODAL */}
+        {showOrgDocModal && isOrgHost && !orgDocsUploaded && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
+          }}>
+            <div className="animate-fade-in" style={{
+              background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '540px',
+              padding: '32px', overflow: 'hidden', boxShadow: 'var(--shadow-lg)', border: '2px solid var(--color-border)', color: 'var(--color-text)'
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: '56px', height: '56px', borderRadius: 'var(--radius-md)',
+                  background: 'rgba(242, 84, 27, 0.1)', color: 'var(--color-primary)', marginBottom: '16px'
+                }}>
+                  <FileText size={28} />
+                </div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 8px 0', color: 'var(--color-text)' }}>
+                  Complete Your Organization Verification
+                </h2>
+                <p className="text-muted" style={{ fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
+                  To fully activate your organization account and create events, please upload your organization documents (EIN letter, certificate, or any legal document).
+                </p>
+              </div>
+
+              <div style={{
+                background: 'var(--color-surface-hover)', border: '2px dashed var(--color-border)',
+                borderRadius: 'var(--radius-md)', padding: '32px 20px', textAlign: 'center',
+                marginBottom: '20px', cursor: 'pointer', transition: 'all 0.2s'
+              }}>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={handleOrgDocUpload}
+                  style={{ display: 'none' }}
+                  id="org-doc-upload"
+                />
+                <label htmlFor="org-doc-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: '44px', height: '44px', borderRadius: '12px',
+                    background: 'rgba(242, 84, 27, 0.12)', color: 'var(--color-primary)'
+                  }}>
+                    <FileText size={22} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>
+                      Click to upload or drag files
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      PDF, JPG, PNG, DOC, or DOCX
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              {uploadedDocuments.length > 0 && (
+                <div style={{ background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '20px' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '10px', color: 'var(--color-text)' }}>
+                    Uploaded Files ({uploadedDocuments.length}):
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {uploadedDocuments.map((doc, idx) => (
+                      <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Check size={14} color='var(--color-accent)' /> {doc}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <Button
+                  variant="primary"
+                  onClick={handleOrgDocSubmit}
+                  disabled={uploadedDocuments.length === 0}
+                  style={{ flex: 1, padding: '12px', fontWeight: 700 }}
+                >
+                  Upload & Activate Account
+                </Button>
+              </div>
+
+              <p style={{
+                fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '16px', margin: '16px 0 0 0'
+              }}>
+                You can also upload documents later in Settings → Organization Documents
+              </p>
             </div>
           </div>
         )}

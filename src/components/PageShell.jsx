@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { LogOut, ArrowRight, LayoutDashboard, Menu, X, Compass, LogIn, Sparkles, Bell, UserPlus, CheckCircle, CreditCard } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, ArrowRight, LayoutDashboard, Menu, X, LogIn, Sparkles, Bell, UserPlus, CheckCircle, CreditCard } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 
 export default function PageShell({ children }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
@@ -12,7 +14,7 @@ export default function PageShell({ children }) {
   useEffect(() => {
     const user = mockStore.getCurrentUser();
     setCurrentUser(user);
-    
+
     if (user && user.role === 'host') {
       setNotifications(mockStore.getHostNotifications());
       // Poll every 10 seconds to show dynamic updates
@@ -21,7 +23,7 @@ export default function PageShell({ children }) {
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, []);
+  }, [location.pathname]);
 
   const handleMarkAllRead = () => {
     mockStore.markHostNotificationsRead();
@@ -32,7 +34,7 @@ export default function PageShell({ children }) {
 
   const handleLogout = () => {
     mockStore.setCurrentUser({ role: null, name: '', email: '', phone: '' });
-    window.location.reload();
+    navigate('/');
   };
 
   return (
@@ -48,10 +50,6 @@ export default function PageShell({ children }) {
 
           {/* Desktop Navigation */}
           <nav className="site-nav site-nav-desktop">
-            <Link to="/" className="site-nav-link" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Compass size={15} /> Explore Events
-            </Link>
-
             {currentUser && currentUser.role ? (
               <>
                 {currentUser.role === 'host' && (
@@ -204,7 +202,7 @@ export default function PageShell({ children }) {
                   <LogIn size={15} /> Sign In
                 </Link>
                 <Link to="/login?signup=true" className="site-nav-cta">
-                  <Sparkles size={14} /> Become a Host <ArrowRight size={14} />
+                  <Sparkles size={14} /> Create Invite <ArrowRight size={14} />
                 </Link>
               </>
             )}
@@ -250,10 +248,6 @@ export default function PageShell({ children }) {
             boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
             animation: 'fadeIn 0.2s ease-in-out'
           }}>
-            <Link to="/" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '1rem', color: 'var(--color-text)', fontWeight: 600 }}>
-              <Compass size={18} style={{ color: 'var(--color-primary)' }} /> Explore Events
-            </Link>
-
             {currentUser && currentUser.role ? (
               <>
                 <Link to="/dashboard" className="dashboard-pill" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', width: 'fit-content' }}>

@@ -2,8 +2,8 @@
 
 :root {
   /* Apple Light Theme Base */
-  --color-primary: #FF6B35; /* Orange Zomato Energy */
-  --color-primary-hover: #e0531f;
+  --color-primary: #F2541B; /* Orange Zomato Energy */
+  --color-primary-hover: #d8430f;
   --color-accent: #00C853; /* Blinkit Green */
   --color-accent-hover: #00b047;
   --color-urgent: #FF1744; /* Urgent Red */
@@ -16,11 +16,11 @@
   --color-border-hover: #ced4da;
 
   /* Brand RGB channels (for tints / glows that need alpha) */
-  --color-primary-rgb: 255, 107, 53;
+  --color-primary-rgb: 242, 84, 27;
   --color-accent-rgb: 0, 200, 83;
   /* Reusable brand tints — keeps every "primary"-flavoured surface on-brand */
-  --tint-primary-soft: rgba(255, 107, 53, 0.08);
-  --tint-primary-medium: rgba(255, 107, 53, 0.14);
+  --tint-primary-soft: rgba(242, 84, 27, 0.08);
+  --tint-primary-medium: rgba(242, 84, 27, 0.14);
   --tint-accent-soft: rgba(0, 200, 83, 0.1);
 
   /* Typography */
@@ -46,7 +46,7 @@
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.08);
   --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.10);
-  --shadow-glow: 0 0 0 4px rgba(255, 107, 53, 0.18), 0 8px 24px rgba(255, 107, 53, 0.28);
+  --shadow-glow: 0 0 0 4px rgba(242, 84, 27, 0.18), 0 8px 24px rgba(242, 84, 27, 0.28);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,7 +77,7 @@ body {
 
 /* On-brand text selection */
 ::selection {
-  background: rgba(255, 107, 53, 0.22);
+  background: rgba(242, 84, 27, 0.22);
   color: var(--color-text);
 }
 
@@ -136,7 +136,7 @@ body {
   left: -10%;
   width: 50%;
   height: 50%;
-  background: radial-gradient(circle, rgba(255, 107, 53, 0.06) 0%, rgba(245, 245, 247, 0) 70%);
+  background: radial-gradient(circle, rgba(242, 84, 27, 0.06) 0%, rgba(245, 245, 247, 0) 70%);
   border-radius: 50%;
   z-index: -1;
   animation: float 10s ease-in-out infinite alternate;
@@ -244,7 +244,7 @@ a {
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
-  box-shadow: 0 4px 14px 0 rgba(255, 107, 53, 0.32);
+  box-shadow: 0 4px 14px 0 rgba(242, 84, 27, 0.32);
 }
 
 .btn-primary:hover {
@@ -392,7 +392,7 @@ a {
 }
 
 .premium-table tr:hover {
-  background-color: rgba(255, 107, 53, 0.03);
+  background-color: rgba(242, 84, 27, 0.03);
 }
 
 /* SVG Chart Animations */
@@ -525,13 +525,13 @@ input[type="url"]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.16) !important;
+  box-shadow: 0 0 0 4px rgba(242, 84, 27, 0.16) !important;
   outline: none !important;
 }
 
 /* Redefined table tr hover color for light mode */
 .premium-table tr:hover {
-  background-color: rgba(255, 107, 53, 0.04);
+  background-color: rgba(242, 84, 27, 0.04);
 }
 
 /* ─── Form System ─── */
@@ -590,7 +590,7 @@ textarea:focus {
 .form-textarea:focus,
 .form-select:focus {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.14) !important;
+  box-shadow: 0 0 0 4px rgba(242, 84, 27, 0.14) !important;
   outline: none !important;
 }
 
@@ -693,7 +693,7 @@ textarea:focus {
 }
 
 .dashboard-nav-btn.active {
-  background: rgba(255, 107, 53, 0.08);
+  background: rgba(242, 84, 27, 0.08);
   color: var(--color-primary);
 }
 
@@ -832,7 +832,7 @@ textarea:focus {
 
 .host-type-option.selected {
   border-color: var(--color-primary);
-  background: rgba(255, 107, 53, 0.06);
+  background: rgba(242, 84, 27, 0.06);
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -944,7 +944,7 @@ textarea:focus {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(255, 107, 53, 0.08);
+  background: rgba(242, 84, 27, 0.08);
   padding: 6px 12px;
   border-radius: var(--radius-sm);
 }
@@ -1020,7 +1020,7 @@ textarea:focus {
 }
 
 .badge-primary {
-  background: rgba(255, 107, 53, 0.08);
+  background: rgba(242, 84, 27, 0.08);
   color: var(--color-primary);
 }
 
@@ -1207,7 +1207,7 @@ button.text-link:hover {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
+  box-shadow: 0 4px 12px rgba(242, 84, 27, 0.25);
 }
 
 /* Collection Card styling (Zomato-style) */
@@ -1464,7 +1464,7 @@ button.text-link:hover {
   flex-shrink: 0;
 }
 
-.stat-icon-orange { background: linear-gradient(135deg, #FF6B35, #e0531f); }
+.stat-icon-orange { background: linear-gradient(135deg, #F2541B, #d8430f); }
 .stat-icon-green { background: linear-gradient(135deg, #00C853, #00963f); }
 .stat-icon-blue { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
 .stat-icon-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
@@ -1583,7 +1583,7 @@ button.text-link:hover {
 
 /* Accent ring helper for emphasized avatars/tiles */
 .ring-primary {
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);
+  box-shadow: 0 0 0 3px rgba(242, 84, 27, 0.18);
 }
 
 /* Smooth, consistent card-photo hover lift on linked event cards */
@@ -1591,4 +1591,159 @@ a .event-photo-card:hover {
   transform: translateY(-6px);
   box-shadow: var(--shadow-lg);
 }
+
+/* ════════════════════════════════════════════════════════════
+   Platform landing — new-age homepage (SafalEvents)
+   Light, calm, tool-like. RSVP is one module of a bigger stack.
+   ════════════════════════════════════════════════════════════ */
+
+/* Hero: light surface + faint grid + soft brand glow (no photo) */
+.platform-hero {
+  position: relative;
+  background: var(--color-surface);
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border);
+}
+.platform-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(10, 10, 10, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(10, 10, 10, 0.04) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 78% 70% at 50% 0%, #000 32%, transparent 78%);
+          mask-image: radial-gradient(ellipse 78% 70% at 50% 0%, #000 32%, transparent 78%);
+  z-index: 0;
+}
+.platform-hero::after {
+  content: '';
+  position: absolute;
+  top: -25%;
+  right: -8%;
+  width: 55%;
+  height: 80%;
+  background: radial-gradient(circle, rgba(var(--color-primary-rgb), 0.13) 0%, transparent 66%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Faux product window shown in the hero */
+.hero-mockup {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.hero-mockup-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+.hero-mockup-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* Reusable feature icon chip + soft tinted variants */
+.feature-chip {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chip-primary { background: rgba(var(--color-primary-rgb), 0.12); color: var(--color-primary); }
+.chip-green   { background: rgba(0, 200, 83, 0.12);   color: #00a344; }
+.chip-blue    { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
+.chip-violet  { background: rgba(139, 92, 246, 0.14); color: #7c3aed; }
+.chip-ink     { background: rgba(10, 10, 10, 0.06);   color: var(--color-text); }
+
+/* Module / value tile */
+.module-tile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease;
+}
+.module-tile:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-hover);
+}
+.module-tile.is-featured {
+  border-color: rgba(var(--color-primary-rgb), 0.4);
+  box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb), 0.16), var(--shadow-sm);
+}
+
+/* Audience segment card (image + copy) */
+.segment-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.segment-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Numbered "how it works" step circle */
+.step-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.05rem;
+  background: var(--color-text);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Soft tag pill (badges on cards) */
+.soft-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+/* Closing CTA — premium warm-dark band (single dark accent on a light page) */
+.cta-band {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  padding: clamp(40px, 6vw, 76px) var(--spacing-md);
+  text-align: center;
+  color: #fff;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(var(--color-primary-rgb), 0.32), transparent 45%),
+    radial-gradient(circle at 86% 88%, rgba(0, 200, 83, 0.16), transparent 45%),
+    linear-gradient(135deg, #141210 0%, #221913 100%);
+}
+.cta-band h2 { color: #fff; }
 

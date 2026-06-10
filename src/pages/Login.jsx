@@ -5,7 +5,7 @@ import PageShell from '../components/PageShell';
 import FormField, { FormInput, FormSelect } from '../components/FormField';
 import {
   CheckCircle2, ArrowLeft, Sparkles, User, Users,
-  Building2, Upload, FileText, Check, Lock, Timer, AlertCircle,
+  Building2, Check, Lock, Timer, AlertCircle,
   Mail, ShieldCheck, Zap, Heart, Star
 } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
@@ -35,7 +35,6 @@ export default function Login() {
     phone: '',
     country: 'USA',
     city: '',
-    password: '',
     agreeTerms: false
   });
 
@@ -51,7 +50,6 @@ export default function Login() {
     lastName: '',
     email: '',
     phone: '',
-    docs: ['mock_org_ein_letter.pdf'], // Mock uploaded documents list
     agreeRepresentation: false,
     agreeTerms: false
   });
@@ -63,7 +61,6 @@ export default function Login() {
 
   // Validation / Error Messages
   const [errorMsg, setErrorMsg] = useState('');
-  const [uploadedFileName, setUploadedFileName] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -238,13 +235,6 @@ export default function Login() {
     navigate('/dashboard');
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setUploadedFileName(file.name);
-      setOrgForm({ ...orgForm, docs: [file.name] });
-    }
-  };
 
   // ─── UI-only helpers (no logic) ───
   const orangeTint = 'rgba(255, 107, 53, 0.1)';
@@ -523,9 +513,6 @@ export default function Login() {
                       <FormField label="City">
                         <FormInput type="text" placeholder="New York" value={individualForm.city} onChange={(e) => setIndividualForm({ ...individualForm, city: e.target.value })} />
                       </FormField>
-                      <FormField label="Password" hint="Optional — OTP login is used by default.">
-                        <FormInput type="password" placeholder="••••••••" value={individualForm.password} onChange={(e) => setIndividualForm({ ...individualForm, password: e.target.value })} />
-                      </FormField>
                       <label style={{ display: 'flex', gap: '8px', fontSize: '0.8rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
                         <input type="checkbox" checked={individualForm.agreeTerms} onChange={(e) => setIndividualForm({ ...individualForm, agreeTerms: e.target.checked })} style={{ marginTop: '2px', accentColor: 'var(--color-primary)' }} />
                         <span>I agree to the Terms and Privacy Policy</span>
@@ -579,31 +566,6 @@ export default function Login() {
                           </FormField>
                         </div>
                       </div>
-                      <FormField label="Organization document" hint="PDF, JPG, or PNG — optional for demo.">
-                        <div
-                          style={{
-                            position: 'relative',
-                            border: `2px dashed ${uploadedFileName ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                            borderRadius: 'var(--radius-md)',
-                            padding: '20px 16px',
-                            textAlign: 'center',
-                            background: uploadedFileName ? greenTint : 'var(--color-surface-hover)',
-                            cursor: 'pointer',
-                            transition: 'all 0.18s ease'
-                          }}
-                        >
-                          <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileChange} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }} />
-                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', background: uploadedFileName ? 'var(--color-accent)' : orangeTint, color: uploadedFileName ? '#fff' : 'var(--color-primary)', marginBottom: '8px' }}>
-                            {uploadedFileName ? <FileText size={18} /> : <Upload size={18} />}
-                          </span>
-                          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                            {uploadedFileName || 'Drop your document here, or tap to browse'}
-                          </div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                            {uploadedFileName ? (<><CheckCircle2 size={12} style={{ color: 'var(--color-accent)' }} /> Looks good — ready to submit</>) : (<><ShieldCheck size={12} /> Helps us verify your organization faster</>)}
-                          </div>
-                        </div>
-                      </FormField>
                     </div>
                   )}
 
