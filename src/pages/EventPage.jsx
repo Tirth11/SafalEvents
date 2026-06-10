@@ -124,7 +124,7 @@ export default function EventPage() {
 
   // Count going / maybe
   const goingGuests = rsvps.filter(r => r.status === 'going');
-  const maybeGuests = rsvps.filter(r => r.status === 'maybe');
+  const maybeGuests = [];
   const waitlistGuests = rsvps.filter(r => r.status === 'waitlist');
   const totalAttending = goingGuests.length + maybeGuests.length;
   const deadlinePassed = event.rsvpDeadline ? new Date() > new Date(event.rsvpDeadline) : false;
@@ -172,8 +172,8 @@ export default function EventPage() {
     e.preventDefault();
     setAuthError('');
 
-    const fn = firstName.trim() || 'Guest';
-    const ln = lastName.trim() || '';
+    const fn = 'Guest';
+    const ln = '';
     const em = email.trim() || `guest${Date.now()}@example.com`;
     const ph = phone.trim() || '+1 (555) 000-0000';
 
@@ -181,7 +181,7 @@ export default function EventPage() {
     if (skipOtp) {
       setRsvpForm(prev => ({
         ...prev,
-        name: `${fn} ${ln}`.trim(),
+        name: prev.name || '',
         emailOrPhone: em
       }));
       setDrawerStep(2);
@@ -216,7 +216,7 @@ export default function EventPage() {
 
     setRsvpForm(prev => ({
       ...prev,
-      name: `${firstName} ${lastName}`,
+      name: prev.name || '',
       emailOrPhone: email
     }));
 
@@ -244,7 +244,7 @@ export default function EventPage() {
     
     mockStore.setCurrentUser({
       role: 'guest',
-      name: `${firstName} ${lastName}`,
+      name: rsvpForm.name || 'Guest',
       email: email,
       phone: phone
     });
@@ -255,7 +255,7 @@ export default function EventPage() {
       setDrawerStep(3);
     } else {
       mockStore.addRSVP(event.id, {
-        name: `${firstName} ${lastName}`,
+        name: rsvpForm.name || 'Guest',
         email: email,
         phone: phone,
         status: finalStatus,
@@ -278,7 +278,7 @@ export default function EventPage() {
     setTimeout(() => {
       // Complete mock checkout payment
       mockStore.addRSVP(event.id, {
-        name: `${firstName} ${lastName}`,
+        name: rsvpForm.name || 'Guest',
         email: email,
         phone: phone,
         status: 'going',
@@ -458,252 +458,6 @@ export default function EventPage() {
               </div>
             </Card>
 
-            {/* Guest list avatar grid card */}
-            <Card style={{ padding: 'var(--spacing-md)' }}>
-              <h3 style={{ ...sectionTitleStyle, justifyContent: 'space-between' }}>
-                <span className="flex items-center" style={{ gap: '10px' }}>
-                  <span className="stat-icon-tile stat-icon-purple" style={{ width: '36px', height: '36px' }}><Users size={18} /></span>
-                  Guest List
-                </span>
-                {event.showRsvpCounts !== 'off' && (
-                  <span className="badge badge-primary" style={{ fontSize: '0.78rem' }}>
-                    {event.showRsvpCounts === 'total' ? `${totalAttending} responded` : `${totalAttending} attending`}
-                  </span>
-                )}
-              </h3>
-
-              {/* Guests avatar grid */}
-              {event.showGuestList ? (
-                goingGuests.length > 0 || maybeGuests.length > 0 || waitlistGuests.length > 0 ? (
-                  <div className="flex flex-col gap-md">
-                    {event.showRsvpCounts === 'detailed' || !event.showRsvpCounts ? (
-                      <>
-                        {goingGuests.length > 0 && (
-                          <div>
-                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-accent)', marginBottom: '10px' }}>
-                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-accent)' }}></span> Going ({goingGuests.length})
-                            </p>
-                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                              {goingGuests.map(g => (
-                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center' }}>
-                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
-                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {maybeGuests.length > 0 && (
-                          <div>
-                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#ca8a04', marginBottom: '10px' }}>
-                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#eab308' }}></span> Maybe ({maybeGuests.length})
-                            </p>
-                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                              {maybeGuests.map(g => (
-                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.85 }}>
-                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
-                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {waitlistGuests.length > 0 && (
-                          <div>
-                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '10px' }}>
-                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#8b5cf6' }}></span> Waitlist ({waitlistGuests.length})
-                            </p>
-                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                              {waitlistGuests.map(g => (
-                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.7 }}>
-                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" style={{ filter: 'grayscale(35%)' }} />
-                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {(goingGuests.length > 0 || maybeGuests.length > 0) && (
-                          <div>
-                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-primary)', marginBottom: '10px' }}>
-                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-primary)' }}></span> Confirmed Guests
-                            </p>
-                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                              {[...goingGuests, ...maybeGuests].map(g => (
-                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center' }}>
-                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
-                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {waitlistGuests.length > 0 && (
-                          <div>
-                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '10px' }}>
-                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#8b5cf6' }}></span> Waitlisted
-                            </p>
-                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                              {waitlistGuests.map(g => (
-                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.7 }}>
-                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" style={{ filter: 'grayscale(35%)' }} />
-                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="empty-state" style={{ padding: 'var(--spacing-md)' }}>
-                    <span className="stat-icon-tile stat-icon-orange"><Users size={20} /></span>
-                    <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>No RSVPs yet. Be the first to join!</p>
-                  </div>
-                )
-              ) : (
-                <div className="flex items-center justify-center gap-xs" style={{ background: 'var(--color-surface-hover)', padding: '14px', borderRadius: '14px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                  <Lock size={15} /> The host has kept the guest list private.
-                </div>
-              )}
-            </Card>
-
-            {/* Polls Widget */}
-            {event.allowComments && polls.length > 0 && (
-              <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h3 style={sectionTitleStyle}>
-                  <span className="stat-icon-tile stat-icon-blue" style={{ width: '36px', height: '36px' }}><Check size={18} /></span>
-                  Event Polls
-                </h3>
-                <div className="flex flex-col gap-md">
-                  {polls.map(poll => {
-                    const totalVotes = poll.options.reduce((acc, curr) => acc + curr.votes, 0);
-                    return (
-                      <div key={poll.id} style={{ background: 'var(--color-surface-hover)', borderRadius: '12px', padding: '14px', border: '1px solid var(--color-border)' }}>
-                        <h5 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '8px' }}>Q: {poll.question}</h5>
-                        <div className="flex flex-col gap-xs">
-                          {poll.options.map(opt => {
-                            const percent = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
-                            // Check if current user voted for this option
-                            const hasVoted = currentUser && opt.voters.includes(currentUser.email);
-                            
-                            return (
-                              <button
-                                key={opt.id}
-                                onClick={() => handleVote(poll.id, opt.id)}
-                                style={{
-                                  display: 'block', width: '100%', border: 'none', background: 'none', textAlign: 'left', padding: 0, cursor: 'pointer'
-                                }}
-                              >
-                                <div style={{
-                                  padding: '9px 12px', borderRadius: '10px', border: hasVoted ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                  background: hasVoted ? 'rgba(255, 107, 53, 0.08)' : 'var(--color-surface)', transition: 'background var(--transition-fast)',
-                                  position: 'relative', overflow: 'hidden'
-                                }}>
-                                  {/* Progress fill */}
-                                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: 'rgba(255, 107, 53, 0.1)', zIndex: 1, borderRadius: '10px' }}></div>
-                                  <div className="flex justify-between items-center" style={{ position: 'relative', zIndex: 2, fontSize: '0.85rem' }}>
-                                    <span style={{ fontWeight: hasVoted ? 600 : 500 }}>{opt.text}</span>
-                                    <span className="text-muted" style={{ fontSize: '0.75rem' }}>{opt.votes} ({percent}%)</span>
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
-
-            {/* Comments Board Feed */}
-            {event.allowComments && (
-              <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h3 style={sectionTitleStyle}>
-                  <span className="stat-icon-tile stat-icon-green" style={{ width: '36px', height: '36px' }}><MessageSquare size={18} /></span>
-                  Guest Board
-                </h3>
-
-                {/* Add Comment Form */}
-                <form onSubmit={handleCommentSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '20px' }}>
-                  {!currentUser || !currentUser.name ? (
-                    <input
-                      type="text"
-                      placeholder="Your name"
-                      value={commentName}
-                      onChange={(e) => setCommentName(e.target.value)}
-                      style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)', outline: 'none', background: 'var(--color-surface-hover)' }}
-                    />
-                  ) : null}
-
-                  <div className="flex gap-xs items-center">
-                    <img src={getAvatar(commentName || currentUser?.email || 'guest')} alt="" className="avatar-img" />
-                    <input
-                      type="text"
-                      placeholder="Leave a message or greeting..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      style={{ flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)', fontSize: '0.875rem', outline: 'none', background: 'var(--color-surface-hover)' }}
-                    />
-                    <Button variant="primary" type="submit" style={{ padding: '10px 12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={16} /></Button>
-                  </div>
-                </form>
-
-                {/* Comments list */}
-                {comments.length > 0 ? (
-                  <div className="flex flex-col gap-md">
-                    {comments.map(c => (
-                      <div key={c.id} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
-                        <img src={getAvatar(c.name)} alt={c.name} className="avatar-img" />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="flex items-center gap-xs">
-                            <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{c.name}</span>
-                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                          <p style={{ fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.5 }}>{c.text}</p>
-
-                          {/* Reactions buttons */}
-                          <div className="flex gap-xs" style={{ marginTop: '8px' }}>
-                            {['🎉', '❤️', '👍'].map(emoji => {
-                              const count = c.reactions[emoji] || 0;
-                              return (
-                                <button
-                                  key={emoji}
-                                  onClick={() => handleReactToComment(c.id, emoji)}
-                                  style={{
-                                    background: count > 0 ? 'rgba(255, 107, 53, 0.08)' : 'var(--color-surface-hover)',
-                                    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-full)',
-                                    padding: '3px 9px', fontSize: '0.72rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px'
-                                  }}
-                                >
-                                  <span>{emoji}</span>
-                                  <span style={{ fontWeight: 700 }}>{count}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty-state" style={{ padding: 'var(--spacing-md)' }}>
-                    <span className="stat-icon-tile stat-icon-green"><MessageSquare size={20} /></span>
-                    <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>No greetings posted yet. Drop a message to say hi!</p>
-                  </div>
-                )}
-              </Card>
-            )}
-
           </div>
 
           {/* RIGHT SIDE: RSVP Checkout Box */}
@@ -779,43 +533,11 @@ export default function EventPage() {
                     </div>
                   )}
 
-                  {/* Capacity bar */}
-                  <div style={{ marginBottom: '14px' }}>
-                    <div className="flex justify-between" style={{ fontSize: '0.75rem', marginBottom: '6px' }}>
-                      <span className="text-muted">Spots remaining</span>
-                      <span style={{ fontWeight: 800, color: spotsLeft <= 10 ? 'var(--color-urgent)' : 'var(--color-accent)' }}>
-                        {spotsLeft} / {event.capacity}
-                      </span>
-                    </div>
-                    <div style={{ height: '8px', background: '#e9ecef', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', width: `${capacityPct}%`, borderRadius: 'var(--radius-full)', transition: 'width 0.4s ease' }}></div>
-                    </div>
-                  </div>
-
                   {/* Deadline note */}
                   {event.rsvpDeadline && (
-                    <div className="flex items-center gap-xs text-muted" style={{ fontSize: '0.78rem', marginBottom: '14px' }}>
+                    <div className="flex items-center gap-xs text-muted" style={{ fontSize: '0.78rem', marginBottom: '16px' }}>
                       <Timer size={14} style={{ color: 'var(--color-primary)' }} />
                       RSVPs close {new Date(event.rsvpDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                    </div>
-                  )}
-
-                  {/* Attendee avatar stack */}
-                  {goingGuests.length > 0 && event.showRsvpCounts !== 'off' && (
-                    <div className="flex items-center gap-xs" style={{ marginBottom: '16px' }}>
-                      <div className="avatar-stack">
-                        {goingGuests.slice(0, 4).map(g => (
-                          <img key={g.id} src={getAvatar(g.name)} alt={g.name} className="avatar-img" title={g.name} />
-                        ))}
-                        {goingGuests.length > 4 && (
-                          <span className="avatar-stack-more">+{goingGuests.length - 4}</span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                        {event.showRsvpCounts === 'total' 
-                          ? `${totalAttending} people responded` 
-                          : `Going: ${goingGuests.length} | Maybe: ${maybeGuests.length}`}
-                      </span>
                     </div>
                   )}
 
@@ -876,19 +598,11 @@ export default function EventPage() {
                   </div>
                 )}
 
-                <div className="grid-2">
-                  <FormField label="First name">
-                    <FormInput type="text" placeholder="Alice" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                  </FormField>
-                  <FormField label="Last name">
-                    <FormInput type="text" placeholder="Vance" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                  </FormField>
-                </div>
                 <FormField label="Email">
-                  <FormInput type="email" placeholder="alice@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <FormInput type="email" placeholder="alice@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </FormField>
                 <FormField label="Phone">
-                  <FormInput type="tel" placeholder="+1 (555) 123-4567" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <FormInput type="tel" placeholder="+1 (555) 123-4567" value={phone} onChange={(e) => setPhone(e.target.value)} required />
                 </FormField>
 
                 <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-sm)', padding: '12px' }}>
@@ -958,31 +672,6 @@ export default function EventPage() {
                   <FormInput type="text" placeholder="Enter name" value={rsvpForm.name} onChange={(e) => setRsvpForm({ ...rsvpForm, name: e.target.value })} />
                 </FormField>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>Will you be attending?</label>
-                  <div className="flex gap-sm">
-                    <button 
-                      type="button" 
-                      onClick={() => setRsvpForm({ ...rsvpForm, status: 'going' })}
-                      style={{
-                        flex: 1, padding: '12px', borderRadius: '8px', border: rsvpForm.status === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: rsvpForm.status === 'going' ? 'rgba(255, 107, 53, 0.06)' : 'white', cursor: 'pointer', fontWeight: 600
-                      }}
-                    >
-                      {event.approvalRequired ? 'Request to Join' : 'Going'}
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setRsvpForm({ ...rsvpForm, status: 'maybe' })}
-                      style={{
-                        flex: 1, padding: '12px', borderRadius: '8px', border: rsvpForm.status === 'maybe' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: rsvpForm.status === 'maybe' ? 'rgba(255, 107, 53, 0.06)' : 'white', cursor: 'pointer', fontWeight: 600
-                      }}
-                    >
-                      Maybe
-                    </button>
-                  </div>
-                </div>
 
                 <FormField label="Number of guests (including yourself)" hint={`Max ${event.maxGuestsPerRsvp} per RSVP`}>
                   <select
@@ -1013,7 +702,7 @@ export default function EventPage() {
                 ))}
 
                 <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-md)' }}>
-                  Confirm & Submit RSVP
+                  {event.approvalRequired ? 'Request to Join' : 'Register'}
                 </Button>
               </form>
             )}
@@ -1113,7 +802,7 @@ export default function EventPage() {
                   <div style={{ padding: '14px 16px', borderTop: '2px dashed var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span className="stat-icon-tile stat-icon-green" style={{ borderRadius: '50%' }}><Check size={22} /></span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{`${firstName} ${lastName}`.trim() || rsvpForm.name}</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{rsvpForm.name || 'Guest'}</div>
                       <div className="text-muted flex items-center gap-xs" style={{ fontSize: '0.75rem', marginTop: '2px' }}>
                         <Calendar size={12} /> {eventDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {event.time}
                       </div>

@@ -418,30 +418,7 @@ export default function CreateEvent() {
                 </div>
               </div>
 
-              <div className="settings-card">
-                <ToggleRow
-                  title="Show guest list social proof"
-                  desc="Show avatars & names of registered guests on the invite page — boosts FOMO and signups."
-                  checked={formData.showGuestList}
-                  onChange={(e) => setFormData({ ...formData, showGuestList: e.target.checked })}
-                />
-              </div>
 
-              <div className="settings-card" style={{ padding: '12px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem' }}>Show RSVP status counts to guests</label>
-                <select
-                  value={formData.showRsvpCounts}
-                  onChange={(e) => setFormData({ ...formData, showRsvpCounts: e.target.value })}
-                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', background: 'var(--color-surface)', fontSize: '0.85rem' }}
-                >
-                  <option value="detailed">Show Going and Maybe separately</option>
-                  <option value="total">Show only total count</option>
-                  <option value="off">Off (Hide all RSVP counts)</option>
-                </select>
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '6px', lineHeight: 1.4 }}>
-                  Controls whether and how RSVP counts (Going/Maybe) are displayed on the public event page.
-                </span>
-              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div className="settings-card" style={{ padding: '12px' }}>
@@ -487,7 +464,7 @@ export default function CreateEvent() {
               </div>
 
               {formData.privacy === 'Private' && (
-                <div style={{ background: 'rgba(0,113,227,0.05)', border: '1px solid rgba(0,113,227,0.2)', borderRadius: 'var(--radius-md)', padding: '14px' }}>
+                <div style={{ background: 'rgba(255,107,53,0.05)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 'var(--radius-md)', padding: '14px' }}>
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><Shield size={14} className="text-primary" /> Private Event — Share Link</h4>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                     <input readOnly value={`${window.location.origin}/e/[event-id]`} style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem', background: 'var(--color-surface)', color: 'var(--color-text-muted)' }} />

@@ -199,7 +199,7 @@ export default function HostDashboard({ onLogout }) {
   let totalViews = 0;
   events.forEach(e => {
     const rsvps = mockStore.getRSVPs(e.id);
-    totalRsvps += rsvps.filter(r => r.status === 'going' || r.status === 'maybe').length;
+    totalRsvps += rsvps.filter(r => r.status === 'going').length;
     totalViews += mockStore.getViews(e.id);
   });
 
@@ -311,7 +311,7 @@ export default function HostDashboard({ onLogout }) {
       setCheckinResult({ type: 'error', rsvp, message: 'Guest is currently waitlisted. Entry denied.' });
       return;
     }
-    if (rsvp.status === 'declined') {
+    if (false) {
       setCheckinResult({ type: 'error', rsvp, message: 'Guest RSVP has been declined. Entry denied.' });
       return;
     }
@@ -429,7 +429,7 @@ export default function HostDashboard({ onLogout }) {
     
     // Log broadcast to notification logs for all targeted guests
     const targetGuests = managedEventRsvps.filter(r => {
-      if (broadcastTarget === 'all') return r.status === 'going' || r.status === 'maybe';
+      if (broadcastTarget === 'all') return r.status === 'going';
       if (broadcastTarget === 'going') return r.status === 'going';
       if (broadcastTarget === 'maybe') return r.status === 'maybe';
       return r.email === broadcastTarget; // Individual guest
@@ -502,7 +502,7 @@ export default function HostDashboard({ onLogout }) {
     } else {
       const eventRsvps = mockStore.getRSVPs(selectedEventId);
       if (dateChanged || locationChanged) {
-        const goingGuests = eventRsvps.filter(r => r.status === 'going' || r.status === 'maybe');
+        const goingGuests = eventRsvps.filter(r => r.status === 'going');
         goingGuests.forEach(guest => {
           const subject = `Event Updated: ${editEventForm.title}`;
           const body = `Hi ${guest.name},\n\nWe wanted to let you know that the details for the event "${editEventForm.title}" have been updated.\n\nNew Details:\nDate: ${editEventForm.date}\nTime: ${editEventForm.time}\nLocation: ${editEventForm.location}\n\nManage RSVP: ${window.location.origin}/dashboard`;
@@ -527,7 +527,7 @@ export default function HostDashboard({ onLogout }) {
   const handleEditEventSubmit = (e) => {
     e.preventDefault();
     const eventRsvps = mockStore.getRSVPs(selectedEventId);
-    const attendingCount = eventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length;
+    const attendingCount = eventRsvps.filter(r => r.status === 'going').length;
     
     // Capacity reduction limit block
     if (editEventForm.capacity < attendingCount) {
@@ -1013,7 +1013,7 @@ export default function HostDashboard({ onLogout }) {
                         key={idx}
                         onClick={() => setSelectedCalendarDate(isSelected ? null : day)}
                         style={{
-                          background: isToday ? 'rgba(0,113,227,0.05)' : 'var(--color-surface)',
+                          background: isToday ? 'rgba(255,107,53,0.05)' : 'var(--color-surface)',
                           border: isSelected 
                             ? '2.5px solid var(--color-primary)' 
                             : isToday 
@@ -1045,7 +1045,7 @@ export default function HostDashboard({ onLogout }) {
                           {hasEvents ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'center' }}>
                               <span style={{ fontSize: '1.1rem' }}>🎉</span>
-                              <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 6px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', borderRadius: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 6px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {dayEvents[0].title}
                               </span>
                             </div>
@@ -1239,7 +1239,7 @@ export default function HostDashboard({ onLogout }) {
                           fontSize: '0.75rem',
                           fontWeight: 700,
                           padding: '1px 6px',
-                          background: t.key === 'live' ? '#ff3b30' : 'rgba(0,113,227,0.1)',
+                          background: t.key === 'live' ? '#ff3b30' : 'rgba(255,107,53,0.1)',
                           color: t.key === 'live' ? 'white' : 'var(--color-primary)',
                           borderRadius: '10px'
                         }}>
@@ -1352,7 +1352,7 @@ export default function HostDashboard({ onLogout }) {
                               {totalAttending > 0 && (
                                 <div className="flex items-center gap-sm" style={{ marginTop: '12px' }}>
                                   <div className="avatar-stack">
-                                    {rsvps.filter(r => r.status === 'going' || r.status === 'maybe').slice(0, 4).map(r => (
+                                    {rsvps.filter(r => r.status === 'going').slice(0, 4).map(r => (
                                       <img key={r.id} src={getAvatar(r.name || r.email)} alt={r.name} className="avatar-img avatar-sm" />
                                     ))}
                                     {totalAttending > 4 && (
@@ -1595,15 +1595,12 @@ export default function HostDashboard({ onLogout }) {
                     </Card>
                   </div>
 
-                  <div className="grid-3" style={{ gap: '16px' }}>
+                  <div className="grid-2" style={{ gap: '16px' }}>
                     <Card style={{ padding: '16px', textAlign: 'center' }}>
                       <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Going</p>
                       <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#16a34a' }}>{managedEventRsvps.filter(r => r.status === 'going').length}</p>
                     </Card>
-                    <Card style={{ padding: '16px', textAlign: 'center' }}>
-                      <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Maybe</p>
-                      <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#ca8a04' }}>{managedEventRsvps.filter(r => r.status === 'maybe').length}</p>
-                    </Card>
+                    
                     <Card style={{ padding: '16px', textAlign: 'center' }}>
                       <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Waitlist</p>
                       <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#ef4444' }}>{managedEventRsvps.filter(r => r.status === 'waitlist').length}</p>
@@ -1689,7 +1686,7 @@ export default function HostDashboard({ onLogout }) {
                   <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
-                        👥 Confirmed & Maybe Attendees
+                        👥 Registered Attendees
                       </h4>
                       
                       {/* Bulk actions tool bar */}
@@ -1697,7 +1694,7 @@ export default function HostDashboard({ onLogout }) {
                         <div style={{ display: 'flex', gap: '8px', background: 'var(--color-surface-hover)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{selectedGuestIds.length} Selected:</span>
                           <button onClick={handleBulkCheckIn} style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Check-in</button>
-                          <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>
+                          <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>
                           <button onClick={handleBulkExport} style={{ border: 'none', background: 'rgba(71,85,105,0.1)', color: '#475569', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Export</button>
                           <button onClick={() => setSelectedGuestIds([])} style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
                         </div>
@@ -1730,7 +1727,7 @@ export default function HostDashboard({ onLogout }) {
                           </tr>
                         </thead>
                         <tbody>
-                          {managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').map(rsvp => (
+                          {managedEventRsvps.filter(r => r.status === 'going').map(rsvp => (
                             <tr key={rsvp.id}>
                               <td style={{ textAlign: 'center' }}>
                                 <input 
@@ -1765,10 +1762,10 @@ export default function HostDashboard({ onLogout }) {
                               <td>
                                 <span style={{
                                   fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', textTransform: 'capitalize',
-                                  background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : rsvp.status === 'declined' ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)',
-                                  color: rsvp.status === 'going' ? '#00963f' : rsvp.status === 'declined' ? '#ef4444' : '#e0531f'
+                                  background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : false ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)',
+                                  color: rsvp.status === 'going' ? '#00963f' : false ? '#ef4444' : '#e0531f'
                                 }}>
-                                  {rsvp.status === 'going' ? '● Going' : rsvp.status === 'declined' ? '● Declined' : `● ${rsvp.status}`}
+                                  {'● Registered'}
                                 </span>
                               </td>
                               <td>
@@ -1917,13 +1914,13 @@ export default function HostDashboard({ onLogout }) {
                       {[...managedEventComments]
                         .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
                         .map(comment => (
-                          <div key={comment.id} className="flex justify-between items-start" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', background: comment.pinned ? 'rgba(0,113,227,0.01)' : 'transparent', padding: comment.pinned ? '12px' : '0 0 12px 0', borderRadius: '8px' }}>
+                          <div key={comment.id} className="flex justify-between items-start" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', background: comment.pinned ? 'rgba(255,107,53,0.01)' : 'transparent', padding: comment.pinned ? '12px' : '0 0 12px 0', borderRadius: '8px' }}>
                             <div className="flex gap-sm" style={{ alignItems: 'flex-start' }}>
                               <img src={getAvatar(comment.name)} alt={comment.name} className="avatar-img avatar-sm" />
                               <div>
                               <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
                                 <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{comment.name}</span>
-                                {comment.pinned && <span style={{ fontSize: '0.65rem', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>PINNED</span>}
+                                {comment.pinned && <span style={{ fontSize: '0.65rem', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>PINNED</span>}
                                 <span className="text-muted" style={{ fontSize: '0.75rem', marginLeft: '6px' }}>{new Date(comment.timestamp).toLocaleDateString()}</span>
                               </div>
                               <p style={{ fontSize: '0.85rem', margin: 0 }}>{comment.text}</p>
@@ -2079,22 +2076,6 @@ export default function HostDashboard({ onLogout }) {
                           </select>
                         </div>
                       </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Show RSVP status counts to guests</label>
-                        <select 
-                          value={editEventForm.showRsvpCounts || 'detailed'} 
-                          onChange={(e) => setEditEventForm({ ...editEventForm, showRsvpCounts: e.target.value })}
-                          style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.85rem' }}
-                        >
-                          <option value="detailed">Show Going and Maybe separately</option>
-                          <option value="total">Show only total count</option>
-                          <option value="off">Off (Hide all RSVP counts)</option>
-                        </select>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
-                          Controls whether guests see detailed Going/Maybe counts, only the total count, or nothing at all on the public page.
-                        </span>
-                      </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2200,7 +2181,7 @@ export default function HostDashboard({ onLogout }) {
                                 <td style={{ fontSize: '0.8rem' }}>{new Date(log.sentAt).toLocaleTimeString()}</td>
                                 <td>{log.guestEmail}</td>
                                 <td>
-                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)' }}>
                                     {log.channel}
                                   </span>
                                 </td>
@@ -2238,7 +2219,7 @@ export default function HostDashboard({ onLogout }) {
                     <form onSubmit={(e) => {
                       e.preventDefault();
                       const capacity = managedEvent.capacity;
-                      const attending = managedEventRsvps.filter(r => r.status === 'going' || r.status === 'maybe').length;
+                      const attending = managedEventRsvps.filter(r => r.status === 'going').length;
                       if (attending + manualInviteForm.guestCount > capacity) {
                         alert(`Cannot add guests. Remaining spots: ${capacity - attending}.`);
                         return;
@@ -2291,7 +2272,7 @@ export default function HostDashboard({ onLogout }) {
                               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.email}</div>
                             </div>
                           </div>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : rsvp.status === 'declined' ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)', color: rsvp.status === 'going' ? '#00963f' : rsvp.status === 'declined' ? '#ef4444' : '#e0531f' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : false ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)', color: rsvp.status === 'going' ? '#00963f' : false ? '#ef4444' : '#e0531f' }}>
                             {rsvp.status.toUpperCase()}
                           </span>
                         </div>
@@ -2364,7 +2345,7 @@ export default function HostDashboard({ onLogout }) {
                       </div>
                       <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.1)', padding: '14px', borderRadius: '8px', textAlign: 'center' }}>
                         <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>
-                          {managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).length}
+                          {managedEventRsvps.filter(r => (r.status === 'going') && !r.checkedIn).length}
                         </div>
                         <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>Arriving Soon</span>
                       </div>
@@ -2372,7 +2353,7 @@ export default function HostDashboard({ onLogout }) {
 
                     <h5 style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px' }}>Pending Guest Arrivals</h5>
                     <div style={{ overflowY: 'auto', maxHeight: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).map(rsvp => (
+                      {managedEventRsvps.filter(r => (r.status === 'going') && !r.checkedIn).map(rsvp => (
                         <div key={rsvp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '8px 12px', borderRadius: '6px' }}>
                           <span className="flex items-center gap-sm" style={{ fontWeight: 600, fontSize: '0.8rem' }}>
                             <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
@@ -2384,7 +2365,7 @@ export default function HostDashboard({ onLogout }) {
                               loadDashboardData();
                               setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: `${rsvp.name} checked in successfully.` });
                             }}
-                            style={{ border: 'none', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}
+                            style={{ border: 'none', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}
                           >
                             Check-in
                           </button>
@@ -2720,7 +2701,7 @@ export default function HostDashboard({ onLogout }) {
                             padding: '16px',
                             borderBottom: '1px solid var(--color-border)',
                             cursor: 'pointer',
-                            background: isActive ? 'rgba(0,113,227,0.06)' : 'transparent',
+                            background: isActive ? 'rgba(255,107,53,0.06)' : 'transparent',
                             textAlign: 'left',
                             display: 'flex',
                             gap: '12px',
@@ -3109,7 +3090,7 @@ export default function HostDashboard({ onLogout }) {
               padding: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)',
               textAlign: 'center'
             }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', marginBottom: '16px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', marginBottom: '16px' }}>
                 <Calendar size={22} />
               </div>
               

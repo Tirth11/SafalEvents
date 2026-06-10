@@ -129,7 +129,7 @@ export default function PageShell({ children }) {
                                   gap: '8px',
                                   padding: '8px',
                                   borderRadius: '8px',
-                                  background: notif.read ? 'transparent' : 'rgba(0,113,227,0.05)',
+                                  background: notif.read ? 'transparent' : 'rgba(255,107,53,0.05)',
                                   fontSize: '0.8rem',
                                   transition: 'background-color 0.2s',
                                   alignItems: 'flex-start',
@@ -139,7 +139,7 @@ export default function PageShell({ children }) {
                                 <div style={{
                                   padding: '4px',
                                   borderRadius: '50%',
-                                  background: notif.type === 'rsvp' ? 'rgba(0,113,227,0.1)' : notif.type === 'payment' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                                  background: notif.type === 'rsvp' ? 'rgba(255,107,53,0.1)' : notif.type === 'payment' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
                                   color: notif.type === 'rsvp' ? 'var(--color-primary)' : notif.type === 'payment' ? '#16a34a' : '#ca8a04',
                                   display: 'flex',
                                   alignItems: 'center',

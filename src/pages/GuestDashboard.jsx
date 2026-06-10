@@ -363,7 +363,7 @@ export default function GuestDashboard({ onLogout }) {
   // Compute metrics variables
   const totalEventsCount = myRsvps.length;
   const attendingCount = myRsvps.filter(r => r.status === 'going').length;
-  const pendingCount = myRsvps.filter(r => r.status === 'maybe' || r.status === 'waitlist').length;
+  const pendingCount = myRsvps.filter(r => r.status === 'waitlist').length;
 
   // Search and Filter Past Records
   const filteredPastRsvps = pastRsvps.filter(r => {
@@ -823,19 +823,19 @@ export default function GuestDashboard({ onLogout }) {
                   )}
 
                   {/* Help Support Widget */}
-                  <Card style={{ padding: '20px', border: '1px solid rgba(99,102,241,0.2)', background: 'rgba(99,102,241,0.02)' }} className="glass-surface">
+                  <Card style={{ padding: '20px', border: '1px solid rgba(255,107,53,0.2)', background: 'rgba(255,107,53,0.03)' }} className="glass-surface">
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                      <div style={{ padding: '8px', background: 'rgba(99,102,241,0.1)', color: 'rgb(99,102,241)', borderRadius: '8px' }}>
+                      <div style={{ padding: '8px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '8px' }}>
                         <HelpCircle size={20} />
                       </div>
                       <div>
-                        <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: 700, color: 'rgb(79,70,229)' }}>Need Help?</h4>
+                        <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)' }}>Need Help?</h4>
                         <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem', lineHeight: 1.4 }}>
                           Can't find your ticket pass, or need to contact the organizer about dietary needs?
                         </p>
                         <button 
                           onClick={() => setActiveTab('profile')}
-                          style={{ background: 'none', border: 'none', color: 'rgb(99,102,241)', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', padding: 0 }}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', padding: 0 }}
                         >
                           Contact Event Support &rarr;
                         </button>
@@ -930,7 +930,7 @@ export default function GuestDashboard({ onLogout }) {
                     
                     if (item.type === 'booking') {
                       IconComponent = Ticket;
-                      iconBg = 'rgba(0,113,227,0.1)';
+                      iconBg = 'rgba(255,107,53,0.1)';
                       iconColor = 'var(--color-primary)';
                     } else if (item.type === 'checkin') {
                       IconComponent = QrCode;
@@ -1019,7 +1019,7 @@ export default function GuestDashboard({ onLogout }) {
                         <tr key={log.id}>
                           <td style={{ fontSize: '0.85rem' }}>{new Date(log.sentAt).toLocaleString()}</td>
                           <td>
-                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(0,113,227,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
+                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(255,107,53,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
                               {log.channel}
                             </span>
                           </td>
@@ -1237,7 +1237,7 @@ export default function GuestDashboard({ onLogout }) {
                     href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selectedTicket.event.title)}&dates=${selectedTicket.event.date.replace(/-/g,'')}T${(selectedTicket.event.time||'180000').replace(':','')}00/${selectedTicket.event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(selectedTicket.event.location)}`}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(0,113,227,0.06)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                    style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(255,107,53,0.06)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
                   >
                     + Google Calendar
                   </a>
@@ -1277,21 +1277,12 @@ export default function GuestDashboard({ onLogout }) {
                     onClick={() => setEditRsvpStatus('going')}
                     style={{
                       flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                      background: editRsvpStatus === 'going' ? 'rgba(0, 113, 227, 0.08)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 700, color: 'var(--color-text)'
+                      background: editRsvpStatus === 'going' ? 'rgba(255, 107, 53, 0.08)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 700, color: 'var(--color-text)'
                     }}
                   >
                     Going
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setEditRsvpStatus('maybe')}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'maybe' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                      background: editRsvpStatus === 'maybe' ? 'rgba(0, 113, 227, 0.08)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 700, color: 'var(--color-text)'
-                    }}
-                  >
-                    Maybe
-                  </button>
+                  
                 </div>
               </div>
 
@@ -1335,7 +1326,7 @@ export default function GuestDashboard({ onLogout }) {
                       fontSize: '0.7rem', 
                       padding: '2px 8px', 
                       borderRadius: '9999px', 
-                      background: viewLogDetail.channel === 'Email' ? 'rgba(0,113,227,0.1)' : 'rgba(34,197,94,0.1)', 
+                      background: viewLogDetail.channel === 'Email' ? 'rgba(255,107,53,0.1)' : 'rgba(34,197,94,0.1)', 
                       color: viewLogDetail.channel === 'Email' ? 'var(--color-primary)' : '#16a34a',
                       fontWeight: 600
                     }}>
