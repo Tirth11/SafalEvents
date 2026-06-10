@@ -1028,26 +1028,6 @@ export default function HostDashboard({ onLogout }) {
                     </button>
                   </Card>
 
-                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
-                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-orange"><Bell size={22} /></div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fee2e2', color: '#ef4444' }}>Diet details</span>
-                    </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Pending Tasks</h3>
-                    <p style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 12px 0' }}>3 dietary unconfirmed</p>
-                    <button 
-                      onClick={() => {
-                        const listEvt = events.find(e => e.id === '1');
-                        if (listEvt) {
-                          handleManageEvent(listEvt.id);
-                          setSelectedEventTab('guests');
-                        }
-                      }}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
-                    >
-                      Resolve now &rarr;
-                    </button>
-                  </Card>
                 </div>
               </div>
 

@@ -659,39 +659,51 @@ textarea:focus {
 }
 
 .dashboard-sidebar {
-  width: 260px;
+  width: 264px;
   flex-shrink: 0;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   padding: var(--spacing-lg) var(--spacing-md);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 4px;
+  position: sticky;
+  top: 64px;
+  align-self: flex-start;
+  height: calc(100vh - 64px);
 }
 
 .dashboard-sidebar-title {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   font-family: var(--font-heading);
-  padding: 0 var(--spacing-xs);
-  margin-bottom: var(--spacing-md);
+  letter-spacing: -0.01em;
+  padding: 0 var(--spacing-xs) var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .dashboard-nav-btn {
+  position: relative;
   width: 100%;
   border: none;
   text-align: left;
   cursor: pointer;
-  padding: 10px 14px;
+  padding: 11px 14px;
   border-radius: var(--radius-md);
   font-weight: 600;
   font-size: 0.9rem;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   background: transparent;
   color: var(--color-text-muted);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.dashboard-nav-btn svg {
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
 }
 
 .dashboard-nav-btn:hover {
@@ -699,9 +711,26 @@ textarea:focus {
   color: var(--color-text);
 }
 
+.dashboard-nav-btn:hover svg {
+  transform: scale(1.08);
+}
+
 .dashboard-nav-btn.active {
-  background: rgba(242, 84, 27, 0.08);
+  background: rgba(242, 84, 27, 0.09);
   color: var(--color-primary);
+  font-weight: 700;
+}
+
+.dashboard-nav-btn.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 56%;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-primary);
 }
 
 .dashboard-main {
@@ -1073,9 +1102,16 @@ textarea:focus {
     flex-direction: row;
     overflow-x: auto;
     gap: 6px;
+    position: static;
+    height: auto;
+    top: auto;
   }
 
   .dashboard-sidebar-title {
+    display: none;
+  }
+
+  .dashboard-nav-btn.active::before {
     display: none;
   }
 
@@ -1469,6 +1505,7 @@ button.text-link:hover {
   justify-content: center;
   color: white;
   flex-shrink: 0;
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.22);
 }
 
 .stat-icon-orange { background: linear-gradient(135deg, #F2541B, #d8430f); }

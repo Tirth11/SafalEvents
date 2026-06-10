@@ -33,6 +33,8 @@ const defaultEvents = [
     reminderSchedule: '24h',
     hostAlerts: true,
     enablePayments: false,
+    hostName: 'Alex Rivera',
+    hostEmail: 'alex@safalevent.com',
     distance: 2.3,
     rating: 4.8,
     reviewsCount: 124
@@ -68,6 +70,8 @@ const defaultEvents = [
     reminderSchedule: '3h',
     hostAlerts: true,
     enablePayments: false,
+    hostName: 'Jordan Chen',
+    hostEmail: 'jordan@startup.com',
     distance: 5.1,
     rating: 4.5,
     reviewsCount: 89
@@ -103,6 +107,8 @@ const defaultEvents = [
     reminderSchedule: 'none',
     hostAlerts: false,
     enablePayments: false,
+    hostName: 'Priya Patel',
+    hostEmail: 'priya@yogalife.com',
     distance: 1.2,
     rating: 4.9,
     reviewsCount: 56
@@ -138,6 +144,8 @@ const defaultEvents = [
     reminderSchedule: 'none',
     hostAlerts: false,
     enablePayments: false,
+    hostName: 'Boston Charity Foundation',
+    hostEmail: 'events@bostoncharity.org',
     distance: 4.0,
     rating: 4.6,
     reviewsCount: 112
@@ -174,6 +182,8 @@ const defaultEvents = [
     hostAlerts: true,
     enablePayments: true,
     ticketPrice: 25,
+    hostName: 'Riley Morgan',
+    hostEmail: 'riley@comedyclub.com',
     distance: 0.8,
     rating: 4.7,
     reviewsCount: 204
@@ -501,6 +511,13 @@ const getDB = () => {
         event[key] = defaults[key];
       }
     });
+
+    // Backfill host attribution for events seeded before host fields existed
+    if (!event.hostName) {
+      const seed = defaultEvents.find(d => d.id === event.id);
+      event.hostName = (seed && seed.hostName) || 'Event Organizer';
+      event.hostEmail = event.hostEmail || (seed && seed.hostEmail) || 'host@safalevents.com';
+    }
 
     if (!event.templates) {
       event.templates = { ...defaultTemplates };
