@@ -25,6 +25,7 @@ export default function CreateEvent() {
     privacy: 'Public', // Public, Private, Unlisted
     rsvpStatus: 'Open', // Open, Closed
     showGuestList: true,
+    showRsvpCounts: 'detailed',
 
     capacity: 100,
     maxGuestsPerRsvp: 2,
@@ -424,6 +425,22 @@ export default function CreateEvent() {
                   checked={formData.showGuestList}
                   onChange={(e) => setFormData({ ...formData, showGuestList: e.target.checked })}
                 />
+              </div>
+
+              <div className="settings-card" style={{ padding: '12px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem' }}>Show RSVP status counts to guests</label>
+                <select
+                  value={formData.showRsvpCounts}
+                  onChange={(e) => setFormData({ ...formData, showRsvpCounts: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit', background: 'var(--color-surface)', fontSize: '0.85rem' }}
+                >
+                  <option value="detailed">Show Going and Maybe separately</option>
+                  <option value="total">Show only total count</option>
+                  <option value="off">Off (Hide all RSVP counts)</option>
+                </select>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '6px', lineHeight: 1.4 }}>
+                  Controls whether and how RSVP counts (Going/Maybe) are displayed on the public event page.
+                </span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>

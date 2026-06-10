@@ -138,6 +138,7 @@ export default function HostDashboard({ onLogout }) {
     privacy: 'Public',
     rsvpStatus: 'Open',
     showGuestList: true,
+    showRsvpCounts: 'detailed',
     capacity: 100,
     maxGuestsPerRsvp: 2,
     rsvpDeadline: '',
@@ -247,6 +248,7 @@ export default function HostDashboard({ onLogout }) {
         privacy: evt.privacy || 'Public',
         rsvpStatus: evt.rsvpStatus || 'Open',
         showGuestList: evt.showGuestList !== undefined ? evt.showGuestList : true,
+        showRsvpCounts: evt.showRsvpCounts || 'detailed',
         capacity: evt.capacity,
         maxGuestsPerRsvp: evt.maxGuestsPerRsvp !== undefined ? evt.maxGuestsPerRsvp : 2,
         rsvpDeadline: evt.rsvpDeadline || '',
@@ -2049,7 +2051,53 @@ export default function HostDashboard({ onLogout }) {
                       />
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-primary)' }}>Visibility & RSVP Settings</span>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Event Privacy</label>
+                          <select 
+                            value={editEventForm.privacy} 
+                            onChange={(e) => setEditEventForm({ ...editEventForm, privacy: e.target.value })}
+                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.85rem' }}
+                          >
+                            <option value="Public">Public (Listed in discover)</option>
+                            <option value="Private">Private (Direct link only)</option>
+                            <option value="Unlisted">Unlisted (Profile lists only)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>RSVP Status</label>
+                          <select 
+                            value={editEventForm.rsvpStatus} 
+                            onChange={(e) => setEditEventForm({ ...editEventForm, rsvpStatus: e.target.value })}
+                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.85rem' }}
+                          >
+                            <option value="Open">Open (Accepting RSVPs)</option>
+                            <option value="Closed">Closed (Disabled bookings)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Show RSVP status counts to guests</label>
+                        <select 
+                          value={editEventForm.showRsvpCounts || 'detailed'} 
+                          onChange={(e) => setEditEventForm({ ...editEventForm, showRsvpCounts: e.target.value })}
+                          style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.85rem' }}
+                        >
+                          <option value="detailed">Show Going and Maybe separately</option>
+                          <option value="total">Show only total count</option>
+                          <option value="off">Off (Hide all RSVP counts)</option>
+                        </select>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
+                          Controls whether guests see detailed Going/Maybe counts, only the total count, or nothing at all on the public page.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <span style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>Series Cadence Recurrence</span>
                       <select 
                         value={seriesType} 

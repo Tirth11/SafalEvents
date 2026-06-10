@@ -465,59 +465,101 @@ export default function EventPage() {
                   <span className="stat-icon-tile stat-icon-purple" style={{ width: '36px', height: '36px' }}><Users size={18} /></span>
                   Guest List
                 </span>
-                <span className="badge badge-primary" style={{ fontSize: '0.78rem' }}>{totalAttending} attending</span>
+                {event.showRsvpCounts !== 'off' && (
+                  <span className="badge badge-primary" style={{ fontSize: '0.78rem' }}>
+                    {event.showRsvpCounts === 'total' ? `${totalAttending} responded` : `${totalAttending} attending`}
+                  </span>
+                )}
               </h3>
 
               {/* Guests avatar grid */}
               {event.showGuestList ? (
-                goingGuests.length > 0 || maybeGuests.length > 0 ? (
+                goingGuests.length > 0 || maybeGuests.length > 0 || waitlistGuests.length > 0 ? (
                   <div className="flex flex-col gap-md">
-                    {goingGuests.length > 0 && (
-                      <div>
-                        <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-accent)', marginBottom: '10px' }}>
-                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-accent)' }}></span> Going ({goingGuests.length})
-                        </p>
-                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                          {goingGuests.map(g => (
-                            <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center' }}>
-                              <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
-                              <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                    {event.showRsvpCounts === 'detailed' || !event.showRsvpCounts ? (
+                      <>
+                        {goingGuests.length > 0 && (
+                          <div>
+                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-accent)', marginBottom: '10px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-accent)' }}></span> Going ({goingGuests.length})
+                            </p>
+                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                              {goingGuests.map(g => (
+                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center' }}>
+                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          </div>
+                        )}
 
-                    {maybeGuests.length > 0 && (
-                      <div>
-                        <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#ca8a04', marginBottom: '10px' }}>
-                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#eab308' }}></span> Maybe ({maybeGuests.length})
-                        </p>
-                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                          {maybeGuests.map(g => (
-                            <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.85 }}>
-                              <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
-                              <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                        {maybeGuests.length > 0 && (
+                          <div>
+                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#ca8a04', marginBottom: '10px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#eab308' }}></span> Maybe ({maybeGuests.length})
+                            </p>
+                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                              {maybeGuests.map(g => (
+                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.85 }}>
+                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          </div>
+                        )}
 
-                    {waitlistGuests.length > 0 && (
-                      <div>
-                        <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '10px' }}>
-                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#8b5cf6' }}></span> Waitlist ({waitlistGuests.length})
-                        </p>
-                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                          {waitlistGuests.map(g => (
-                            <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.7 }}>
-                              <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" style={{ filter: 'grayscale(35%)' }} />
-                              <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                        {waitlistGuests.length > 0 && (
+                          <div>
+                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '10px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#8b5cf6' }}></span> Waitlist ({waitlistGuests.length})
+                            </p>
+                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                              {waitlistGuests.map(g => (
+                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.7 }}>
+                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" style={{ filter: 'grayscale(35%)' }} />
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {(goingGuests.length > 0 || maybeGuests.length > 0) && (
+                          <div>
+                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-primary)', marginBottom: '10px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-primary)' }}></span> Confirmed Guests
+                            </p>
+                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                              {[...goingGuests, ...maybeGuests].map(g => (
+                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center' }}>
+                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {waitlistGuests.length > 0 && (
+                          <div>
+                            <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '10px' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#8b5cf6' }}></span> Waitlisted
+                            </p>
+                            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                              {waitlistGuests.map(g => (
+                                <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.7 }}>
+                                  <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" style={{ filter: 'grayscale(35%)' }} />
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (
@@ -759,7 +801,7 @@ export default function EventPage() {
                   )}
 
                   {/* Attendee avatar stack */}
-                  {goingGuests.length > 0 && (
+                  {goingGuests.length > 0 && event.showRsvpCounts !== 'off' && (
                     <div className="flex items-center gap-xs" style={{ marginBottom: '16px' }}>
                       <div className="avatar-stack">
                         {goingGuests.slice(0, 4).map(g => (
@@ -770,7 +812,9 @@ export default function EventPage() {
                         )}
                       </div>
                       <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                        {goingGuests.length} going{maybeGuests.length > 0 ? ` · ${maybeGuests.length} maybe` : ''}
+                        {event.showRsvpCounts === 'total' 
+                          ? `${totalAttending} people responded` 
+                          : `Going: ${goingGuests.length} | Maybe: ${maybeGuests.length}`}
                       </span>
                     </div>
                   )}

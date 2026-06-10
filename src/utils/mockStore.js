@@ -553,6 +553,7 @@ export const mockStore = {
       privacy: 'Public',
       rsvpStatus: 'Open',
       showGuestList: true,
+      showRsvpCounts: 'detailed',
       maxGuestsPerRsvp: 1,
       rsvpDeadline: '',
       allowSelfEdit: true,
