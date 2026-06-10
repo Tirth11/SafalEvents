@@ -12,13 +12,19 @@ export default function ExploreEvents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedState, setSelectedState] = useState('');
+  const [selectedType, setSelectedType] = useState('');
 
   // Get all published public events
   const allEvents = mockStore.getEvents().filter(e => e.status === 'Published' && e.privacy === 'Public');
 
-  // Extract unique locations and states
-  const uniqueLocations = [...new Set(allEvents.map(e => e.location.split(',')[0]))].sort();
-  const uniqueStates = [...new Set(allEvents.map(e => e.state))].sort();
+  // Extract unique locations, states, types
+  const uniqueStates = [...new Set(allEvents.map(e => e.state).filter(Boolean))].sort();
+  const uniqueLocations = [...new Set(
+    allEvents
+      .filter(e => !selectedState || e.state === selectedState)
+      .map(e => e.location.split(',')[0].trim())
+  )].sort();
+  const uniqueTypes = [...new Set(allEvents.map(e => e.eventType).filter(Boolean))].sort();
 
   // Filter events based on search and filters
   const filteredEvents = useMemo(() => {
@@ -27,14 +33,16 @@ export default function ExploreEvents() {
       const matchesSearch = !q ||
         evt.title.toLowerCase().includes(q) ||
         evt.location.toLowerCase().includes(q) ||
+        (evt.description && evt.description.toLowerCase().includes(q)) ||
         (evt.eventType && evt.eventType.toLowerCase().includes(q));
 
-      const matchesLocation = !selectedLocation || evt.location.split(',')[0] === selectedLocation;
+      const matchesLocation = !selectedLocation || evt.location.split(',')[0].trim() === selectedLocation;
       const matchesState = !selectedState || evt.state === selectedState;
+      const matchesType = !selectedType || evt.eventType === selectedType;
 
-      return matchesSearch && matchesLocation && matchesState;
+      return matchesSearch && matchesLocation && matchesState && matchesType;
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [searchQuery, selectedLocation, selectedState, allEvents]);
+  }, [searchQuery, selectedLocation, selectedState, selectedType, allEvents]);
 
   return (
     <PageShell>
@@ -111,7 +119,7 @@ export default function ExploreEvents() {
             }}>
               <select
                 value={selectedState}
-                onChange={(e) => setSelectedState(e.target.value)}
+                onChange={(e) => { setSelectedState(e.target.value); setSelectedLocation(''); }}
                 style={{
                   background: 'white',
                   border: '1px solid var(--color-border)',
@@ -151,12 +159,34 @@ export default function ExploreEvents() {
                 ))}
               </select>
 
-              {(searchQuery || selectedLocation || selectedState) && (
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                style={{
+                  background: 'white',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '10px',
+                  padding: '9px 14px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+              >
+                <option value="">All Types</option>
+                {uniqueTypes.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+
+              {(searchQuery || selectedLocation || selectedState || selectedType) && (
                 <button
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedLocation('');
                     setSelectedState('');
+                    setSelectedType('');
                   }}
                   style={{
                     background: 'transparent',
@@ -218,6 +248,7 @@ export default function ExploreEvents() {
                     setSearchQuery('');
                     setSelectedLocation('');
                     setSelectedState('');
+                    setSelectedType('');
                   }}
                   style={{
                     background: 'var(--color-primary)',

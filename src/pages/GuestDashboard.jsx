@@ -47,6 +47,12 @@ export default function GuestDashboard({ onLogout }) {
   const [historySearch, setHistorySearch] = useState('');
   const [historyYear, setHistoryYear] = useState('All');
 
+  // Search & Filter state for Discover
+  const [discoverSearch, setDiscoverSearch] = useState('');
+  const [discoverState, setDiscoverState] = useState('');
+  const [discoverCity, setDiscoverCity] = useState('');
+  const [discoverType, setDiscoverType] = useState('');
+
   const getTimelineData = (user, db) => {
     if (!user || !db) return [];
     const items = [];
@@ -454,6 +460,30 @@ export default function GuestDashboard({ onLogout }) {
     });
     return Array.from(years).sort().reverse();
   };
+
+  // ── Discover search / location / type filtering ──
+  const discoverStates = [...new Set(exploreEvents.map(e => e.state).filter(Boolean))].sort();
+  const discoverCities = [...new Set(
+    exploreEvents
+      .filter(e => !discoverState || e.state === discoverState)
+      .map(e => e.location.split(',')[0].trim())
+  )].sort();
+  const discoverTypes = [...new Set(exploreEvents.map(e => e.eventType).filter(Boolean))].sort();
+
+  const filteredExplore = exploreEvents.filter(evt => {
+    const q = discoverSearch.trim().toLowerCase();
+    const matchesSearch = !q ||
+      evt.title.toLowerCase().includes(q) ||
+      evt.location.toLowerCase().includes(q) ||
+      (evt.description && evt.description.toLowerCase().includes(q)) ||
+      (evt.eventType && evt.eventType.toLowerCase().includes(q));
+    const matchesState = !discoverState || evt.state === discoverState;
+    const matchesCity = !discoverCity || evt.location.split(',')[0].trim() === discoverCity;
+    const matchesType = !discoverType || evt.eventType === discoverType;
+    return matchesSearch && matchesState && matchesCity && matchesType;
+  });
+
+  const discoverFiltersActive = discoverSearch || discoverState || discoverCity || discoverType;
 
   // Up Next Event (the soonest upcoming event)
   const getUpNextEvent = () => {
@@ -934,13 +964,68 @@ export default function GuestDashboard({ onLogout }) {
           {/* ========================================================================= */}
           {activeTab === 'explore' && (
             <div className="animate-fade-in">
-              <div style={{ textAlign: 'left', marginBottom: 'var(--spacing-md)' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Explore Public Events</h3>
-                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>Fresh experiences picked for you — tap one and grab your spot.</p>
+              <div style={{ textAlign: 'left', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Discover Public Events</h3>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>Search by name, filter by location or type, and grab your spot.</p>
               </div>
-              {exploreEvents.length > 0 ? (
+
+              {/* Search + Filters toolbar */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '220px' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search events, places, types..."
+                    value={discoverSearch}
+                    onChange={(e) => setDiscoverSearch(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.88rem', outline: 'none', background: 'var(--color-surface)', fontFamily: 'inherit' }}
+                  />
+                </div>
+                <select
+                  value={discoverState}
+                  onChange={(e) => { setDiscoverState(e.target.value); setDiscoverCity(''); }}
+                  style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', background: 'var(--color-surface)', outline: 'none' }}
+                >
+                  <option value="">All States</option>
+                  {discoverStates.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select
+                  value={discoverCity}
+                  onChange={(e) => setDiscoverCity(e.target.value)}
+                  style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', background: 'var(--color-surface)', outline: 'none' }}
+                >
+                  <option value="">All Cities</option>
+                  {discoverCities.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select
+                  value={discoverType}
+                  onChange={(e) => setDiscoverType(e.target.value)}
+                  style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', background: 'var(--color-surface)', outline: 'none' }}
+                >
+                  <option value="">All Types</option>
+                  {discoverTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                {discoverFiltersActive && (
+                  <button
+                    type="button"
+                    onClick={() => { setDiscoverSearch(''); setDiscoverState(''); setDiscoverCity(''); setDiscoverType(''); }}
+                    style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Result count */}
+              {exploreEvents.length > 0 && (
+                <p className="text-muted" style={{ fontSize: '0.82rem', fontWeight: 600, margin: '0 0 14px 0', textAlign: 'left' }}>
+                  {filteredExplore.length === 0 ? 'No matches' : `${filteredExplore.length} event${filteredExplore.length === 1 ? '' : 's'} found`}
+                </p>
+              )}
+
+              {filteredExplore.length > 0 ? (
                 <div className="grid-3" style={{ gap: '20px' }}>
-                  {exploreEvents.map((evt, idx) => (
+                  {filteredExplore.map((evt, idx) => (
                     <div key={evt.id} className="event-photo-card" style={{ textAlign: 'left' }}>
                       <div style={{ position: 'relative' }}>
                         <img className="event-photo-card-img" src={getEventCover(evt)} alt={evt.title} />
@@ -982,6 +1067,15 @@ export default function GuestDashboard({ onLogout }) {
                     </div>
                   ))}
                 </div>
+              ) : discoverFiltersActive ? (
+                <Card style={{ padding: 0 }}>
+                  <div className="empty-state">
+                    <Search size={44} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
+                    <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>No events match your search</h4>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>Try a different keyword, city, or type — or clear your filters.</p>
+                    <Button variant="primary" onClick={() => { setDiscoverSearch(''); setDiscoverState(''); setDiscoverCity(''); setDiscoverType(''); }} style={{ padding: '9px 18px', fontSize: '0.85rem' }}>Clear filters</Button>
+                  </div>
+                </Card>
               ) : (
                 <Card style={{ padding: 0 }}>
                   <div className="empty-state">
