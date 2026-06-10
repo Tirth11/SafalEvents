@@ -87,20 +87,21 @@ export default function LandingPage() {
                   margin: 0,
                 }}
               >
-                Throw an event people{' '}
-                <span className="text-gradient">show up</span> to.
+                The effortless way to{' '}
+                <span className="text-gradient">host</span>.
               </h1>
 
               <p
                 style={{
                   fontSize: '1.15rem',
-                  maxWidth: '520px',
-                  lineHeight: 1.55,
+                  maxWidth: '560px',
+                  lineHeight: 1.65,
                   margin: 0,
                   color: 'var(--color-text-muted)',
+                  fontWeight: 500,
                 }}
               >
-                Make an invite, share one link, and see who's coming. All in one place. Free to start.
+                Design refined invitations, manage guest responses, and coordinate every detail from a single, beautiful dashboard. Start at no cost.
               </p>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
@@ -415,7 +416,7 @@ export default function LandingPage() {
                   lineHeight: 1.1,
                 }}
               >
-How it works
+How it works — simple, refined
               </h2>
               <p
                 style={{
@@ -471,10 +472,10 @@ How it works
                   lineHeight: 1.1,
                 }}
               >
-                Everything you need
+Everything you need to host
               </h2>
               <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', margin: 0, maxWidth: '560px' }}>
-                All the tools to throw an amazing event, no extra fluff.
+                All the refined tools you need to throw a seamless, beautiful event. Nothing unnecessary.
               </p>
             </div>
 
@@ -528,7 +529,7 @@ How it works
                   lineHeight: 1.1,
                 }}
               >
-                Built the right way
+Designed with intention
               </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', marginTop: '4px' }}>
@@ -648,10 +649,10 @@ How it works
                     lineHeight: 1.1,
                   }}
                 >
-                  Ready to plan your next event?
+                  Ready to host with ease?
                 </h2>
                 <p style={{ fontSize: '1.05rem', maxWidth: '480px', margin: 0, color: 'rgba(255,255,255,0.8)' }}>
-                  Create your first invite. It's free and takes 2 minutes.
+                  Create your first refined event in minutes. No credit card required.
                 </p>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
                   <Link to="/login?signup=true">
