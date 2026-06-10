@@ -223,12 +223,7 @@ const defaultComments = [
   { id: 'c3', eventId: '1', name: 'Host (You)', text: 'Yes Bob! There is a public parking garage right next to the entrance.', timestamp: '2026-06-07T15:10:00.000Z', reactions: { '❤️': 1 } }
 ];
 
-const defaultUser = {
-  role: 'host', // host or guest
-  name: 'Alex Rivera',
-  email: 'alex@safalevent.com',
-  phone: '+1 (555) 999-8888'
-};
+const defaultUser = null;
 
 const defaultAnalytics = {
   views: {
