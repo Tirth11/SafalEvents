@@ -1678,5 +1678,30 @@ export const mockStore = {
         break; // No more capacity
       }
     }
+  },
+
+  // --- Platform Settings ---
+  getPlatformSettings: () => {
+    const db = getDB();
+    if (!db.platformSettings) {
+      db.platformSettings = {
+        platformName: 'SafalEvents',
+        primaryColor: '#2563eb',
+        fromName: 'SafalEvents',
+        supportEmail: 'support@safalevent.com',
+        smsSenderId: 'SAFALEVT',
+        defaultRsvpDeadline: 12,
+        defaultSelfCancellation: true
+      };
+      saveDB(db);
+    }
+    return db.platformSettings;
+  },
+
+  savePlatformSettings: (settings) => {
+    const db = getDB();
+    db.platformSettings = { ...db.platformSettings, ...settings };
+    saveDB(db);
+    return db.platformSettings;
   }
 };
