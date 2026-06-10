@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Building2, CheckCircle2, XCircle, FileText, UserCheck, UserX, 
+import {
+  Building2, CheckCircle2, XCircle, FileText, UserCheck, UserX,
   History, LogOut, Compass, Eye, Shield, Check, X, ArrowLeft, Mail, Phone, MapPin,
-  Search, Download, TrendingUp, AlertTriangle
+  Search, Download, TrendingUp, AlertTriangle, Users, Calendar, Ticket, Clock
 } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
+import { HERO_IMAGES, getAvatar, getEventCover, EVENT_COVERS } from '../utils/images';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
@@ -167,6 +168,17 @@ export default function AdminDashboard({ onLogout }) {
   const activeHosts = users.filter(u => u.role === 'host' && u.status === 'ACTIVE');
   const rejectedHosts = users.filter(u => u.role === 'host' && u.status === 'REJECTED');
 
+  // Platform-wide KPI figures (read-only derivations for the header banner)
+  const platformEvents = mockStore.getEvents();
+  const platformRsvpCount = platformEvents.reduce((acc, evt) => acc + mockStore.getRSVPs(evt.id).length, 0);
+
+  const kpiCards = [
+    { label: 'Active Hosts', value: activeHosts.length, icon: <Users size={20} />, tile: 'stat-icon-blue', hint: 'Verified organizers' },
+    { label: 'Live Events', value: platformEvents.length, icon: <Calendar size={20} />, tile: 'stat-icon-orange', hint: 'Across the platform' },
+    { label: 'Total RSVPs', value: platformRsvpCount, icon: <Ticket size={20} />, tile: 'stat-icon-green', hint: 'Guest registrations' },
+    { label: 'Pending Approvals', value: pendingHosts.length, icon: <Clock size={20} />, tile: 'stat-icon-purple', hint: 'Awaiting your review' },
+  ];
+
   return (
     <PageShell>
       <div className="dashboard-layout">
@@ -174,7 +186,7 @@ export default function AdminDashboard({ onLogout }) {
       <aside className="dashboard-sidebar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '0 4px' }}>
           <span style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}>Admin Portal</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(0, 113, 227, 0.1)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>Superadmin</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(14, 165, 233, 0.12)', color: '#0369a1', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>Superadmin</span>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
@@ -233,11 +245,46 @@ export default function AdminDashboard({ onLogout }) {
 
       {/* Main dashboard content */}
       <main className="dashboard-main">
-        
+
+        {/* --- PLATFORM CONTROL CENTER HERO + KPI BANNER --- */}
+        <div className="page-hero animate-fade-in" style={{ minHeight: '160px', marginBottom: '18px' }}>
+          <img src={HERO_IMAGES.adminOps} alt="Operations team at work" className="page-hero-img" />
+          <div className="page-hero-overlay" />
+          <div className="page-hero-content" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'rgba(14, 165, 233, 0.9)', color: '#fff', padding: '4px 12px', borderRadius: '9999px', marginBottom: '8px' }}>
+                <Shield size={12} /> Superadmin Console
+              </span>
+              <h1 style={{ fontSize: '1.8rem', margin: 0, fontFamily: 'var(--font-heading)', fontWeight: 800 }}>Platform Control Center</h1>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>Welcome back, Super Admin — here is what's happening across SafalEvents today.</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src={getAvatar('Super Admin')} alt="Super Admin" className="avatar-img" />
+              <div style={{ fontSize: '0.75rem', lineHeight: 1.4 }}>
+                <div style={{ fontWeight: 700 }}>Super Admin</div>
+                <div style={{ opacity: 0.85 }}>admin@safalevent.com</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '28px' }}>
+          {kpiCards.map(kpi => (
+            <Card key={kpi.label} className="glass-surface" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '14px', background: '#fff' }}>
+              <div className={`stat-icon-tile ${kpi.tile}`}>{kpi.icon}</div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)' }}>{kpi.label}</div>
+                <div style={{ fontSize: '1.55rem', fontWeight: 800, lineHeight: 1.2 }}>{kpi.value}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{kpi.hint}</div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
         {/* --- PENDING APPLICATIONS VIEW --- */}
         {activeTab === 'pending' && (
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Host Registration Approvals</h1>
+            <h1 style={{ fontSize: '1.45rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Host Registration Approvals</h1>
             <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>
               Verify organization registration details and approve accounts to allow event creations.
             </p>
@@ -247,7 +294,9 @@ export default function AdminDashboard({ onLogout }) {
                 pendingHosts.map(host => (
                   <Card key={host.id} style={{ padding: 'var(--spacing-md)' }} className="glass-surface">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                      <div className="flex flex-col gap-xs" style={{ textAlign: 'left' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1, minWidth: '280px' }}>
+                        <img src={getAvatar(host.name)} alt={host.name} className="avatar-img avatar-lg" />
+                      <div className="flex flex-col gap-xs" style={{ textAlign: 'left', flex: 1 }}>
                         <div className="flex items-center gap-xs">
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, background: 'rgba(234,179,8,0.1)', color: '#ca8a04', padding: '2px 8px', borderRadius: '9999px' }}>
                             {host.hostType.toUpperCase()}
@@ -272,13 +321,13 @@ export default function AdminDashboard({ onLogout }) {
                         </div>
 
                         {host.orgProfile?.docs && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>ATTACHMENTS:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--color-text-muted)' }}>DOCUMENTS:</span>
                             {host.orgProfile.docs.map((doc, idx) => (
-                              <button 
+                              <button
                                 key={idx}
                                 onClick={() => setDocumentPreview(doc)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '0.75rem', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 600 }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', fontSize: '0.75rem', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '9999px', background: 'rgba(14, 165, 233, 0.08)', cursor: 'pointer', color: '#0369a1', fontWeight: 600 }}
                               >
                                 <FileText size={12} /> {doc} <Eye size={12} />
                               </button>
@@ -286,19 +335,20 @@ export default function AdminDashboard({ onLogout }) {
                           </div>
                         )}
                       </div>
+                      </div>
 
                       <div className="flex gap-sm">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           onClick={() => setRejectionHostId(host.id)}
-                          style={{ borderColor: '#ef4444', color: '#ef4444', padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#ef4444', background: 'rgba(239,68,68,0.06)', padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '9999px', fontWeight: 600 }}
                         >
                           <UserX size={16} /> Reject
                         </Button>
-                        <Button 
-                          variant="primary" 
+                        <Button
+                          variant="primary"
                           onClick={() => handleApprove(host.id)}
-                          style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          style={{ background: '#00C853', borderColor: '#00C853', padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '9999px', fontWeight: 600, boxShadow: '0 4px 12px rgba(0,200,83,0.25)' }}
                         >
                           <UserCheck size={16} /> Approve
                         </Button>
@@ -307,14 +357,17 @@ export default function AdminDashboard({ onLogout }) {
                   </Card>
                 ))
               ) : (
-                <Card style={{ padding: '48px', textAlign: 'center' }} className="glass-surface">
-                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(34,197,94,0.1)', color: '#22c55e', marginBottom: '16px' }}>
-                    <CheckCircle2 size={32} />
+                <Card className="glass-surface">
+                  <div className="empty-state">
+                    <img src={EVENT_COVERS.meetup[0]} alt="Team celebrating" className="empty-state-img" />
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#00C853', fontWeight: 700, fontSize: '0.9rem' }}>
+                      <CheckCircle2 size={18} /> All caught up!
+                    </div>
+                    <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 600 }}>Applications Inbox Clear</h3>
+                    <p className="text-muted" style={{ fontSize: '0.875rem', maxWidth: '360px', margin: 0 }}>
+                      No pending host registration applications await review. New applications will appear here the moment they arrive.
+                    </p>
                   </div>
-                  <h3 style={{ fontSize: '1.2rem', margin: '0 0 6px 0', fontWeight: 600 }}>Applications Inbox Clear</h3>
-                  <p className="text-muted" style={{ fontSize: '0.875rem', maxWidth: '360px', margin: '0 auto' }}>
-                    No pending host registration applications await review.
-                  </p>
                 </Card>
               )}
             </div>
@@ -324,7 +377,7 @@ export default function AdminDashboard({ onLogout }) {
         {/* --- ALL HOSTS DIRECTORY VIEW --- */}
         {activeTab === 'all' && (
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Registered Hosts Directory</h1>
+            <h1 style={{ fontSize: '1.45rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Registered Hosts Directory</h1>
             <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>List of active and rejected host profiles on SafalEvents.</p>
 
             <Card style={{ padding: 0 }} className="glass-surface">
@@ -346,8 +399,13 @@ export default function AdminDashboard({ onLogout }) {
                       {users.filter(u => u.role === 'host').map(host => (
                         <tr key={host.id}>
                           <td style={{ fontWeight: 600 }}>
-                            {host.hostType === 'organization' ? host.orgProfile?.orgName : host.name}
-                            {host.hostType === 'organization' && <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>Contact: {host.name}</div>}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <img src={getAvatar(host.name)} alt={host.name} className="avatar-img avatar-sm" />
+                              <div>
+                                {host.hostType === 'organization' ? host.orgProfile?.orgName : host.name}
+                                {host.hostType === 'organization' && <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>Contact: {host.name}</div>}
+                              </div>
+                            </div>
                           </td>
                           <td>
                             <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize' }}>
@@ -402,8 +460,10 @@ export default function AdminDashboard({ onLogout }) {
                   </table>
                 </div>
               ) : (
-                <div style={{ padding: '32px', textAlign: 'center' }} className="text-muted">
-                  No hosts found in database.
+                <div className="empty-state">
+                  <img src={EVENT_COVERS.conference[1]} alt="Empty venue" className="empty-state-img" />
+                  <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 600 }}>No hosts yet</h3>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0, maxWidth: '340px' }}>Once organizers register on SafalEvents, their profiles will show up in this directory.</p>
                 </div>
               )}
             </Card>
@@ -413,7 +473,7 @@ export default function AdminDashboard({ onLogout }) {
         {/* --- VERIFICATION AUDIT LOGS VIEW --- */}
         {activeTab === 'logs' && (
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Security Verification Logs</h1>
+            <h1 style={{ fontSize: '1.45rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Security Verification Logs</h1>
             <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>Real-time security auditing history logs for multi-channel OTP attempts.</p>
 
             <Card style={{ padding: 0 }} className="glass-surface">
@@ -462,8 +522,10 @@ export default function AdminDashboard({ onLogout }) {
                   </table>
                 </div>
               ) : (
-                <div className="text-center text-muted" style={{ padding: '32px' }}>
-                  No verification audit log entries recorded.
+                <div className="empty-state">
+                  <div className="stat-icon-tile stat-icon-blue" style={{ width: '56px', height: '56px' }}><Shield size={26} /></div>
+                  <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 600 }}>No verification activity</h3>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0, maxWidth: '340px' }}>OTP verification attempts across email and SMS channels will be logged here in real time.</p>
                 </div>
               )}
             </Card>
@@ -474,7 +536,7 @@ export default function AdminDashboard({ onLogout }) {
         {activeTab === 'messages' && (() => {
           const allEvents = mockStore.getEvents();
           const allNotificationLogs = allEvents.reduce((acc, evt) => {
-            const evLogs = mockStore.getNotificationLogs(evt.id).map(log => ({ ...log, eventTitle: evt.title }));
+            const evLogs = mockStore.getNotificationLogs(evt.id).map(log => ({ ...log, eventTitle: evt.title, eventCover: getEventCover(evt) }));
             return [...acc, ...evLogs];
           }, []);
 
@@ -497,14 +559,15 @@ export default function AdminDashboard({ onLogout }) {
 
           return (
             <div>
-              <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Platform Message Logs & Delivery Health</h1>
+              <h1 style={{ fontSize: '1.45rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Platform Message Logs & Delivery Health</h1>
               <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>Search notification outbox history and view delivery volume metrics.</p>
 
               {/* Delivery Health Spark/Bar Charts */}
               <div className="grid-3" style={{ marginBottom: '24px' }}>
                 <Card style={{ padding: 'var(--spacing-md)' }} className="flex justify-between items-center glass-surface">
                   <div>
-                    <h5 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Email Volume</h5>
+                    <h5 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Email Volume</h5>
+                    <p className="text-muted" style={{ fontSize: '0.7rem', margin: '0 0 6px 0' }}>Transactional emails sent platform-wide</p>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>{emailLogs}</p>
                     <span style={{ fontSize: '0.75rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '2px', marginTop: '4px' }}><TrendingUp size={12} /> Channel active</span>
                   </div>
@@ -518,7 +581,8 @@ export default function AdminDashboard({ onLogout }) {
 
                 <Card style={{ padding: 'var(--spacing-md)' }} className="flex justify-between items-center glass-surface">
                   <div>
-                    <h5 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>SMS Volume</h5>
+                    <h5 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>SMS Volume</h5>
+                    <p className="text-muted" style={{ fontSize: '0.7rem', margin: '0 0 6px 0' }}>Text reminders and OTP messages</p>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>{smsLogs}</p>
                     <span style={{ fontSize: '0.75rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '2px', marginTop: '4px' }}><TrendingUp size={12} /> Channel active</span>
                   </div>
@@ -532,7 +596,8 @@ export default function AdminDashboard({ onLogout }) {
 
                 <Card style={{ padding: 'var(--spacing-md)' }} className="flex justify-between items-center glass-surface">
                   <div>
-                    <h5 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Bounces & Failures</h5>
+                    <h5 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Bounces & Failures</h5>
+                    <p className="text-muted" style={{ fontSize: '0.7rem', margin: '0 0 6px 0' }}>Undeliverable messages this period</p>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#ef4444' }}>{bounceLogs}</p>
                     <span style={{ fontSize: '0.75rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '2px', marginTop: '4px' }}><AlertTriangle size={12} /> Normal 3% bounce rate</span>
                   </div>
@@ -587,8 +652,18 @@ export default function AdminDashboard({ onLogout }) {
                         filteredMsgLogs.map(log => (
                           <tr key={log.id}>
                             <td style={{ fontSize: '0.75rem', width: '150px' }}>{new Date(log.sentAt).toLocaleString()}</td>
-                            <td style={{ fontWeight: 600 }}>{log.eventTitle}</td>
-                            <td>{log.guestEmail}</td>
+                            <td style={{ fontWeight: 600 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <img src={log.eventCover} alt={log.eventTitle} className="thumb-img" style={{ width: '40px', height: '40px', borderRadius: '8px' }} />
+                                {log.eventTitle}
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <img src={getAvatar(log.guestEmail)} alt="" className="avatar-img avatar-sm" />
+                                {log.guestEmail}
+                              </div>
+                            </td>
                             <td>
                               <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(0,113,227,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
                                 {log.channel}
@@ -598,7 +673,9 @@ export default function AdminDashboard({ onLogout }) {
                               {log.subject}
                             </td>
                             <td>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#16a34a' }}>Delivered</span>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#00963f', background: 'rgba(0,200,83,0.1)', padding: '3px 10px', borderRadius: '9999px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <CheckCircle2 size={11} /> Delivered
+                              </span>
                             </td>
                           </tr>
                         ))
@@ -618,15 +695,16 @@ export default function AdminDashboard({ onLogout }) {
         {/* --- SYSTEM WIDE TEMPLATES VERSION EDITOR --- */}
         {activeTab === 'templates' && (
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>System Template Version Editor</h1>
+            <h1 style={{ fontSize: '1.45rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>System Template Version Editor</h1>
             <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>Modify platform defaults for life-cycle transaction notifications and update versions.</p>
 
             <div className="grid-2" style={{ alignItems: 'start' }}>
               
               {/* Selector & Form */}
               <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: '16px', fontWeight: 600 }}>Edit Base Template</h4>
-                
+                <h4 style={{ fontSize: '1.1rem', marginBottom: '2px', fontWeight: 600 }}>Edit Base Template</h4>
+                <p className="text-muted" style={{ fontSize: '0.8rem', margin: '0 0 16px 0' }}>Changes apply platform-wide and are version-tracked automatically.</p>
+
                 <form onSubmit={handleTemplateUpdateSubmit} className="flex flex-col gap-md">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Select System Template</label>
@@ -721,7 +799,7 @@ export default function AdminDashboard({ onLogout }) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-md)', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h1 style={{ fontSize: '2rem', margin: 0, fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Immutable System Audit Logs</h1>
+                  <h1 style={{ fontSize: '1.45rem', margin: 0, fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Immutable System Audit Logs</h1>
                   <p className="text-muted" style={{ margin: '4px 0 0 0' }}>Security auditing chronological history trail of host and admin operations.</p>
                 </div>
                 
@@ -774,7 +852,12 @@ export default function AdminDashboard({ onLogout }) {
                         filteredAudit.map(log => (
                           <tr key={log.id}>
                             <td style={{ fontSize: '0.8rem', width: '200px' }}>{new Date(log.timestamp).toLocaleString()}</td>
-                            <td style={{ fontWeight: 600, width: '200px' }}>{log.actor}</td>
+                            <td style={{ fontWeight: 600, width: '200px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <img src={getAvatar(log.actor)} alt={log.actor} className="avatar-img avatar-sm" />
+                                {log.actor}
+                              </div>
+                            </td>
                             <td>{log.action}</td>
                             <td>
                               <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', padding: '2px 6px', background: 'var(--color-surface-hover)', borderRadius: '4px' }}>
@@ -799,7 +882,7 @@ export default function AdminDashboard({ onLogout }) {
         {/* --- GLOBAL USER LOOKUP TOOL --- */}
         {activeTab === 'lookup' && (
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Universal User Lookup Directory</h1>
+            <h1 style={{ fontSize: '1.45rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>Universal User Lookup Directory</h1>
             <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>Search platform-wide hosts and guests by email or phone to view detail files.</p>
 
             <Card style={{ padding: 'var(--spacing-lg)', maxWidth: '600px', marginBottom: '24px' }}>
@@ -822,14 +905,17 @@ export default function AdminDashboard({ onLogout }) {
             {lookupResult ? (
               <Card style={{ padding: 'var(--spacing-lg)', maxWidth: '800px' }} className="animate-fade-in glass-surface">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border)', paddingBottom: '16px', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                  <div>
-                    <div className="flex items-center gap-xs" style={{ marginBottom: '6px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 10px', borderRadius: '9999px', background: lookupResult.type === 'Host' ? 'rgba(0,113,227,0.1)' : 'rgba(234,179,8,0.1)', color: lookupResult.type === 'Host' ? 'var(--color-primary)' : '#ca8a04' }}>
-                        {lookupResult.type.toUpperCase()} PROFILE
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Created: {new Date(lookupResult.createdAt).toLocaleDateString()}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <img src={getAvatar(lookupResult.email || lookupResult.name)} alt={lookupResult.name} className="avatar-img avatar-lg" />
+                    <div>
+                      <div className="flex items-center gap-xs" style={{ marginBottom: '6px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 10px', borderRadius: '9999px', background: lookupResult.type === 'Host' ? 'rgba(14,165,233,0.12)' : 'rgba(234,179,8,0.1)', color: lookupResult.type === 'Host' ? '#0369a1' : '#ca8a04' }}>
+                          {lookupResult.type.toUpperCase()} PROFILE
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Created: {new Date(lookupResult.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <h3 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 700 }}>{lookupResult.name}</h3>
                     </div>
-                    <h3 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 700 }}>{lookupResult.name}</h3>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem' }}>
@@ -844,10 +930,13 @@ export default function AdminDashboard({ onLogout }) {
                     {lookupResult.details.length > 0 ? (
                       <div className="flex flex-col gap-sm">
                         {lookupResult.details.map(evt => (
-                          <div key={evt.id} style={{ padding: '12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <strong style={{ fontSize: '0.9rem' }}>{evt.title}</strong>
-                              <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '2px' }}>{evt.date} • {evt.location}</div>
+                          <div key={evt.id} style={{ padding: '12px', background: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <img src={getEventCover(evt)} alt={evt.title} className="thumb-img" />
+                              <div>
+                                <strong style={{ fontSize: '0.9rem' }}>{evt.title}</strong>
+                                <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '2px' }}>{evt.date} • {evt.location}</div>
+                              </div>
                             </div>
                             <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: evt.status === 'Published' ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)', color: evt.status === 'Published' ? '#16a34a' : 'var(--color-text-muted)' }}>{evt.status}</span>
                           </div>
@@ -862,10 +951,13 @@ export default function AdminDashboard({ onLogout }) {
                     <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '12px' }}>Event Registrations list ({lookupResult.details.length})</h4>
                     <div className="flex flex-col gap-sm">
                       {lookupResult.details.map((reg, idx) => (
-                        <div key={idx} style={{ padding: '12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                          <div>
-                            <strong style={{ fontSize: '0.9rem' }}>{reg.eventTitle}</strong>
-                            <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '2px' }}>Pass ID: {reg.rsvpId} • Registered: {new Date(reg.timestamp).toLocaleDateString()}</div>
+                        <div key={idx} style={{ padding: '12px', background: 'var(--color-surface-hover)', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <img src={getEventCover({ id: reg.eventId, title: reg.eventTitle })} alt={reg.eventTitle} className="thumb-img" />
+                            <div>
+                              <strong style={{ fontSize: '0.9rem' }}>{reg.eventTitle}</strong>
+                              <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '2px' }}>Pass ID: {reg.rsvpId} • Registered: {new Date(reg.timestamp).toLocaleDateString()}</div>
+                            </div>
                           </div>
                           <div className="flex items-center gap-sm" style={{ fontSize: '0.75rem' }}>
                             <span style={{ fontWeight: 600, padding: '2px 8px', borderRadius: '9999px', background: reg.status === 'going' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: reg.status === 'going' ? '#16a34a' : '#ef4444' }}>{reg.status.toUpperCase()} ({reg.guestCount} tix)</span>
@@ -878,9 +970,10 @@ export default function AdminDashboard({ onLogout }) {
                 )}
               </Card>
             ) : (
-              <div className="text-center text-muted" style={{ padding: '32px 0', border: '1px dashed var(--color-border)', borderRadius: '12px', background: 'var(--color-surface-hover)', maxWidth: '600px' }}>
-                <Search size={32} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                <p style={{ fontSize: '0.85rem' }}>No user details loaded. Enter email or phone above.</p>
+              <div className="empty-state" style={{ border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-lg)', background: '#fff', maxWidth: '600px' }}>
+                <img src={EVENT_COVERS.meetup[2]} alt="People connecting" className="empty-state-img" />
+                <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 600 }}>Find anyone on the platform</h3>
+                <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0, maxWidth: '380px' }}>Enter a host or guest email address (or phone number) above to pull up their full profile, events and registrations.</p>
               </div>
             )}
           </div>

@@ -13,7 +13,7 @@ const defaultEvents = [
     description: 'Join us for cocktails, high-fidelity music, and networking under the stars. Meet other creatives, developers, and designers in the city. Premium dress code enforced.',
     status: 'Published',
     capacity: 100,
-    cover: 'https://images.unsplash.com/photo-1533174000243-cb84210f443b?auto=format&fit=crop&w=800&q=80',
+    cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80',
     theme: 'mesh-gradient-sunset',
     approvalRequired: false,
     questions: ['Any food allergies?', 'What song do you want the DJ to play?'],

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, HelpCircle, MessageSquare, ArrowRight, X, CheckCircle, Smile, Plus, ArrowLeft, Send, Check, Timer, Share2, Pin } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, MessageSquare, ArrowRight, X, CheckCircle, ArrowLeft, Send, Check, Timer, Share2, Mail, Phone, Ticket, Lock, Sparkles } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
+import { getEventCover, getAvatar } from '../utils/images';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
@@ -69,14 +70,6 @@ export default function EventPage() {
   const [commentText, setCommentText] = useState('');
   const [commentName, setCommentName] = useState(currentUser?.name || '');
 
-  // Theme gradient selection
-  const themes = {
-    'mesh-gradient-sunset': 'linear-gradient(135deg, #f43f5e 0%, #3b82f6 100%)',
-    'mesh-gradient-ocean': 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
-    'mesh-gradient-forest': 'linear-gradient(135deg, #10b981 0%, #0f172a 100%)',
-    'mesh-gradient-midnight': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-  };
-
   const loadEventData = () => {
     const evt = mockStore.getEventById(eventId);
     if (!evt) {
@@ -136,6 +129,17 @@ export default function EventPage() {
   const totalAttending = goingGuests.length + maybeGuests.length;
   const deadlinePassed = event.rsvpDeadline ? new Date() > new Date(event.rsvpDeadline) : false;
   const isRsvpClosed = event.rsvpStatus === 'Closed' || deadlinePassed;
+
+  // Presentation-only derived values
+  const coverImg = getEventCover(event);
+  const hostName = 'Alex Rivera';
+  const eventDateObj = new Date(event.date);
+  const spotsLeft = Math.max(0, event.capacity - totalAttending);
+  const capacityPct = Math.min((totalAttending / event.capacity) * 100, 100);
+  const fillingFast = !isRsvpClosed && spotsLeft <= Math.max(5, Math.ceil(event.capacity * 0.15));
+  const statusLabel = isRsvpClosed ? 'Closed' : fillingFast ? 'Filling fast' : 'Open';
+  const statusColor = isRsvpClosed ? '#64748b' : fillingFast ? 'var(--color-primary)' : 'var(--color-accent)';
+  const sectionTitleStyle = { fontSize: '1.15rem', marginBottom: '14px', fontFamily: 'var(--font-heading)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' };
 
   function handleOpenRsvpDrawer() {
     const user = mockStore.getCurrentUser();
@@ -322,122 +326,209 @@ export default function EventPage() {
     <PageShell>
       <div className="mesh-bg" style={{ minHeight: '80vh', paddingBottom: 'var(--spacing-xl)' }}>
         {/* Main Container */}
-        <div className="container flex flex-col items-center animate-fade-in" style={{ marginTop: 'var(--spacing-md)' }}>
-        
-        {/* Banner Cover */}
-        <div style={{
-          width: '100%',
-          maxWidth: '850px',
-          height: '280px',
-          borderRadius: '24px',
-          overflow: 'hidden',
-          background: event.cover ? `url(${event.cover}) center/cover` : (themes[event.theme] || themes['mesh-gradient-sunset']),
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'flex-end',
-          padding: 'var(--spacing-md)',
-          boxShadow: 'var(--shadow-lg)',
-          marginBottom: 'var(--spacing-md)'
-        }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(15, 23, 42, 0.7) 0%, rgba(0,0,0,0) 80%)', zIndex: 1 }}></div>
-          <div style={{ zIndex: 2 }}>
-            <h1 style={{ color: 'white', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', textShadow: '0 2px 4px rgba(0,0,0,0.4)' }}>{event.title}</h1>
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem' }}>Hosted by <Link to="/host/Alex Rivera" style={{ color: 'white', textDecoration: 'underline', fontWeight: 600 }}>Alex Rivera</Link></p>
+        <div className="container animate-fade-in" style={{ marginTop: 'var(--spacing-md)', maxWidth: '1060px' }}>
+
+        {/* Page-scoped responsive layout helpers (UI only) */}
+        <style>{`
+          .evt-layout { display: grid; grid-template-columns: 1fr; gap: var(--spacing-md); align-items: start; }
+          .evt-side { order: -1; display: flex; flex-direction: column; gap: var(--spacing-md); }
+          @media (min-width: 920px) {
+            .evt-layout { grid-template-columns: minmax(0, 1fr) 380px; gap: var(--spacing-lg); }
+            .evt-side { order: 0; position: sticky; top: 90px; }
+          }
+          .evt-chip { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); color: white; padding: 7px 14px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+        `}</style>
+
+        {/* Hero Cover Banner */}
+        <div className="page-hero" style={{ minHeight: 'clamp(320px, 42vw, 380px)', marginBottom: 'var(--spacing-md)', boxShadow: 'var(--shadow-lg)' }}>
+          <img src={coverImg} alt={event.title} className="page-hero-img" />
+          <div className="page-hero-overlay"></div>
+
+          {/* Status badge */}
+          <span style={{
+            position: 'absolute', top: '18px', right: '18px', zIndex: 3,
+            display: 'inline-flex', alignItems: 'center', gap: '7px',
+            background: 'rgba(255,255,255,0.95)', color: 'var(--color-text)',
+            padding: '7px 14px', borderRadius: 'var(--radius-full)',
+            fontSize: '0.8rem', fontWeight: 700, boxShadow: 'var(--shadow-md)'
+          }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: statusColor, flexShrink: 0 }}></span>
+            {statusLabel}
+          </span>
+
+          <div className="page-hero-content" style={{ width: '100%' }}>
+            <div className="flex gap-xs" style={{ flexWrap: 'wrap', marginBottom: '14px' }}>
+              <span className="evt-chip">
+                <Calendar size={15} />
+                {eventDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {event.time}
+              </span>
+              <span className="evt-chip">
+                <MapPin size={15} /> {event.location}
+              </span>
+            </div>
+            <h1 style={{ fontSize: 'clamp(1.9rem, 4.5vw, 2.8rem)', lineHeight: 1.1, textShadow: '0 2px 12px rgba(0,0,0,0.35)', marginBottom: '12px' }}>{event.title}</h1>
+            <div className="flex items-center gap-xs">
+              <img src={getAvatar(hostName)} alt={hostName} className="avatar-img avatar-sm" />
+              <p style={{ fontSize: '0.95rem', margin: 0 }}>
+                Hosted by <Link to="/host/Alex Rivera" style={{ color: 'white', textDecoration: 'underline', fontWeight: 600 }}>{hostName}</Link>
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Content Layout Grid */}
-        <div className="grid-2" style={{ width: '100%', maxWidth: '850px', gap: 'var(--spacing-md)', alignItems: 'start' }}>
+        <div className="evt-layout">
           
           {/* LEFT SIDE: Info, Polls, Comments */}
           <div className="flex flex-col gap-md">
             
             {/* Event Description Card */}
             <Card style={{ padding: 'var(--spacing-md)' }} className="glass-surface">
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>About this gathering</h3>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+              <h3 style={sectionTitleStyle}>
+                <span className="stat-icon-tile stat-icon-orange" style={{ width: '36px', height: '36px' }}><Sparkles size={18} /></span>
+                About this gathering
+              </h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', whiteSpace: 'pre-line', lineHeight: '1.7' }}>
                 {event.description}
               </p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-sm)', marginTop: '20px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-                <div className="flex flex-col">
-                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', fontWeight: 600 }}>Date & Time</span>
-                  <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {event.time}</span>
+            </Card>
+
+            {/* Date & Time + Location Card */}
+            <Card style={{ padding: 'var(--spacing-md)' }}>
+              <div className="flex items-center gap-sm" style={{ marginBottom: '16px' }}>
+                {/* Calendar tile */}
+                <div style={{ width: '54px', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--color-border)', textAlign: 'center', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ background: 'var(--color-primary)', color: 'white', fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', padding: '4px 0' }}>
+                    {eventDateObj.toLocaleDateString('en-US', { month: 'short' })}
+                  </div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, padding: '4px 0', background: 'white', color: 'var(--color-text)' }}>
+                    {eventDateObj.getDate()}
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', fontWeight: 600 }}>Location</span>
-                  <span style={{ fontWeight: 600, fontSize: '0.9rem' }} className="flex items-center gap-xs"><MapPin size={14} className="text-accent" /> {event.location}</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{eventDateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                  <div className="text-muted flex items-center gap-xs" style={{ fontSize: '0.85rem', marginTop: '2px' }}>
+                    <Clock size={14} /> {event.time}
+                    {event.rsvpDeadline && !deadlinePassed && (
+                      <span style={{ marginLeft: '6px', color: 'var(--color-primary)', fontWeight: 600 }}>
+                        · RSVP by {new Date(event.rsvpDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-sm" style={{ marginBottom: '12px' }}>
+                <span className="stat-icon-tile stat-icon-green" style={{ width: '54px', height: '54px', borderRadius: '14px' }}><MapPin size={22} /></span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{event.location}</div>
+                  <div className="text-muted" style={{ fontSize: '0.85rem', marginTop: '2px' }}>Full address shared after RSVP</div>
+                </div>
+              </div>
+
+              {/* Map placeholder */}
+              <div style={{
+                height: '130px', borderRadius: '16px', border: '1px dashed var(--color-border)',
+                background: 'repeating-linear-gradient(45deg, #f1f3f5, #f1f3f5 14px, #eef1f4 14px, #eef1f4 28px)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--color-text-muted)'
+              }}>
+                <span style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
+                  <MapPin size={20} style={{ color: 'var(--color-primary)' }} />
+                </span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Map preview</span>
               </div>
             </Card>
 
-            {/* Guest list bubbles card */}
+            {/* Host Card */}
             <Card style={{ padding: 'var(--spacing-md)' }}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }} className="flex justify-between items-center">
-                <span>Guest List</span>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>{totalAttending} attending</span>
-              </h3>
-              
-              {/* Capacity progress */}
-              <div style={{ marginBottom: '16px' }}>
-                <div className="flex justify-between" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  <span>Progress to limit</span>
-                  <span>{totalAttending} / {event.capacity} capacity</span>
+              <div className="flex items-center justify-between gap-sm" style={{ flexWrap: 'wrap' }}>
+                <div className="flex items-center gap-sm">
+                  <img src={getAvatar(hostName)} alt={hostName} className="avatar-img avatar-lg" />
+                  <div>
+                    <span className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Hosted by</span>
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{hostName}</div>
+                    <div className="text-muted flex items-center gap-xs" style={{ fontSize: '0.8rem', marginTop: '2px' }}>
+                      <Mail size={13} /> alex@safalevent.com
+                    </div>
+                  </div>
                 </div>
-                <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', width: `${Math.min((totalAttending / event.capacity) * 100, 100)}%`, borderRadius: '4px' }}></div>
-                </div>
+                <Link to="/host/Alex Rivera" style={{ textDecoration: 'none' }}>
+                  <Button variant="outline" style={{ fontSize: '0.85rem' }}>View profile</Button>
+                </Link>
               </div>
+            </Card>
 
-              {/* Guests bubble list */}
+            {/* Guest list avatar grid card */}
+            <Card style={{ padding: 'var(--spacing-md)' }}>
+              <h3 style={{ ...sectionTitleStyle, justifyContent: 'space-between' }}>
+                <span className="flex items-center" style={{ gap: '10px' }}>
+                  <span className="stat-icon-tile stat-icon-purple" style={{ width: '36px', height: '36px' }}><Users size={18} /></span>
+                  Guest List
+                </span>
+                <span className="badge badge-primary" style={{ fontSize: '0.78rem' }}>{totalAttending} attending</span>
+              </h3>
+
+              {/* Guests avatar grid */}
               {event.showGuestList ? (
                 goingGuests.length > 0 || maybeGuests.length > 0 ? (
-                  <div className="flex flex-col gap-sm">
+                  <div className="flex flex-col gap-md">
                     {goingGuests.length > 0 && (
                       <div>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#16a34a', marginBottom: '6px' }}>Going ({goingGuests.length})</p>
-                        <div className="flex gap-xs" style={{ flexWrap: 'wrap' }}>
+                        <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-accent)', marginBottom: '10px' }}>
+                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-accent)' }}></span> Going ({goingGuests.length})
+                        </p>
+                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
                           {goingGuests.map(g => (
-                            <span key={g.id} style={{ fontSize: '0.8rem', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.1)', color: '#15803d', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
-                              {g.name}
-                            </span>
+                            <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center' }}>
+                              <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
+                              <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
 
                     {maybeGuests.length > 0 && (
-                      <div style={{ marginTop: '6px' }}>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#ca8a04', marginBottom: '6px' }}>Maybe ({maybeGuests.length})</p>
-                        <div className="flex gap-xs" style={{ flexWrap: 'wrap' }}>
+                      <div>
+                        <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#ca8a04', marginBottom: '10px' }}>
+                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#eab308' }}></span> Maybe ({maybeGuests.length})
+                        </p>
+                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
                           {maybeGuests.map(g => (
-                            <span key={g.id} style={{ fontSize: '0.8rem', background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.1)', color: '#a16207', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
-                              {g.name}
-                            </span>
+                            <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.85 }}>
+                              <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" />
+                              <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
 
                     {waitlistGuests.length > 0 && (
-                      <div style={{ marginTop: '6px' }}>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#4f46e5', marginBottom: '6px' }}>Waitlist ({waitlistGuests.length})</p>
-                        <div className="flex gap-xs" style={{ flexWrap: 'wrap' }}>
+                      <div>
+                        <p className="flex items-center gap-xs" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '10px' }}>
+                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#8b5cf6' }}></span> Waitlist ({waitlistGuests.length})
+                        </p>
+                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
                           {waitlistGuests.map(g => (
-                            <span key={g.id} style={{ fontSize: '0.8rem', background: 'rgba(0, 113, 227, 0.06)', border: '1px solid rgba(0, 113, 227, 0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: 500 }}>
-                              {g.name}
-                            </span>
+                            <div key={g.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', width: '70px', textAlign: 'center', opacity: 0.7 }}>
+                              <img src={getAvatar(g.name)} alt={g.name} className="avatar-img avatar-lg" style={{ filter: 'grayscale(35%)' }} />
+                              <span style={{ fontSize: '0.72rem', fontWeight: 600, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>No RSVPs yet. Be the first to join!</p>
+                  <div className="empty-state" style={{ padding: 'var(--spacing-md)' }}>
+                    <span className="stat-icon-tile stat-icon-orange"><Users size={20} /></span>
+                    <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>No RSVPs yet. Be the first to join!</p>
+                  </div>
                 )
               ) : (
-                <div style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '12px', fontSize: '0.85rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  🔒 The host has kept the guest list private.
+                <div className="flex items-center justify-center gap-xs" style={{ background: 'var(--color-surface-hover)', padding: '14px', borderRadius: '14px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                  <Lock size={15} /> The host has kept the guest list private.
                 </div>
               )}
             </Card>
@@ -445,7 +536,10 @@ export default function EventPage() {
             {/* Polls Widget */}
             {event.allowComments && polls.length > 0 && (
               <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }}>Event Polls</h3>
+                <h3 style={sectionTitleStyle}>
+                  <span className="stat-icon-tile stat-icon-blue" style={{ width: '36px', height: '36px' }}><Check size={18} /></span>
+                  Event Polls
+                </h3>
                 <div className="flex flex-col gap-md">
                   {polls.map(poll => {
                     const totalVotes = poll.options.reduce((acc, curr) => acc + curr.votes, 0);
@@ -467,12 +561,12 @@ export default function EventPage() {
                                 }}
                               >
                                 <div style={{
-                                  padding: '8px 12px', borderRadius: '6px', border: hasVoted ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                  background: hasVoted ? 'rgba(0, 113, 227, 0.1)' : 'var(--color-surface)', transition: 'background var(--transition-fast)',
+                                  padding: '9px 12px', borderRadius: '10px', border: hasVoted ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                  background: hasVoted ? 'rgba(255, 107, 53, 0.08)' : 'var(--color-surface)', transition: 'background var(--transition-fast)',
                                   position: 'relative', overflow: 'hidden'
                                 }}>
                                   {/* Progress fill */}
-                                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: 'rgba(0, 113, 227, 0.1)', zIndex: 1, borderRadius: '6px' }}></div>
+                                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${percent}%`, background: 'rgba(255, 107, 53, 0.1)', zIndex: 1, borderRadius: '10px' }}></div>
                                   <div className="flex justify-between items-center" style={{ position: 'relative', zIndex: 2, fontSize: '0.85rem' }}>
                                     <span style={{ fontWeight: hasVoted ? 600 : 500 }}>{opt.text}</span>
                                     <span className="text-muted" style={{ fontSize: '0.75rem' }}>{opt.votes} ({percent}%)</span>
@@ -492,33 +586,33 @@ export default function EventPage() {
             {/* Comments Board Feed */}
             {event.allowComments && (
               <Card style={{ padding: 'var(--spacing-md)' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontFamily: 'var(--font-heading)' }} className="flex items-center gap-xs">
-                  <MessageSquare size={18} /> Guest Board
+                <h3 style={sectionTitleStyle}>
+                  <span className="stat-icon-tile stat-icon-green" style={{ width: '36px', height: '36px' }}><MessageSquare size={18} /></span>
+                  Guest Board
                 </h3>
 
                 {/* Add Comment Form */}
-                <form onSubmit={handleCommentSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '20px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                <form onSubmit={handleCommentSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '20px' }}>
                   {!currentUser || !currentUser.name ? (
-                    <div className="flex gap-xs" style={{ marginBottom: '4px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Your Name" 
-                        value={commentName} 
-                        onChange={(e) => setCommentName(e.target.value)}
-                        style={{ padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border)', flex: 1 }}
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      placeholder="Your name"
+                      value={commentName}
+                      onChange={(e) => setCommentName(e.target.value)}
+                      style={{ padding: '8px 14px', fontSize: '0.85rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)', outline: 'none', background: 'var(--color-surface-hover)' }}
+                    />
                   ) : null}
 
                   <div className="flex gap-xs items-center">
-                    <input 
-                      type="text" 
+                    <img src={getAvatar(commentName || currentUser?.email || 'guest')} alt="" className="avatar-img" />
+                    <input
+                      type="text"
                       placeholder="Leave a message or greeting..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.875rem' }}
+                      style={{ flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)', fontSize: '0.875rem', outline: 'none', background: 'var(--color-surface-hover)' }}
                     />
-                    <Button variant="primary" type="submit" style={{ padding: '8px 12px' }}><Send size={16} /></Button>
+                    <Button variant="primary" type="submit" style={{ padding: '10px 12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={16} /></Button>
                   </div>
                 </form>
 
@@ -526,37 +620,44 @@ export default function EventPage() {
                 {comments.length > 0 ? (
                   <div className="flex flex-col gap-md">
                     {comments.map(c => (
-                      <div key={c.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
-                        <div className="flex items-center gap-xs">
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{c.name}</span>
-                          <span className="text-muted" style={{ fontSize: '0.7rem' }}>{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <p style={{ fontSize: '0.85rem' }}>{c.text}</p>
-                        
-                        {/* Reactions buttons */}
-                        <div className="flex gap-xs" style={{ marginTop: '4px' }}>
-                          {['🎉', '❤️', '👍'].map(emoji => {
-                            const count = c.reactions[emoji] || 0;
-                            return (
-                              <button 
-                                key={emoji}
-                                onClick={() => handleReactToComment(c.id, emoji)}
-                                style={{ 
-                                  background: 'none', border: '1px solid var(--color-border)', borderRadius: '6px', 
-                                  padding: '2px 6px', fontSize: '0.7rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '2px' 
-                                }}
-                              >
-                                <span>{emoji}</span>
-                                <span style={{ fontWeight: 600 }}>{count}</span>
-                              </button>
-                            );
-                          })}
+                      <div key={c.id} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+                        <img src={getAvatar(c.name)} alt={c.name} className="avatar-img" />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="flex items-center gap-xs">
+                            <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{c.name}</span>
+                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <p style={{ fontSize: '0.875rem', margin: '4px 0 0', lineHeight: 1.5 }}>{c.text}</p>
+
+                          {/* Reactions buttons */}
+                          <div className="flex gap-xs" style={{ marginTop: '8px' }}>
+                            {['🎉', '❤️', '👍'].map(emoji => {
+                              const count = c.reactions[emoji] || 0;
+                              return (
+                                <button
+                                  key={emoji}
+                                  onClick={() => handleReactToComment(c.id, emoji)}
+                                  style={{
+                                    background: count > 0 ? 'rgba(255, 107, 53, 0.08)' : 'var(--color-surface-hover)',
+                                    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-full)',
+                                    padding: '3px 9px', fontSize: '0.72rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px'
+                                  }}
+                                >
+                                  <span>{emoji}</span>
+                                  <span style={{ fontWeight: 700 }}>{count}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>No greetings posted yet. Drop a message to say hi!</p>
+                  <div className="empty-state" style={{ padding: 'var(--spacing-md)' }}>
+                    <span className="stat-icon-tile stat-icon-green"><MessageSquare size={20} /></span>
+                    <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>No greetings posted yet. Drop a message to say hi!</p>
+                  </div>
                 )}
               </Card>
             )}
@@ -564,17 +665,26 @@ export default function EventPage() {
           </div>
 
           {/* RIGHT SIDE: RSVP Checkout Box */}
-          <div style={{ position: 'sticky', top: '90px' }} className="flex flex-col gap-md">
-            
-            <Card style={{ padding: 'var(--spacing-md)' }} className="glass-surface">
+          <div className="evt-side">
+
+            <Card style={{ padding: 0, overflow: 'hidden' }} className="glass-surface">
+              {/* Ticket cover strip */}
+              <div style={{ position: 'relative' }}>
+                <img src={coverImg} alt="" style={{ width: '100%', height: '96px', objectFit: 'cover', display: 'block' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,12,0.55), rgba(8,8,12,0.05))' }}></div>
+                <span style={{ position: 'absolute', left: '16px', bottom: '10px', color: 'white', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <Ticket size={14} /> Event Pass
+                </span>
+              </div>
+              <div style={{ padding: 'var(--spacing-md)', borderTop: '2px dashed var(--color-border)' }}>
               {existingRsvp ? (
                 <div className="text-center">
-                  <CheckCircle size={40} style={{ color: '#16a34a', margin: '0 auto var(--spacing-sm) auto' }} />
-                  <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>You are RSVP'd!</h3>
+                  <CheckCircle size={40} style={{ color: 'var(--color-accent)', margin: '0 auto var(--spacing-sm) auto' }} />
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>You're on the list!</h3>
                   <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '16px' }}>
-                    Status: <strong style={{ color: 'var(--color-primary)' }}>{existingRsvp.status.toUpperCase()}</strong>
+                    Status: <span className="badge badge-primary">{existingRsvp.status.toUpperCase()}</span>
                   </p>
-                  <p style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', marginBottom: '16px' }}>
+                  <p style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: '12px', marginBottom: '16px', color: 'var(--color-text-muted)' }}>
                     Show your event ticket pass at the door for entry check-in.
                   </p>
                   <Link to="/dashboard">
@@ -586,14 +696,14 @@ export default function EventPage() {
                       href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${event.date.replace(/-/g,'')}T${(event.time||'180000').replace(':','')}00/${event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(event.location)}&details=${encodeURIComponent(event.description)}`}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(0,113,227,0.08)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
                     >
                       + Google Calendar
                     </a>
                     <a
                       href={`data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0ASUMMARY:${encodeURIComponent(event.title)}%0ALOCATION:${encodeURIComponent(event.location)}%0ADESCRIPTION:${encodeURIComponent(event.description)}%0ADTSTART:${event.date.replace(/-/g,'')}T${(event.time||'18:00').replace(':','')}00%0ADTEND:${event.date.replace(/-/g,'')}T220000%0AEND:VEVENT%0AEND:VCALENDAR`}
                       download={`${event.title.replace(/\s+/g,'-')}.ics`}
-                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(249,115,22,0.08)', color: 'var(--color-accent)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(0,200,83,0.1)', color: 'var(--color-accent)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
                     >
                       + Apple Calendar
                     </a>
@@ -601,6 +711,7 @@ export default function EventPage() {
                 </div>
               ) : isRsvpClosed ? (
                 <div className="text-center">
+                  <span className="stat-icon-tile stat-icon-red" style={{ margin: '0 auto 12px' }}><Lock size={20} /></span>
                   <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)' }}>RSVPs Closed</h3>
                   <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
                     {deadlinePassed ? 'The registration deadline has passed.' : 'The host has closed registrations for this event.'}
@@ -611,44 +722,77 @@ export default function EventPage() {
                 </div>
               ) : (
                 <div>
-                  <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-xs)', fontFamily: 'var(--font-heading)' }}>Join gathering</h3>
-                  
-                  {event.enablePayments && (
-                    <div style={{ fontSize: '0.85rem', color: '#16a34a', fontWeight: 700, marginBottom: '12px', background: 'rgba(34,197,94,0.06)', padding: '6px 10px', borderRadius: '6px', display: 'inline-block' }}>
-                      🎟️ Ticket Cost: ${event.ticketPrice} USD
-                    </div>
-                  )}
-
-                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
-                    {event.approvalRequired 
-                      ? 'This event requires organizer approval. Request to join the waitlist.' 
+                  <h3 style={{ fontSize: '1.3rem', marginBottom: '4px', fontFamily: 'var(--font-heading)', fontWeight: 800 }}>
+                    {event.approvalRequired ? 'Request your spot' : 'Reserve your spot'}
+                  </h3>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '14px' }}>
+                    {event.approvalRequired
+                      ? 'This event requires organizer approval. Request to join the waitlist.'
                       : 'RSVP now to save your spot. Capacity is limited!'}
                   </p>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '10px', borderRadius: '8px', marginBottom: '12px', fontSize: '0.85rem' }}>
-                    <span className="text-muted">Spots remaining</span>
-                    <span style={{ fontWeight: 700, color: event.capacity - totalAttending <= 10 ? '#dc2626' : '#16a34a' }}>
-                      {Math.max(0, event.capacity - totalAttending)} / {event.capacity}
-                    </span>
+                  {event.enablePayments && (
+                    <div className="flex items-center gap-xs" style={{ fontSize: '0.85rem', color: 'var(--color-accent)', fontWeight: 700, marginBottom: '14px', background: 'rgba(0,200,83,0.08)', padding: '8px 12px', borderRadius: '10px' }}>
+                      <Ticket size={16} /> Ticket Cost: ${event.ticketPrice} USD
+                    </div>
+                  )}
+
+                  {/* Capacity bar */}
+                  <div style={{ marginBottom: '14px' }}>
+                    <div className="flex justify-between" style={{ fontSize: '0.75rem', marginBottom: '6px' }}>
+                      <span className="text-muted">Spots remaining</span>
+                      <span style={{ fontWeight: 800, color: spotsLeft <= 10 ? 'var(--color-urgent)' : 'var(--color-accent)' }}>
+                        {spotsLeft} / {event.capacity}
+                      </span>
+                    </div>
+                    <div style={{ height: '8px', background: '#e9ecef', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', width: `${capacityPct}%`, borderRadius: 'var(--radius-full)', transition: 'width 0.4s ease' }}></div>
+                    </div>
                   </div>
 
-                  <Button variant="primary" onClick={handleOpenRsvpDrawer} style={{ width: '100%', padding: '12px 0' }} className="flex justify-center items-center gap-xs">
+                  {/* Deadline note */}
+                  {event.rsvpDeadline && (
+                    <div className="flex items-center gap-xs text-muted" style={{ fontSize: '0.78rem', marginBottom: '14px' }}>
+                      <Timer size={14} style={{ color: 'var(--color-primary)' }} />
+                      RSVPs close {new Date(event.rsvpDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                    </div>
+                  )}
+
+                  {/* Attendee avatar stack */}
+                  {goingGuests.length > 0 && (
+                    <div className="flex items-center gap-xs" style={{ marginBottom: '16px' }}>
+                      <div className="avatar-stack">
+                        {goingGuests.slice(0, 4).map(g => (
+                          <img key={g.id} src={getAvatar(g.name)} alt={g.name} className="avatar-img" title={g.name} />
+                        ))}
+                        {goingGuests.length > 4 && (
+                          <span className="avatar-stack-more">+{goingGuests.length - 4}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                        {goingGuests.length} going{maybeGuests.length > 0 ? ` · ${maybeGuests.length} maybe` : ''}
+                      </span>
+                    </div>
+                  )}
+
+                  <Button variant="primary" onClick={handleOpenRsvpDrawer} style={{ width: '100%', padding: '14px 0', fontSize: '1rem', fontWeight: 700 }} className="flex justify-center items-center gap-xs">
                     {event.approvalRequired ? 'Request to Join (Waitlist)' : 'RSVP Now'} <ArrowRight size={18} />
                   </Button>
                 </div>
               )}
+              </div>
             </Card>
 
             {/* Quick Contacts Info */}
-            <Card style={{ padding: 'var(--spacing-sm)' }} className="flex flex-col gap-xs text-muted">
-              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Questions?</span>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>Email: alex@safalevent.com</span>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>Direct Phone: +1 (555) 999-8888</span>
+            <Card style={{ padding: 'var(--spacing-md)' }} className="flex flex-col gap-xs">
+              <span className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '4px' }}>Questions?</span>
+              <span className="flex items-center gap-xs" style={{ fontSize: '0.85rem' }}><Mail size={15} style={{ color: 'var(--color-primary)' }} /> alex@safalevent.com</span>
+              <span className="flex items-center gap-xs" style={{ fontSize: '0.85rem' }}><Phone size={15} style={{ color: 'var(--color-accent)' }} /> +1 (555) 999-8888</span>
             </Card>
 
              {/* Share Event Card */}
-            <Card style={{ padding: 'var(--spacing-sm)', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '10px' }}>Share This Event</span>
+            <Card style={{ padding: 'var(--spacing-md)', textAlign: 'center' }}>
+              <span className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px', display: 'block', marginBottom: '10px' }}>Share This Event</span>
               <Button
                 onClick={() => setShowShareModal(true)}
                 variant="outline"
@@ -716,7 +860,7 @@ export default function EventPage() {
                   <p className="text-muted" style={{ fontSize: '0.875rem' }}>
                     Enter the 6-digit verification code we sent to your email and phone.
                   </p>
-                  <div style={{ margin: '12px auto', background: 'rgba(0, 113, 227, 0.08)', border: '1px dashed rgba(0, 113, 227, 0.3)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  <div style={{ margin: '12px auto', background: 'rgba(255, 107, 53, 0.08)', border: '1px dashed rgba(255, 107, 53, 0.35)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                     Active Code: {rsvpSession.otpCode}
                   </div>
                 </div>
@@ -778,7 +922,7 @@ export default function EventPage() {
                       onClick={() => setRsvpForm({ ...rsvpForm, status: 'going' })}
                       style={{
                         flex: 1, padding: '12px', borderRadius: '8px', border: rsvpForm.status === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: rsvpForm.status === 'going' ? 'rgba(0, 113, 227, 0.05)' : 'white', cursor: 'pointer', fontWeight: 600
+                        background: rsvpForm.status === 'going' ? 'rgba(255, 107, 53, 0.06)' : 'white', cursor: 'pointer', fontWeight: 600
                       }}
                     >
                       {event.approvalRequired ? 'Request to Join' : 'Going'}
@@ -788,7 +932,7 @@ export default function EventPage() {
                       onClick={() => setRsvpForm({ ...rsvpForm, status: 'maybe' })}
                       style={{
                         flex: 1, padding: '12px', borderRadius: '8px', border: rsvpForm.status === 'maybe' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: rsvpForm.status === 'maybe' ? 'rgba(0, 113, 227, 0.05)' : 'white', cursor: 'pointer', fontWeight: 600
+                        background: rsvpForm.status === 'maybe' ? 'rgba(255, 107, 53, 0.06)' : 'white', cursor: 'pointer', fontWeight: 600
                       }}
                     >
                       Maybe
@@ -910,23 +1054,31 @@ export default function EventPage() {
 
             {drawerStep === 4 && (
               <div className="text-center flex flex-col items-center gap-md" style={{ padding: '12px 0' }}>
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '50%',
-                  background: 'rgba(34,197,94,0.1)',
-                  color: '#16a34a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '2rem',
-                  fontWeight: 700,
-                  margin: '0 auto'
-                }}>
-                  ✓
+                {/* Celebratory ticket */}
+                <div className="animate-fade-in" style={{ width: '100%', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', textAlign: 'left', background: 'white' }}>
+                  <div style={{ position: 'relative' }}>
+                    <img src={coverImg} alt={event.title} style={{ width: '100%', height: '130px', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,12,0.75), rgba(8,8,12,0.1))' }}></div>
+                    <div style={{ position: 'absolute', left: '16px', bottom: '12px', right: '16px', color: 'white' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.9, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Ticket size={13} /> Admit {rsvpForm.guestCount || 1}
+                      </span>
+                      <div style={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.2, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{event.title}</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '14px 16px', borderTop: '2px dashed var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span className="stat-icon-tile stat-icon-green" style={{ borderRadius: '50%' }}><Check size={22} /></span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{`${firstName} ${lastName}`.trim() || rsvpForm.name}</div>
+                      <div className="text-muted flex items-center gap-xs" style={{ fontSize: '0.75rem', marginTop: '2px' }}>
+                        <Calendar size={12} /> {eventDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {event.time}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
                 <div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>RSVP Confirmed!</h4>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>🎉 RSVP Confirmed!</h4>
                   <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '6px', lineHeight: '1.4' }}>
                     You have successfully registered for "{event.title}". An email ticket invoice and details have been sent to <strong>{email}</strong>.
                   </p>
@@ -939,14 +1091,14 @@ export default function EventPage() {
                       href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${event.date.replace(/-/g,'')}T${(event.time||'180000').replace(':','')}00/${event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(event.location)}&details=${encodeURIComponent(event.description)}`}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(0,113,227,0.08)', color: 'var(--color-primary)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
                     >
                       Google
                     </a>
                     <a
                       href={`data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0ASUMMARY:${encodeURIComponent(event.title)}%0ALOCATION:${encodeURIComponent(event.location)}%0ADESCRIPTION:${encodeURIComponent(event.description)}%0ADTSTART:${event.date.replace(/-/g,'')}T${(event.time||'18:00').replace(':','')}00%0ADTEND:${event.date.replace(/-/g,'')}T220000%0AEND:VEVENT%0AEND:VCALENDAR`}
                       download={`${event.title.replace(/\s+/g,'-')}.ics`}
-                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(249,115,22,0.08)', color: 'var(--color-accent)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(0,200,83,0.1)', color: 'var(--color-accent)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
                     >
                       iCal / .ics
                     </a>
@@ -1046,13 +1198,7 @@ export default function EventPage() {
                             {event.description || 'Join us for this exciting gathering!'}
                           </p>
                         </div>
-                        <div style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '4px',
-                          background: event.cover ? `url(${event.cover}) center/cover` : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
-                          flexShrink: 0
-                        }}></div>
+                        <img src={coverImg} alt="" style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} />
                       </div>
                     </div>
                   </div>

@@ -4,12 +4,14 @@ import {
   Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X,
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Compass, Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
-  UserCheck, AlertCircle, Copy, Share2, ArrowRight
+  UserCheck, AlertCircle, Copy, Share2, ArrowRight, DollarSign, Ticket, TrendingUp,
+  MapPin, Eye
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
+import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 
 export default function HostDashboard({ onLogout }) {
   const navigate = useNavigate();
@@ -819,35 +821,59 @@ export default function HostDashboard({ onLogout }) {
           {activeSidebar === 'dashboard' && (
             <div className="flex flex-col gap-xl">
               
-              {/* SECTION 1: WELCOME BAR */}
-              <div className="glass-surface flex justify-between items-center" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>
-                    {getGreeting()}, Alex! 👋
-                  </h1>
-                  <p className="text-muted" style={{ margin: '6px 0 0 0', fontSize: '0.95rem' }}>
-                    {getWeeklyEventsText()}
-                  </p>
-                </div>
-                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                  <Link to="/create">
-                    <Button variant="primary" className="flex items-center gap-xs">
-                      <Plus size={18} /> Create New Event
-                    </Button>
-                  </Link>
-                  <Button variant="outline" onClick={handleDuplicateLastEvent} className="flex items-center gap-xs">
-                    <Copy size={16} /> Copy Last Event
-                  </Button>
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/host/alex`);
-                      alert("Host profile link copied to clipboard!");
-                    }}
-                    className="btn btn-outline"
-                    style={{ padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', color: 'var(--color-text-muted)', background: 'transparent' }}
-                  >
-                    <Share2 size={16} /> Share Profile
-                  </button>
+              {/* SECTION 1: WELCOME HERO BANNER */}
+              <div className="page-hero animate-fade-in" style={{ padding: '32px', minHeight: '260px' }}>
+                <img src={HERO_IMAGES.hosting} alt="Host on stage" className="page-hero-img" />
+                <div className="page-hero-overlay" />
+                <div className="page-hero-content" style={{ width: '100%', textAlign: 'left' }}>
+                  <div className="flex justify-between items-end" style={{ flexWrap: 'wrap', gap: '20px', width: '100%' }}>
+                    <div>
+                      <div className="flex items-center gap-sm" style={{ marginBottom: '10px' }}>
+                        <img src={getAvatar('alex@safalevent.com')} alt="Alex Rivera" className="avatar-img" />
+                        <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Host Portal</span>
+                      </div>
+                      <h1 style={{ fontSize: '2.1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>
+                        {getGreeting()}, Alex! 👋
+                      </h1>
+                      <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', maxWidth: '560px' }}>
+                        {getWeeklyEventsText()}
+                      </p>
+                      <div className="flex gap-md" style={{ marginTop: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 'var(--radius-md)', padding: '8px 16px', textAlign: 'left' }}>
+                          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.2 }}>{totalEvents}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Events</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 'var(--radius-md)', padding: '8px 16px', textAlign: 'left' }}>
+                          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.2 }}>{totalRsvps}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Guests RSVP'd</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 'var(--radius-md)', padding: '8px 16px', textAlign: 'left' }}>
+                          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.2 }}>${availableBalance.toLocaleString()}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Balance</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                      <Link to="/create">
+                        <Button variant="primary" className="flex items-center gap-xs">
+                          <Plus size={18} /> Create New Event
+                        </Button>
+                      </Link>
+                      <Button variant="outline" onClick={handleDuplicateLastEvent} className="flex items-center gap-xs" style={{ background: 'rgba(255,255,255,0.92)' }}>
+                        <Copy size={16} /> Copy Last Event
+                      </Button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/host/alex`);
+                          alert("Host profile link copied to clipboard!");
+                        }}
+                        className="btn btn-outline"
+                        style={{ padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', color: 'white', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.4)' }}
+                      >
+                        <Share2 size={16} /> Share Profile
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -857,8 +883,8 @@ export default function HostDashboard({ onLogout }) {
                 <div className="grid-3" style={{ gap: '16px' }}>
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '1.5rem' }}>💰</span>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(34,197,94,0.1)', color: '#16a34a' }}>+$850 this week</span>
+                      <div className="stat-icon-tile stat-icon-green"><DollarSign size={22} /></div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(0,200,83,0.1)', color: 'var(--color-accent)' }}>↑ +$850 this week</span>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Earnings</h3>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>${availableBalance.toLocaleString()}</p>
@@ -872,8 +898,8 @@ export default function HostDashboard({ onLogout }) {
 
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '1.5rem' }}>🎟️</span>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>{upcomingEventsCount} Active</span>
+                      <div className="stat-icon-tile stat-icon-orange"><Ticket size={22} /></div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)' }}>{upcomingEventsCount} Active</span>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Active RSVPs</h3>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalRsvps} guests</p>
@@ -887,7 +913,7 @@ export default function HostDashboard({ onLogout }) {
 
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '1.5rem' }}>📩</span>
+                      <div className="stat-icon-tile stat-icon-blue"><Mail size={22} /></div>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fee2e2', color: '#ef4444' }}>3 urgent</span>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Unread Messages</h3>
@@ -902,7 +928,7 @@ export default function HostDashboard({ onLogout }) {
 
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '1.5rem' }}>⏱️</span>
+                      <div className="stat-icon-tile stat-icon-red"><Clock size={22} /></div>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#d97706' }}>Ends in 3h</span>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Ending Soon</h3>
@@ -920,7 +946,7 @@ export default function HostDashboard({ onLogout }) {
 
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '1.5rem' }}>⭐</span>
+                      <div className="stat-icon-tile stat-icon-purple"><Star size={22} /></div>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#b45309' }}>Recent reviews</span>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>New Reviews</h3>
@@ -943,7 +969,7 @@ export default function HostDashboard({ onLogout }) {
 
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <span style={{ fontSize: '1.5rem' }}>🔔</span>
+                      <div className="stat-icon-tile stat-icon-orange"><Bell size={22} /></div>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fee2e2', color: '#ef4444' }}>Diet details</span>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Pending Tasks</h3>
@@ -1044,11 +1070,14 @@ export default function HostDashboard({ onLogout }) {
                           const going = rsvps.filter(r => r.status === 'going').length;
                           return (
                             <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', items: 'center', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '10px' }}>
-                              <div>
-                                <h5 style={{ margin: '0 0 2px 0', fontSize: '1rem', fontWeight: 700 }}>{evt.title}</h5>
-                                <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
-                                  🕒 {evt.time} • 📍 {evt.location.split(',')[0]} • 👥 {going} / {evt.capacity} spots filled
-                                </p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <img src={getEventCover(evt)} alt={evt.title} className="thumb-img" />
+                                <div>
+                                  <h5 style={{ margin: '0 0 2px 0', fontSize: '1rem', fontWeight: 700 }}>{evt.title}</h5>
+                                  <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
+                                    🕒 {evt.time} • 📍 {evt.location.split(',')[0]} • 👥 {going} / {evt.capacity} spots filled
+                                  </p>
+                                </div>
                               </div>
                               <div className="flex gap-xs">
                                 <Button variant="primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleManageEvent(evt.id)}>Edit</Button>
@@ -1075,7 +1104,7 @@ export default function HostDashboard({ onLogout }) {
                     
                     {/* Activity Item 1 */}
                     <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <span style={{ fontSize: '1.4rem' }}>🎟️</span>
+                      <img src={getAvatar('sarah@example.com')} alt="Sarah Johnson" className="avatar-img" />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Sarah Johnson RSVP'd for Summer Rooftop Mixer (+2)</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Just now</div>
@@ -1085,7 +1114,7 @@ export default function HostDashboard({ onLogout }) {
 
                     {/* Activity Item 2 */}
                     <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <span style={{ fontSize: '1.4rem' }}>✉️</span>
+                      <div className="stat-icon-tile stat-icon-blue" style={{ width: '40px', height: '40px' }}><Mail size={18} /></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>You sent message: "Parking update & venue maps" to 45 guests of Summer Rooftop Mixer</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>5 minutes ago</div>
@@ -1095,7 +1124,7 @@ export default function HostDashboard({ onLogout }) {
 
                     {/* Activity Item 3 */}
                     <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <span style={{ fontSize: '1.4rem' }}>💰</span>
+                      <img src={getAvatar('john.smith@example.com')} alt="John Smith" className="avatar-img" />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Ticket Payment received: $60.00 from John Smith</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>12 minutes ago</div>
@@ -1105,7 +1134,7 @@ export default function HostDashboard({ onLogout }) {
 
                     {/* Activity Item 4 */}
                     <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                      <div className="stat-icon-tile stat-icon-orange" style={{ width: '40px', height: '40px' }}><AlertCircle size={18} /></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Capacity Alert: Stand-up Comedy Night is currently at 90% capacity</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>1 hour ago</div>
@@ -1115,7 +1144,7 @@ export default function HostDashboard({ onLogout }) {
 
                     {/* Activity Item 5 */}
                     <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '1.4rem' }}>🌟</span>
+                      <img src={getAvatar('priya@example.com')} alt="Priya M." className="avatar-img" />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>New review posted: "Amazing venue!" ⭐⭐⭐⭐⭐ from Priya M.</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>3 hours ago</div>
@@ -1131,20 +1160,20 @@ export default function HostDashboard({ onLogout }) {
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>Quick Tools & Resources</h2>
                 <div className="grid-3" style={{ gap: '16px' }}>
-                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface">
-                    <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>📖</span>
+                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface card-hover-lift">
+                    <div className="stat-icon-tile stat-icon-blue" style={{ marginBottom: '10px' }}><HelpCircle size={20} /></div>
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Help Center</h4>
                     <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Learn how to customize your check-in scanner and RSVPs workflows.</p>
                     <a href="#help" style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Browse articles &rarr;</a>
                   </Card>
-                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface">
-                    <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>📝</span>
+                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface card-hover-lift">
+                    <div className="stat-icon-tile stat-icon-orange" style={{ marginBottom: '10px' }}><FileText size={20} /></div>
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Auto-Reply Templates</h4>
                     <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Set default templates for instant confirmation and reminders.</p>
                     <a href="#templates" onClick={() => { setActiveSidebar('settings'); }} style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Edit templates &rarr;</a>
                   </Card>
-                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface">
-                    <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>⚙️</span>
+                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface card-hover-lift">
+                    <div className="stat-icon-tile stat-icon-green" style={{ marginBottom: '10px' }}><Settings size={20} /></div>
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Waitlist Promotion</h4>
                     <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Configure auto-promote settings when RSVPs get cancelled.</p>
                     <a href="#rules" onClick={() => { handleManageEvent('2'); setSelectedEventTab('staff'); }} style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Manage rules &rarr;</a>
@@ -1240,9 +1269,7 @@ export default function HostDashboard({ onLogout }) {
                             width: '100%',
                             maxWidth: '280px',
                             minHeight: '180px',
-                            background: event.cover 
-                              ? `url(${event.cover}) center/cover` 
-                              : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                            background: `url(${getEventCover(event)}) center/cover`,
                             position: 'relative'
                           }}>
                             {activeEventTab === 'live' && (
@@ -1279,6 +1306,23 @@ export default function HostDashboard({ onLogout }) {
                                 📝 DRAFT
                               </span>
                             )}
+                            {activeEventTab !== 'live' && event.status === 'Published' && (
+                              <span style={{
+                                position: 'absolute',
+                                top: '12px',
+                                left: '12px',
+                                background: activeEventTab === 'past' ? 'rgba(15,23,42,0.75)' : 'var(--color-accent)',
+                                color: 'white',
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                padding: '4px 10px',
+                                borderRadius: '99px',
+                                letterSpacing: '0.5px'
+                              }}>
+                                {activeEventTab === 'past' ? 'COMPLETED' : 'PUBLISHED'}
+                              </span>
+                            )}
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,12,0.35), transparent 50%)' }} />
                           </div>
 
                           {/* Event Details Content */}
@@ -1299,6 +1343,21 @@ export default function HostDashboard({ onLogout }) {
                               {event.id === '1' && (
                                 <div style={{ marginTop: '10px', background: '#fee2e2', color: '#b91c1c', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                   ⚠️ Action needed: 3 dietary restrictions unconfirmed
+                                </div>
+                              )}
+
+                              {/* Attendee avatar stack */}
+                              {totalAttending > 0 && (
+                                <div className="flex items-center gap-sm" style={{ marginTop: '12px' }}>
+                                  <div className="avatar-stack">
+                                    {rsvps.filter(r => r.status === 'going' || r.status === 'maybe').slice(0, 4).map(r => (
+                                      <img key={r.id} src={getAvatar(r.name || r.email)} alt={r.name} className="avatar-img avatar-sm" />
+                                    ))}
+                                    {totalAttending > 4 && (
+                                      <span className="avatar-stack-more" style={{ width: '28px', height: '28px', fontSize: '0.65rem' }}>+{totalAttending - 4}</span>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{totalAttending} attending</span>
                                 </div>
                               )}
                             </div>
@@ -1369,9 +1428,17 @@ export default function HostDashboard({ onLogout }) {
                     );
                   })
                 ) : (
-                  <div className="text-center text-muted" style={{ padding: '48px var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px' }}>
-                    <Calendar size={48} style={{ opacity: 0.3, margin: '0 auto 12px' }} />
-                    <p style={{ margin: 0 }}>No events scheduled in this status.</p>
+                  <div className="empty-state" style={{ padding: '48px var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <img src={HERO_IMAGES.toast} alt="Friends celebrating" className="empty-state-img" />
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Nothing here yet</h3>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '380px' }}>
+                      No events in this bucket right now. Spin up your next unforgettable gathering and watch the RSVPs roll in.
+                    </p>
+                    <Link to="/create">
+                      <Button variant="primary" className="flex items-center gap-xs">
+                        <Plus size={16} /> Create New Event
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -1393,22 +1460,31 @@ export default function HostDashboard({ onLogout }) {
                   <ChevronLeft size={16} /> Back to Events
                 </button>
                 
-                <div className="flex justify-between items-start" style={{ flexWrap: 'wrap', gap: '16px' }}>
-                  <div>
-                    <div className="flex items-center gap-xs" style={{ marginBottom: '6px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)' }}>
+                <div className="page-hero" style={{ padding: '24px', minHeight: '200px', marginBottom: '16px' }}>
+                  <img src={getEventCover(managedEvent)} alt={managedEvent.title} className="page-hero-img" />
+                  <div className="page-hero-overlay" />
+                  <div className="page-hero-content" style={{ width: '100%', textAlign: 'left' }}>
+                    <div className="flex items-center gap-xs" style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '99px', background: managedEvent.status === 'Published' ? 'var(--color-accent)' : 'rgba(255,255,255,0.25)', color: 'white', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                         {managedEvent.status}
                       </span>
-                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '99px', background: 'rgba(255,255,255,0.18)', color: 'white' }}>
+                        {managedEvent.eventType || 'Event'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)' }}>
                         Invite Link: {window.location.origin}/e/{managedEvent.id}
                       </span>
                     </div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>{managedEvent.title}</h1>
-                    <p className="text-muted" style={{ fontSize: '0.9rem', margin: '4px 0 0 0' }}>
-                      🗓️ {managedEvent.date} • 🕒 {managedEvent.time} • 📍 {managedEvent.location}
+                    <p style={{ fontSize: '0.9rem', margin: '6px 0 0 0', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                      <span className="flex items-center gap-xs"><Calendar size={14} /> {managedEvent.date}</span>
+                      <span className="flex items-center gap-xs"><Clock size={14} /> {managedEvent.time}</span>
+                      <span className="flex items-center gap-xs"><MapPin size={14} /> {managedEvent.location}</span>
                     </p>
                   </div>
-                  
+                </div>
+
+                <div className="flex justify-between items-start" style={{ flexWrap: 'wrap', gap: '16px' }}>
                   <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
                     <button
                       onClick={() => handleExportCSV(managedEvent, managedEventRsvps)}
@@ -1485,7 +1561,8 @@ export default function HostDashboard({ onLogout }) {
               {selectedEventTab === 'overview' && (
                 <div className="flex flex-col gap-lg">
                   <div className="grid-3" style={{ gap: '16px' }}>
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface card-hover-lift">
+                      <div className="stat-icon-tile stat-icon-blue" style={{ marginBottom: '12px' }}><TrendingUp size={20} /></div>
                       <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Conversion Rate</h4>
                       <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
                         {Math.round((managedEventRsvps.length / (managedEventViews || 1)) * 100)}%
@@ -1494,7 +1571,8 @@ export default function HostDashboard({ onLogout }) {
                         {managedEventRsvps.length} RSVPs from {managedEventViews} views
                       </p>
                     </Card>
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface card-hover-lift">
+                      <div className="stat-icon-tile stat-icon-orange" style={{ marginBottom: '12px' }}><Users size={20} /></div>
                       <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Capacity Fill</h4>
                       <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#ca8a04' }}>
                         {Math.round((managedEventRsvps.filter(r => r.status === 'going').length / (managedEvent.capacity || 1)) * 100)}%
@@ -1503,7 +1581,8 @@ export default function HostDashboard({ onLogout }) {
                         {managedEventRsvps.filter(r => r.status === 'going').length} Confirmed vs {managedEvent.capacity} Cap
                       </p>
                     </Card>
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface card-hover-lift">
+                      <div className="stat-icon-tile stat-icon-green" style={{ marginBottom: '12px' }}><UserCheck size={20} /></div>
                       <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Check-in Rate</h4>
                       <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#16a34a' }}>
                         {Math.round((managedEventRsvps.filter(r => r.checkedIn).length / (managedEventRsvps.filter(r => r.status === 'going').length || 1)) * 100)}%
@@ -1567,7 +1646,12 @@ export default function HostDashboard({ onLogout }) {
                               {waitlisted.map((rsvp, index) => (
                                 <tr key={rsvp.id}>
                                   <td style={{ fontWeight: 800, color: 'var(--color-primary)' }}>#{index + 1}</td>
-                                  <td style={{ fontWeight: 600 }}>{rsvp.name}</td>
+                                  <td style={{ fontWeight: 600 }}>
+                                    <div className="flex items-center gap-sm">
+                                      <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
+                                      {rsvp.name}
+                                    </div>
+                                  </td>
                                   <td>
                                     <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
@@ -1660,12 +1744,17 @@ export default function HostDashboard({ onLogout }) {
                                 />
                               </td>
                               <td style={{ fontWeight: 600 }}>
-                                {rsvp.name}
-                                {rsvp.answers?.['Any food allergies?'] && rsvp.answers['Any food allergies?'] !== 'None' && (
-                                  <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#b91c1c', padding: '1px 5px', borderRadius: '3px', marginLeft: '6px', fontWeight: 700 }} title={rsvp.answers['Any food allergies?']}>
-                                    ⚠️ DIET
+                                <div className="flex items-center gap-sm">
+                                  <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img" />
+                                  <span>
+                                    {rsvp.name}
+                                    {rsvp.answers?.['Any food allergies?'] && rsvp.answers['Any food allergies?'] !== 'None' && (
+                                      <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#b91c1c', padding: '1px 5px', borderRadius: '3px', marginLeft: '6px', fontWeight: 700 }} title={rsvp.answers['Any food allergies?']}>
+                                        ⚠️ DIET
+                                      </span>
+                                    )}
                                   </span>
-                                )}
+                                </div>
                               </td>
                               <td>
                                 <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
@@ -1673,11 +1762,11 @@ export default function HostDashboard({ onLogout }) {
                               </td>
                               <td>
                                 <span style={{
-                                  fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '12px',
-                                  background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
-                                  color: rsvp.status === 'going' ? '#16a34a' : '#ca8a04'
+                                  fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', textTransform: 'capitalize',
+                                  background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : rsvp.status === 'declined' ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)',
+                                  color: rsvp.status === 'going' ? '#00963f' : rsvp.status === 'declined' ? '#ef4444' : '#e0531f'
                                 }}>
-                                  {rsvp.status}
+                                  {rsvp.status === 'going' ? '● Going' : rsvp.status === 'declined' ? '● Declined' : `● ${rsvp.status}`}
                                 </span>
                               </td>
                               <td>
@@ -1755,7 +1844,10 @@ export default function HostDashboard({ onLogout }) {
                         })}
                       </div>
                     ) : (
-                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>No active polls created for this event yet.</p>
+                      <div className="empty-state" style={{ padding: '24px 8px' }}>
+                        <img src={ALL_COVERS[3]} alt="Event crowd" className="empty-state-img" style={{ width: '160px', height: '110px' }} />
+                        <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No active polls yet — ask your guests what they want using the form alongside.</p>
+                      </div>
                     )}
                   </Card>
 
@@ -1824,13 +1916,16 @@ export default function HostDashboard({ onLogout }) {
                         .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
                         .map(comment => (
                           <div key={comment.id} className="flex justify-between items-start" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', background: comment.pinned ? 'rgba(0,113,227,0.01)' : 'transparent', padding: comment.pinned ? '12px' : '0 0 12px 0', borderRadius: '8px' }}>
-                            <div>
+                            <div className="flex gap-sm" style={{ alignItems: 'flex-start' }}>
+                              <img src={getAvatar(comment.name)} alt={comment.name} className="avatar-img avatar-sm" />
+                              <div>
                               <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
                                 <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{comment.name}</span>
                                 {comment.pinned && <span style={{ fontSize: '0.65rem', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>PINNED</span>}
                                 <span className="text-muted" style={{ fontSize: '0.75rem', marginLeft: '6px' }}>{new Date(comment.timestamp).toLocaleDateString()}</span>
                               </div>
                               <p style={{ fontSize: '0.85rem', margin: 0 }}>{comment.text}</p>
+                              </div>
                             </div>
                             <div className="flex gap-sm">
                               <button
@@ -1860,7 +1955,13 @@ export default function HostDashboard({ onLogout }) {
                         ))}
                     </div>
                   ) : (
-                    <p className="text-muted" style={{ fontSize: '0.85rem' }}>No comments posted on the guest board yet.</p>
+                    <div className="empty-state" style={{ padding: '32px 8px' }}>
+                      <img src={HERO_IMAGES.toast} alt="Friends toasting" className="empty-state-img" />
+                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>No comments yet</h4>
+                      <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem', maxWidth: '360px' }}>
+                        When guests post on the event board, their questions and shout-outs will show up here for you to pin or moderate.
+                      </p>
+                    </div>
                   )}
                 </Card>
               )}
@@ -2066,7 +2167,10 @@ export default function HostDashboard({ onLogout }) {
                         </table>
                       </div>
                     ) : (
-                      <p className="text-muted" style={{ padding: '24px' }}>No messages sent yet.</p>
+                      <div className="empty-state" style={{ padding: '32px 16px' }}>
+                        <div className="stat-icon-tile stat-icon-blue"><Send size={20} /></div>
+                        <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No messages dispatched yet — confirmations and reminders will be logged here.</p>
+                      </div>
                     )}
                   </Card>
                 </div>
@@ -2132,11 +2236,14 @@ export default function HostDashboard({ onLogout }) {
                     <div style={{ overflowY: 'auto', maxHeight: '380px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {managedEventRsvps.map(rsvp => (
                         <div key={rsvp.id} style={{ background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rsvp.name} {rsvp.isManualInvite && <span style={{ fontSize: '0.65rem', background: 'rgba(0,113,227,0.1)', color: 'var(--color-primary)', padding: '1px 5px', borderRadius: '3px' }}>Manual</span>}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.email}</div>
+                          <div className="flex items-center gap-sm">
+                            <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rsvp.name} {rsvp.isManualInvite && <span style={{ fontSize: '0.65rem', background: 'rgba(255,107,53,0.12)', color: 'var(--color-primary)', padding: '1px 5px', borderRadius: '3px' }}>Manual</span>}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.email}</div>
+                            </div>
                           </div>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '12px', background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)', color: rsvp.status === 'going' ? '#16a34a' : '#ca8a04' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : rsvp.status === 'declined' ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)', color: rsvp.status === 'going' ? '#00963f' : rsvp.status === 'declined' ? '#ef4444' : '#e0531f' }}>
                             {rsvp.status.toUpperCase()}
                           </span>
                         </div>
@@ -2219,7 +2326,10 @@ export default function HostDashboard({ onLogout }) {
                     <div style={{ overflowY: 'auto', maxHeight: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {managedEventRsvps.filter(r => (r.status === 'going' || r.status === 'maybe') && !r.checkedIn).map(rsvp => (
                         <div key={rsvp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '8px 12px', borderRadius: '6px' }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{rsvp.name}</span>
+                          <span className="flex items-center gap-sm" style={{ fontWeight: 600, fontSize: '0.8rem' }}>
+                            <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
+                            {rsvp.name}
+                          </span>
                           <button 
                             onClick={() => {
                               mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }, activeScannerStaff);
@@ -2311,9 +2421,12 @@ export default function HostDashboard({ onLogout }) {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {activeStaffList.map(s => (
                           <div key={s.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
-                            <div>
-                              <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{s.role} • {s.email}</div>
+                            <div className="flex items-center gap-sm">
+                              <img src={getAvatar(s.email)} alt={s.name} className="avatar-img avatar-sm" />
+                              <div>
+                                <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{s.role} • {s.email}</div>
+                              </div>
                             </div>
                             <button onClick={() => handleRemoveStaff(s.email)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16} /></button>
                           </div>
@@ -2403,8 +2516,8 @@ export default function HostDashboard({ onLogout }) {
                 {/* Available balance block */}
                 <Card style={{ padding: '24px', textAlign: 'left' }} className="glass-surface">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '2rem' }}>🏦</span>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '4px 10px', background: 'rgba(34,197,94,0.1)', color: '#16a34a', borderRadius: '20px' }}>
+                    <div className="stat-icon-tile stat-icon-green"><DollarSign size={22} /></div>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '4px 10px', background: 'rgba(0,200,83,0.12)', color: '#00963f', borderRadius: '20px' }}>
                       Auto-transfers enabled
                     </span>
                   </div>
@@ -2567,21 +2680,7 @@ export default function HostDashboard({ onLogout }) {
                             position: 'relative'
                           }}
                         >
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            background: 'var(--color-primary)',
-                            color: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: '0.9rem',
-                            flexShrink: 0
-                          }}>
-                            {c.avatar}
-                          </div>
+                          <img src={getAvatar(c.guestName || c.guestEmail)} alt={c.guestName} className="avatar-img" style={{ flexShrink: 0 }} />
                           
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
@@ -2627,11 +2726,14 @@ export default function HostDashboard({ onLogout }) {
                     
                     {/* Header */}
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong style={{ fontSize: '1rem', display: 'block' }}>{activeConversation.guestName}</strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          Conversation regarding: <strong>{activeConversation.eventTitle}</strong> ({activeConversation.guestEmail})
-                        </span>
+                      <div className="flex items-center gap-sm">
+                        <img src={getAvatar(activeConversation.guestName || activeConversation.guestEmail)} alt={activeConversation.guestName} className="avatar-img" />
+                        <div>
+                          <strong style={{ fontSize: '1rem', display: 'block' }}>{activeConversation.guestName}</strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            Conversation regarding: <strong>{activeConversation.eventTitle}</strong> ({activeConversation.guestEmail})
+                          </span>
+                        </div>
                       </div>
                       <div className="flex gap-xs">
                         <button 
@@ -2709,8 +2811,9 @@ export default function HostDashboard({ onLogout }) {
 
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                    Select a conversation to reply to guest inquiries.
+                  <div className="empty-state" style={{ padding: '32px' }}>
+                    <div className="stat-icon-tile stat-icon-blue"><MessageSquare size={20} /></div>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>Select a conversation to reply to guest inquiries.</p>
                   </div>
                 )}
 
@@ -2743,7 +2846,12 @@ export default function HostDashboard({ onLogout }) {
                     <tbody>
                       {audienceList.map(guest => (
                         <tr key={guest.email}>
-                          <td style={{ fontWeight: 600 }}>{guest.name}</td>
+                          <td style={{ fontWeight: 600 }}>
+                            <div className="flex items-center gap-sm">
+                              <img src={getAvatar(guest.name || guest.email)} alt={guest.name} className="avatar-img" />
+                              {guest.name}
+                            </div>
+                          </td>
                           <td>{guest.email}</td>
                           <td>{guest.phone || 'N/A'}</td>
                           <td>{guest.eventsAttended.join(', ')}</td>
@@ -2764,9 +2872,17 @@ export default function HostDashboard({ onLogout }) {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="text-center text-muted" style={{ padding: '48px 0' }}>
-                    <Users size={48} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                    <p>No audience members found in your database.</p>
+                  <div className="empty-state" style={{ padding: '48px 16px' }}>
+                    <img src={HERO_IMAGES.crowd} alt="Dinner party crowd" className="empty-state-img" />
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Your audience starts here</h3>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '380px' }}>
+                      Once guests RSVP to your events, their contact details and attendance history will appear in this directory.
+                    </p>
+                    <Link to="/create">
+                      <Button variant="primary" className="flex items-center gap-xs">
+                        <Plus size={16} /> Host Your First Event
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </Card>
@@ -2784,7 +2900,13 @@ export default function HostDashboard({ onLogout }) {
               </div>
               
               <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left' }} className="glass-surface">
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Organizer Profile Info</h4>
+                <div className="flex items-center gap-md" style={{ marginBottom: '20px' }}>
+                  <img src={getAvatar('alex@safalevent.com')} alt="Alex Rivera" className="avatar-img avatar-lg" />
+                  <div>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Organizer Profile Info</h4>
+                    <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>This is how guests see you across invitations and event pages.</p>
+                  </div>
+                </div>
                 <form onSubmit={(e) => { e.preventDefault(); alert('Profile preferences updated!'); }} className="flex flex-col gap-md">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Host Display Name</label>
@@ -2814,13 +2936,23 @@ export default function HostDashboard({ onLogout }) {
             background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
           }}>
-            <div style={{
-              background: 'var(--color-surface)', borderRadius: '16px', width: '90%', maxWidth: '500px',
-              padding: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
+            <div className="animate-fade-in" style={{
+              background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '500px',
+              padding: 0, overflow: 'hidden', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)'
             }}>
+              {managedEvent && (
+                <div style={{ position: 'relative', height: '96px' }}>
+                  <img src={getEventCover(managedEvent)} alt={managedEvent.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,12,0.75), rgba(8,8,12,0.15))' }} />
+                  <span style={{ position: 'absolute', left: '20px', bottom: '10px', color: 'white', fontWeight: 700, fontSize: '0.85rem' }}>
+                    {managedEvent.title}
+                  </span>
+                </div>
+              )}
+              <div style={{ padding: '24px' }}>
               <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                  <Mail size={18} /> Broadcast Announcement
+                  <Mail size={18} color="var(--color-primary)" /> Broadcast Announcement
                 </h3>
                 <button onClick={() => setShowBroadcastModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={20} /></button>
               </div>
@@ -2871,6 +3003,7 @@ export default function HostDashboard({ onLogout }) {
                   </Button>
                 </div>
               </form>
+              </div>
             </div>
           </div>
         )}

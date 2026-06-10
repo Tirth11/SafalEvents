@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CalendarPlus, Share2, Users, MapPin, Sparkles, LayoutDashboard, QrCode,
-  ArrowRight, ShieldCheck, Zap, Heart, Check, Search, Filter, Calendar, ArrowUpRight, CheckCircle2, Star
+  Users, MapPin, Sparkles, ArrowRight, Shield, Zap, Heart, Search, Calendar,
+  Star, CheckCircle, Ticket, TrendingUp, Award, Clock, Globe
 } from 'lucide-react';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import PageShell from '../components/PageShell';
 import { mockStore } from '../utils/mockStore';
+import { HERO_IMAGES, AVATARS, getEventCover, getAvatar } from '../utils/images';
 
 export default function LandingPage() {
   const [events, setEvents] = React.useState([]);
@@ -65,7 +65,7 @@ export default function LandingPage() {
       id: 'music',
       title: 'Concerts & DJs',
       desc: 'High-fidelity audio & live beats.',
-      cover: 'https://images.unsplash.com/photo-1533174000243-cb84210f443b?auto=format&fit=crop&w=600&q=80',
+      cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
       icon: '🎵',
       category: 'Party',
       avatarImgs: ['11', '12', '13']
@@ -90,125 +90,130 @@ export default function LandingPage() {
     }
   };
 
+  const scrollToDiscover = () => {
+    const disc = document.getElementById('discover');
+    if (disc) disc.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const trendingSearches = ["Mixer", "Startup", "Yoga", "Comedy"];
+
+  const testimonials = [
+    {
+      name: 'Priya Sharma',
+      role: 'Hosted 14 mixers',
+      quote: 'I set up my launch party page in five minutes and the QR check-ins made the door line vanish. Guests kept asking what app we used.',
+      seed: 'priya.sharma'
+    },
+    {
+      name: 'Marcus Lee',
+      role: 'Comedy night regular',
+      quote: 'The Apple-style ticket pass is gorgeous. One tap to RSVP, no passwords, and my pass just lives in my email. Booking takes seconds.',
+      seed: 'marcus.lee'
+    },
+    {
+      name: 'Elena Rodriguez',
+      role: 'Yoga community host',
+      quote: 'Capacity tracking and self-edit deadlines saved me hours of back-and-forth. SafalEvents feels like it was built by people who actually host.',
+      seed: 'elena.rodriguez'
+    }
+  ];
 
   return (
     <PageShell>
-      <div className="mesh-bg" style={{ overflow: 'hidden' }}>
-        
-        {/* --- HERO SECTION --- */}
-        <section className="container" style={{ padding: 'var(--spacing-xl) 0 var(--spacing-lg) 0', minHeight: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div className="grid-2" style={{ alignItems: 'center', gap: 'var(--spacing-xl)' }}>
-            
-            {/* Hero Left Content */}
-            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }}>
-              
-              {/* Location Selector Pill */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  background: 'rgba(255, 107, 53, 0.08)', 
-                  color: 'var(--color-primary)', 
-                  padding: '6px 14px', 
-                  borderRadius: 'var(--radius-full)', 
-                  fontWeight: 700, 
-                  fontSize: '0.8rem',
-                  letterSpacing: '0.5px'
+      <div style={{ overflow: 'hidden', background: 'var(--color-bg)' }}>
+
+        {/* ───────── HERO: full-bleed photo with dark overlay ───────── */}
+        <section style={{ position: 'relative', minHeight: '88vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+          <img
+            src={HERO_IMAGES.landing}
+            alt="Confetti celebration at a live event"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 1 }}
+          />
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 2,
+            background: 'linear-gradient(to right, rgba(10, 10, 16, 0.88) 0%, rgba(10, 10, 16, 0.72) 45%, rgba(10, 10, 16, 0.35) 100%)'
+          }}></div>
+
+          <div className="container" style={{ position: 'relative', zIndex: 3, padding: 'var(--spacing-xl) var(--spacing-md)', width: '100%' }}>
+            <div className="animate-fade-in" style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', gap: '22px', textAlign: 'left' }}>
+
+              {/* Location pill + state switcher */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  background: 'rgba(255, 107, 53, 0.18)', border: '1px solid rgba(255, 107, 53, 0.45)',
+                  color: '#ffb699', padding: '6px 14px', borderRadius: 'var(--radius-full)',
+                  fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.6px', backdropFilter: 'blur(6px)'
                 }}>
-                  <span style={{ animation: 'pulse-glow 1.5s infinite' }}>📍</span> EVENTS IN {simulatedState}
+                  <MapPin size={13} /> EVENTS IN {simulatedState}
                 </span>
-                
                 <select
                   value={simulatedState}
                   onChange={(e) => setSimulatedState(e.target.value)}
                   style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--color-text-muted)',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    outline: 'none',
-                    padding: '2px 4px'
+                    background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+                    color: 'white', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+                    outline: 'none', padding: '6px 10px', borderRadius: 'var(--radius-full)', backdropFilter: 'blur(6px)'
                   }}
                 >
-                  <option value="NY">New York (NY)</option>
-                  <option value="CA">California (CA)</option>
-                  <option value="MA">Massachusetts (MA)</option>
+                  <option value="NY" style={{ color: '#1d1d1f' }}>New York (NY)</option>
+                  <option value="CA" style={{ color: '#1d1d1f' }}>California (CA)</option>
+                  <option value="MA" style={{ color: '#1d1d1f' }}>Massachusetts (MA)</option>
                 </select>
               </div>
-              
-              {/* Typography with animated text */}
-              <h1 style={{ 
-                fontSize: 'clamp(2.8rem, 5.5vw, 4.4rem)', 
-                lineHeight: 1.05, 
-                fontWeight: 800,
-                fontFamily: 'var(--font-heading)',
-                letterSpacing: '-0.04em',
-                color: 'var(--color-text)'
+
+              {/* Headline with rotating phrase */}
+              <h1 style={{
+                fontSize: 'clamp(2.6rem, 6vw, 4.6rem)', lineHeight: 1.04, fontWeight: 800,
+                fontFamily: 'var(--font-heading)', letterSpacing: '-0.04em', color: 'white', margin: 0
               }}>
                 Discover events<br />
                 that <span className="text-gradient" style={{ transition: 'opacity 0.3s ease-in-out' }}>{phrases[phraseIdx]}</span>.
               </h1>
-              
-              <p className="text-muted" style={{ fontSize: '1.15rem', maxWidth: '520px', lineHeight: '1.5', margin: '4px 0' }}>
+
+              <p style={{ fontSize: '1.15rem', maxWidth: '540px', lineHeight: 1.55, margin: 0, color: 'rgba(255,255,255,0.85)' }}>
                 Create beautiful invite pages, claim Apple-style ticket passes, and coordinate guest check-ins. Simple, gorgeous, and lightning-fast.
               </p>
-              
-              {/* Spotlight Search Bar */}
-              <div style={{ position: 'relative', maxWidth: '540px', marginTop: '8px' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  background: 'white', 
-                  borderRadius: '20px', 
-                  border: '1.5px solid var(--color-border)', 
-                  padding: '6px 6px 6px 16px',
-                  boxShadow: 'var(--shadow-md)',
-                  transition: 'border-color 0.2s'
-                }}
-                  onFocusCapture={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                  onBlurCapture={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}
-                >
-                  <Search size={20} style={{ color: 'var(--color-text-muted)', marginRight: '10px' }} />
+
+              {/* Spotlight search bar */}
+              <div style={{ maxWidth: '560px', width: '100%' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', background: 'white',
+                  borderRadius: '18px', padding: '6px 6px 6px 16px',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.35)', transition: 'box-shadow 0.2s'
+                }}>
+                  <Search size={20} style={{ color: 'var(--color-text-muted)', marginRight: '10px', flexShrink: 0 }} />
                   <input
                     type="text"
                     placeholder="Search events, comedy, mixers, dates..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ 
-                      flex: 1, 
-                      border: 'none', 
-                      background: 'none', 
-                      fontSize: '0.95rem', 
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                      padding: '8px 0',
-                      color: 'var(--color-text)'
+                    style={{
+                      flex: 1, border: 'none', background: 'none', fontSize: '0.95rem',
+                      fontFamily: 'inherit', outline: 'none', padding: '10px 0', color: 'var(--color-text)', minWidth: 0
                     }}
                   />
-                  <Button 
-                    onClick={() => {
-                      const disc = document.getElementById('discover');
-                      if (disc) disc.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    variant="primary" 
-                    style={{ borderRadius: '14px', padding: '10px 20px', fontSize: '0.85rem' }}
+                  <Button
+                    onClick={scrollToDiscover}
+                    variant="primary"
+                    style={{ borderRadius: '13px', padding: '11px 22px', fontSize: '0.85rem', flexShrink: 0 }}
                   >
                     Search
                   </Button>
                 </div>
 
-                {/* Search suggestion tags */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px', fontSize: '0.75rem' }}>
-                  <span className="text-muted">Trending:</span>
+                {/* Trending tags */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px', fontSize: '0.78rem', flexWrap: 'wrap' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>Trending:</span>
                   {trendingSearches.map(tag => (
-                    <button 
+                    <button
                       key={tag}
                       onClick={() => setSearchQuery(tag)}
-                      style={{ background: 'rgba(0,0,0,0.04)', border: 'none', borderRadius: '6px', padding: '4px 8px', fontWeight: 600, cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                      style={{
+                        background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '8px', padding: '4px 10px', fontWeight: 600, cursor: 'pointer',
+                        color: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)'
+                      }}
                     >
                       {tag}
                     </button>
@@ -216,222 +221,119 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* CTAs */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginTop: '10px' }}>
+              {/* Dual CTAs */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+                <Button
+                  variant="primary"
+                  onClick={scrollToDiscover}
+                  style={{
+                    padding: '15px 30px', fontSize: '0.95rem', borderRadius: 'var(--radius-full)',
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    boxShadow: '0 10px 28px rgba(255, 107, 53, 0.4)'
+                  }}
+                >
+                  Explore events <ArrowRight size={18} />
+                </Button>
                 <Link to="/login?signup=true">
-                  <Button variant="primary" style={{ padding: '14px 28px', fontSize: '0.95rem', borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(255, 107, 53, 0.2)' }}>
-                    Become a Host <ArrowRight size={18} />
+                  <Button
+                    variant="outline"
+                    style={{
+                      padding: '15px 30px', fontSize: '0.95rem', borderRadius: 'var(--radius-full)',
+                      background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(255,255,255,0.6)',
+                      display: 'inline-flex', alignItems: 'center', gap: '8px'
+                    }}
+                  >
+                    <Sparkles size={16} /> Host an event
                   </Button>
                 </Link>
-                <Link to="/e/1">
-                  <Button variant="outline" style={{ padding: '14px 28px', fontSize: '0.95rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)', background: 'white' }}>
-                    View Live Preview
-                  </Button>
+                <Link to="/e/1" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                  See a live event page
                 </Link>
               </div>
 
-              {/* Stats Counters (Blinkit style) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px', maxWidth: '440px' }}>
-                <div>
-                  <h4 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>2,400+</h4>
-                  <span className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 500 }}>Events This Week</span>
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>150+</h4>
-                  <span className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 500 }}>Cities Covered</span>
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--color-accent)' }}>1M+</h4>
-                  <span className="text-muted" style={{ fontSize: '0.75rem', fontWeight: 500 }}>Happy Guests</span>
-                </div>
-              </div>
-
-            </div>
-            
-            {/* Hero Right Visual: Apple Wallet Ticket mockup */}
-            <div className="animate-fade-in animate-delay-1" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-              <div style={{ position: 'absolute', width: '120%', height: '120%', background: 'radial-gradient(circle, rgba(255, 107, 53, 0.08) 0%, transparent 65%)', zIndex: -1, top: '-10%' }}></div>
-              
-              <div style={{
-                width: '100%',
-                maxWidth: '380px',
-                background: '#ffffff',
-                border: '1px solid var(--color-border)',
-                borderRadius: '28px',
-                padding: '24px',
-                boxShadow: 'var(--shadow-lg)',
-                transform: 'perspective(1200px) rotateY(-8deg) rotateX(4deg) rotateZ(-1.5deg)',
-                transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.transform = 'perspective(1200px) rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(1.02)'}
-              onMouseOut={(e) => e.currentTarget.style.transform = 'perspective(1200px) rotateY(-8deg) rotateX(4deg) rotateZ(-1.5deg) scale(1)'}
-              >
-                {/* Apple Wallet Style Ticket Header */}
-                <div style={{
-                  height: '170px',
-                  background: 'linear-gradient(135deg, var(--color-primary) 0%, #d84b15 100%)',
-                  borderRadius: '18px',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  padding: '20px',
-                  color: 'white',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ display: 'flex', justifyContainer: 'space-between', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800 }}>SE</div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.5px' }}>SAFAL PASS</span>
+              {/* Trust signals: avatar stack + rating + live ticker */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="avatar-stack">
+                    {AVATARS.slice(0, 4).map((src, i) => (
+                      <img key={i} src={src} alt={`Happy host ${i + 1}`} className="avatar-img avatar-sm" />
+                    ))}
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={13} fill="#fbbf24" stroke="#fbbf24" />
+                      ))}
+                      <span style={{ color: 'white', fontWeight: 800, fontSize: '0.8rem', marginLeft: '4px' }}>4.9</span>
                     </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(255, 255, 255, 0.2)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>FRI 10 JUL</span>
-                  </div>
-                  
-                  <div style={{ zIndex: 2 }}>
-                    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8 }}>🎭 COMEDY SHOWCASE</span>
-                    <h3 style={{ fontSize: '1.35rem', margin: '2px 0 0 0', fontWeight: 700, color: 'white', letterSpacing: '-0.02em' }}>Stand-up Comedy Night</h3>
-                  </div>
-                  
-                  {/* Decorative mesh circle */}
-                  <div style={{ position: 'absolute', width: '150px', height: '150px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', top: '-50px', right: '-50px', zIndex: 1 }}></div>
-                </div>
-
-                {/* Event Details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.88rem', color: 'var(--color-text)', borderBottom: '1px dashed var(--color-border)', paddingBottom: '20px', marginBottom: '20px', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <MapPin size={16} style={{ color: 'var(--color-primary)' }} /> 
-                    <span style={{ fontWeight: 600 }}>The Comedy Club, Manhattan, NY</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Users size={16} style={{ color: 'var(--color-accent)' }} />
-                    <span><strong>68 Guests Booked</strong> <span style={{ color: 'var(--color-text-muted)' }}>(Capacity 80)</span></span>
+                    <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.78rem', fontWeight: 600 }}>Trusted by 10,000+ hosts</span>
                   </div>
                 </div>
 
-                {/* Barcode & Scan */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ display: 'flex', gap: '2px', height: '36px', width: '80%', background: '#1d1d1f', opacity: 0.85, mask: 'repeating-linear-gradient(90deg, #000 0px, #000 2px, transparent 2px, transparent 6px)', WebkitMask: 'repeating-linear-gradient(90deg, #000 0px, #000 2px, transparent 2px, transparent 6px)' }}></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>PASS CODE: #SE-COM-0710</span>
-                    <Link to="/e/5?rsvp=true">
-                      <Button variant="primary" style={{ padding: '8px 16px', fontSize: '0.8rem', borderRadius: '12px' }}>Book Ticket ⚡</Button>
-                    </Link>
-                  </div>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  background: 'rgba(0, 200, 83, 0.16)', border: '1px solid rgba(0, 200, 83, 0.4)',
+                  borderRadius: 'var(--radius-full)', padding: '8px 16px',
+                  fontSize: '0.8rem', fontWeight: 700, color: '#7dffb0', backdropFilter: 'blur(6px)'
+                }}>
+                  <span style={{ display: 'inline-block', width: '8px', height: '8px', background: 'var(--color-accent)', borderRadius: '50%', animation: 'pulse-glow 1s infinite' }}></span>
+                  {bookingsCount} spots claimed today in {simulatedState}
                 </div>
               </div>
 
-              {/* Overlays floating badges */}
-              <div style={{
-                position: 'absolute',
-                top: '-10px',
-                right: '-16px',
-                background: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '12px',
-                padding: '10px 14px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                boxShadow: 'var(--shadow-md)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: 'var(--color-text)',
-                zIndex: 3
-              }}>
-                <ShieldCheck size={14} style={{ color: 'var(--color-accent)' }} /> Dual-Channel OTP Secure
-              </div>
-              
-              <div style={{
-                position: 'absolute',
-                bottom: '15px',
-                left: '-28px',
-                background: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '12px',
-                padding: '10px 14px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                boxShadow: 'var(--shadow-md)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: 'var(--color-text)',
-                zIndex: 3
-              }}>
-                <QrCode size={14} style={{ color: 'var(--color-primary)' }} /> Live-Scanner QR Checkins
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* --- URGENCY SOCIAL PROOF TICKER (Blinkit style) --- */}
-        <section style={{ background: 'var(--color-text)', color: 'white', padding: '12px 0', borderTop: '1px solid #2d2d2d', borderBottom: '1px solid #2d2d2d' }}>
-          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600 }}>
-              <span style={{ color: 'var(--color-primary)' }}>⚡</span>
-              <span>Blinkit speed RSVP guarantee: Register and claim tickets in under 2 minutes.</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-accent)' }}>
-              <span style={{ display: 'inline-block', width: '8px', height: '8px', background: 'var(--color-accent)', borderRadius: '50%', marginRight: '4px', animation: 'pulse-glow 1s infinite' }}></span>
-              <span>{bookingsCount} spots claimed today in {simulatedState}</span>
             </div>
           </div>
         </section>
 
-        {/* --- CURATED COLLECTIONS (Zomato style) --- */}
+        {/* ───────── STATS STRIP ───────── */}
+        <section style={{ background: 'white', borderBottom: '1px solid var(--color-border)', padding: 'var(--spacing-md) 0' }}>
+          <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            {[
+              { icon: <Calendar size={20} />, tile: 'stat-icon-orange', value: '2,400+', label: 'Events this week' },
+              { icon: <Globe size={20} />, tile: 'stat-icon-blue', value: '150+', label: 'Cities covered' },
+              { icon: <Heart size={20} />, tile: 'stat-icon-red', value: '1M+', label: 'Happy guests' },
+              { icon: <Zap size={20} />, tile: 'stat-icon-green', value: '< 2 min', label: 'Average RSVP time' }
+            ].map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '8px 4px', textAlign: 'left' }}>
+                <div className={`stat-icon-tile ${s.tile}`}>{s.icon}</div>
+                <div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>{s.value}</div>
+                  <div className="text-muted" style={{ fontSize: '0.78rem', fontWeight: 600 }}>{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ───────── CURATED COLLECTIONS ───────── */}
         <section style={{ padding: 'var(--spacing-xl) 0', background: 'white' }}>
           <div className="container">
-            <div style={{ textAlign: 'left', marginBottom: 'var(--spacing-md)' }}>
-              <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '4px' }}>Curated Collections</h2>
-              <p className="text-muted" style={{ fontSize: '0.95rem' }}>Explore events by mood, theme, or group dynamics. Curated weekly.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px', marginBottom: 'var(--spacing-md)', textAlign: 'left' }}>
+              <div>
+                <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '4px', letterSpacing: '-0.02em' }}>Curated Collections</h2>
+                <p className="text-muted" style={{ fontSize: '0.95rem', margin: 0 }}>Explore events by mood, theme, or group dynamics. Curated weekly.</p>
+              </div>
+              <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <TrendingUp size={13} /> Fresh picks every Monday
+              </span>
             </div>
 
-            <div className="grid-3" style={{ gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
               {collections.map(col => (
-                <div 
-                  key={col.id} 
+                <div
+                  key={col.id}
                   className="collection-card card-hover-lift"
                   onClick={() => handleSelectCollection(col.category)}
                 >
                   <img src={col.cover} alt={col.title} className="collection-card-img" />
                   <div className="collection-card-overlay"></div>
-                  
-                  {/* Floating Attendees Overlapping Stack */}
-                  <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', zIndex: 4 }}>
-                    {col.avatarImgs.map((imgId, idx) => (
-                      <div 
-                        key={idx}
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '50%',
-                          backgroundImage: `url(https://i.pravatar.cc/100?img=${imgId})`,
-                          backgroundSize: 'cover',
-                          border: '2px solid white',
-                          marginLeft: idx > 0 ? '-8px' : 0,
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-                        }}
-                      />
+
+                  {/* Floating attendee avatar stack */}
+                  <div className="avatar-stack" style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 4 }}>
+                    {col.avatarImgs.map((seed, idx) => (
+                      <img key={idx} src={getAvatar(`${col.id}-${seed}`)} alt="Attendee" className="avatar-img avatar-sm" />
                     ))}
-                    <div style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      background: 'var(--color-primary)',
-                      color: 'white',
-                      fontSize: '0.6rem',
-                      fontWeight: 800,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '2px solid white',
-                      marginLeft: '-8px',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-                    }}>+50</div>
+                    <div className="avatar-stack-more" style={{ width: '28px', height: '28px', fontSize: '0.6rem', background: 'var(--color-primary)' }}>+50</div>
                   </div>
 
                   <div className="collection-card-content">
@@ -448,31 +350,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* --- EVENT DISCOVERY GRID (District style) --- */}
+        {/* ───────── EVENT DISCOVERY GRID ───────── */}
         <section id="discover" style={{ padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
           <div className="container">
-            
-            {/* Header + Simulated location banner info */}
+
+            {/* Header + filters */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', marginBottom: 'var(--spacing-md)' }}>
               <div style={{ textAlign: 'left' }}>
-                <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '4px' }}>🔥 Happening Near You</h2>
-                <p className="text-muted" style={{ fontSize: '0.95rem' }}>Top-rated gatherings sorted by local proximity and simulated location.</p>
+                <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '4px', letterSpacing: '-0.02em' }}>🔥 Happening Near You</h2>
+                <p className="text-muted" style={{ fontSize: '0.95rem', margin: 0 }}>Top-rated gatherings sorted by local proximity and simulated location.</p>
               </div>
 
-              {/* State & City Filter Controls */}
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <select
                   value={filterState}
                   onChange={(e) => setFilterState(e.target.value)}
                   style={{
-                    background: 'white',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '12px',
-                    padding: '8px 12px',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    outline: 'none'
+                    background: 'white', border: '1px solid var(--color-border)', borderRadius: '12px',
+                    padding: '9px 12px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                    outline: 'none', boxShadow: 'var(--shadow-sm)'
                   }}
                 >
                   <option value="">All States</option>
@@ -487,20 +383,15 @@ export default function LandingPage() {
                   value={filterCity}
                   onChange={(e) => setFilterCity(e.target.value)}
                   style={{
-                    background: 'white',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '12px',
-                    padding: '8px 12px',
-                    fontSize: '0.85rem',
-                    fontWeight: 500,
-                    outline: 'none',
-                    width: '150px'
+                    background: 'white', border: '1px solid var(--color-border)', borderRadius: '12px',
+                    padding: '9px 12px', fontSize: '0.85rem', fontWeight: 500, outline: 'none',
+                    width: '150px', boxShadow: 'var(--shadow-sm)'
                   }}
                 />
               </div>
             </div>
 
-            {/* Horizontal scrolling Categories Ribbon */}
+            {/* Category pills */}
             <div className="scrollbar-hidden" style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '20px', marginBottom: '10px' }}>
               {categories.map(cat => (
                 <button
@@ -514,7 +405,7 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* Cards Grid */}
+            {/* Cards grid */}
             {(() => {
               const filtered = events
                 .filter(evt => {
@@ -535,23 +426,25 @@ export default function LandingPage() {
 
               if (filtered.length === 0) {
                 return (
-                  <div className="text-center text-muted" style={{ padding: 'var(--spacing-xl) 0', background: 'white', borderRadius: '24px', border: '1px solid var(--color-border)' }}>
-                    <p style={{ fontSize: '1.05rem', fontWeight: 600 }}>No public events match your filters.</p>
-                    <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>Try switching categories or expanding your location settings.</p>
-                    <Link to="/login?signup=true" style={{ color: 'var(--color-primary)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '12px' }}>
-                      Host an event yourself <ArrowUpRight size={16} />
+                  <div className="empty-state" style={{ background: 'white', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                    <img src={HERO_IMAGES.crowd} alt="People at an event" className="empty-state-img" />
+                    <p style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>No public events match your filters.</p>
+                    <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>Try switching categories or expanding your location settings.</p>
+                    <Link to="/login?signup=true" style={{ color: 'var(--color-primary)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      Host an event yourself <ArrowRight size={16} />
                     </Link>
                   </div>
                 );
               }
 
               return (
-                <div className="grid-3" style={{ gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '24px' }}>
                   {filtered.map(evt => {
                     const rsvpList = mockStore.getRSVPs(evt.id).filter(r => r.status === 'going' || r.status === 'maybe');
                     const totalAttending = rsvpList.length;
                     const spotsLeft = evt.capacity - totalAttending;
-                    
+                    const evtDate = new Date(evt.date);
+
                     // District-style badges logic
                     const badge = spotsLeft <= 0 ? (
                       <span className="district-badge district-badge-closed">SOLD OUT</span>
@@ -564,36 +457,37 @@ export default function LandingPage() {
                     );
 
                     return (
-                      <div 
-                        key={evt.id} 
-                        className="card-hover-lift"
-                        style={{ 
-                          background: 'white', 
-                          borderRadius: '24px', 
-                          border: '1.5px solid var(--color-border)', 
-                          overflow: 'hidden', 
-                          boxShadow: 'var(--shadow-sm)', 
-                          display: 'flex', 
-                          flexDirection: 'column' 
-                        }}
-                      >
-                        {/* Cover Image Container */}
-                        <div className="zoom-image-container" style={{ height: '180px' }}>
+                      <div key={evt.id} className="event-photo-card">
+                        {/* Cover image with badges */}
+                        <div className="zoom-image-container" style={{ height: '190px', position: 'relative' }}>
                           {badge}
-                          
-                          <img 
-                            src={evt.cover || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'} 
-                            alt={evt.title} 
+                          <img
+                            src={getEventCover(evt)}
+                            alt={evt.title}
                             className="zoom-image-hover"
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             loading="lazy"
                           />
+                          {/* Date badge */}
+                          <div style={{
+                            position: 'absolute', bottom: '12px', left: '12px', zIndex: 3,
+                            background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(6px)',
+                            borderRadius: '12px', padding: '6px 12px', textAlign: 'center',
+                            boxShadow: 'var(--shadow-md)', lineHeight: 1.1
+                          }}>
+                            <div style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              {evtDate.toLocaleDateString('en-US', { month: 'short' })}
+                            </div>
+                            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                              {evtDate.toLocaleDateString('en-US', { day: 'numeric' })}
+                            </div>
+                          </div>
                         </div>
-                        
-                        {/* Card Content Details */}
-                        <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
-                          
-                          {/* Rating & Proximity Row (District-style) */}
+
+                        {/* Body */}
+                        <div className="event-photo-card-body" style={{ textAlign: 'left' }}>
+
+                          {/* Rating & proximity */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#fbbf24' }}>
                               <Star size={14} fill="#fbbf24" stroke="#fbbf24" />
@@ -605,46 +499,63 @@ export default function LandingPage() {
                           </div>
 
                           <div>
-                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.01em', color: 'var(--color-text)' }}>{evt.title}</h3>
+                            <h3 style={{ fontSize: '1.12rem', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.01em', color: 'var(--color-text)' }}>{evt.title}</h3>
                             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <MapPin size={14} style={{ color: 'var(--color-text-muted)' }} /> 
+                              <MapPin size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
                               {evt.location.split(',')[0]}
                             </p>
                           </div>
-                          
-                          {/* Event date details */}
-                          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-hover)', padding: '10px 14px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+
+                          {/* Date & time row */}
+                          <div style={{ fontSize: '0.83rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-hover)', padding: '10px 14px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: 'var(--color-text)' }}>
-                              <Calendar size={14} style={{ color: 'var(--color-primary)' }} /> 
-                              {new Date(evt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {evt.time}
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Users size={14} style={{ color: 'var(--color-text-muted)' }} /> 
-                              {spotsLeft > 0 ? `${spotsLeft} spots left (capacity ${evt.capacity})` : 'Sold Out'}
+                              <Calendar size={14} style={{ color: 'var(--color-primary)' }} />
+                              {evtDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              <span style={{ color: 'var(--color-border)' }}>•</span>
+                              <Clock size={14} style={{ color: 'var(--color-text-muted)' }} /> {evt.time}
                             </span>
                           </div>
-                          
-                          {/* Ticket pricing & Fast Action button */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '8px' }}>
+
+                          {/* Attendee avatar stack */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {totalAttending > 0 ? (
+                                <>
+                                  <div className="avatar-stack">
+                                    {rsvpList.slice(0, 3).map((r, i) => (
+                                      <img key={i} src={getAvatar(r.email || r.name || `${evt.id}-${i}`)} alt={r.name || 'Guest'} className="avatar-img avatar-sm" />
+                                    ))}
+                                    {totalAttending > 3 && (
+                                      <div className="avatar-stack-more" style={{ width: '28px', height: '28px', fontSize: '0.6rem' }}>+{totalAttending - 3}</div>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{totalAttending} going</span>
+                                </>
+                              ) : (
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <Sparkles size={13} /> Be the first to RSVP
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Users size={13} /> {spotsLeft > 0 ? `${spotsLeft} left` : 'Full'}
+                            </span>
+                          </div>
+
+                          {/* Price + RSVP */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '8px', borderTop: '1px dashed var(--color-border)' }}>
                             {evt.enablePayments ? (
-                              <span style={{ fontSize: '1rem', fontWeight: 800, color: '#00C853' }}>${evt.ticketPrice} USD</span>
+                              <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-accent)' }}>${evt.ticketPrice} USD</span>
                             ) : (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#00C853', background: 'rgba(0, 200, 83, 0.08)', padding: '4px 10px', borderRadius: '8px' }}>FREE</span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', background: 'rgba(0, 200, 83, 0.08)', padding: '4px 10px', borderRadius: '8px' }}>FREE</span>
                             )}
-                            
+
                             <Link to={`/e/${evt.id}${spotsLeft > 0 ? '?rsvp=true' : ''}`}>
-                              <Button 
-                                variant={spotsLeft > 0 ? 'primary' : 'ghost'} 
-                                style={{ 
-                                  padding: '8px 18px', 
-                                  fontSize: '0.8rem', 
-                                  borderRadius: '12px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
+                              <Button
+                                variant={spotsLeft > 0 ? 'primary' : 'ghost'}
+                                style={{ padding: '8px 18px', fontSize: '0.8rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                               >
-                                {spotsLeft > 0 ? <>Quick RSVP ⚡</> : 'Full Invite'}
+                                {spotsLeft > 0 ? <><Ticket size={14} /> Quick RSVP</> : 'Full Invite'}
                               </Button>
                             </Link>
                           </div>
@@ -658,115 +569,214 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* --- HOW IT WORKS (Blinkit simplicity) --- */}
+        {/* ───────── HOW IT WORKS ───────── */}
         <section id="how-it-works" style={{ padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)', background: 'white' }}>
           <div className="container">
             <div className="text-center" style={{ marginBottom: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text)' }}>Book in 3 simple steps</h2>
-              <p className="text-muted" style={{ fontSize: '1.05rem', maxWidth: '520px' }}>SafalEvents eliminates friction. No passwords or heavy setups needed.</p>
+              <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Zap size={13} /> Friction-free by design
+              </span>
+              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text)', margin: 0 }}>Book in 3 simple steps</h2>
+              <p className="text-muted" style={{ fontSize: '1.05rem', maxWidth: '520px', margin: 0 }}>SafalEvents eliminates friction. No passwords or heavy setups needed.</p>
             </div>
-            
-            <div className="grid-3" style={{ gap: '24px' }}>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
               {[
-                { 
-                  icon: <Search size={22} />, 
-                  title: "1. Find Your Event", 
-                  desc: "Browse high-visual gatherings happening nearby. Filter by simulated proximity or specific genres.",
-                  bg: 'rgba(255, 107, 53, 0.04)',
-                  color: 'var(--color-primary)'
+                {
+                  icon: <Search size={22} />,
+                  tile: 'stat-icon-orange',
+                  step: 'STEP 1',
+                  title: 'Find your event',
+                  desc: 'Browse high-visual gatherings happening nearby. Filter by simulated proximity or specific genres.'
                 },
-                { 
-                  icon: <Zap size={22} />, 
-                  title: "2. One-Click RSVP", 
-                  desc: "Register in under 2 minutes. Authenticate instantly using a secure email/SMS verification code.",
-                  bg: 'rgba(0, 200, 83, 0.04)',
-                  color: 'var(--color-accent)'
+                {
+                  icon: <Zap size={22} />,
+                  tile: 'stat-icon-green',
+                  step: 'STEP 2',
+                  title: 'One-click RSVP',
+                  desc: 'Register in under 2 minutes. Authenticate instantly using a secure email/SMS verification code.'
                 },
-                { 
-                  icon: <QrCode size={22} />, 
-                  title: "3. Access Instantly", 
-                  desc: "Receive an Apple-style ticket pass containing a live QR check-in code directly to your email.",
-                  bg: 'rgba(124, 58, 237, 0.04)',
-                  color: '#7c3aed'
+                {
+                  icon: <Ticket size={22} />,
+                  tile: 'stat-icon-purple',
+                  step: 'STEP 3',
+                  title: 'Access instantly',
+                  desc: 'Receive an Apple-style ticket pass containing a live QR check-in code directly to your email.'
                 }
               ].map((step, idx) => (
-                <div key={idx} style={{ 
-                  padding: '28px', 
-                  borderRadius: '20px', 
-                  textAlign: 'left', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '12px', 
-                  background: 'white', 
-                  border: '1.5px solid var(--color-border)',
-                  boxShadow: 'var(--shadow-sm)',
-                  transition: 'transform 0.3s'
-                }}
-                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
-                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                <div
+                  key={idx}
+                  className={`card-hover-lift animate-fade-in animate-delay-${idx + 1}`}
+                  style={{
+                    padding: '28px', borderRadius: 'var(--radius-lg)', textAlign: 'left',
+                    display: 'flex', flexDirection: 'column', gap: '12px',
+                    background: 'var(--color-bg)', border: '1.5px solid var(--color-border)', boxShadow: 'var(--shadow-sm)'
+                  }}
                 >
-                  <div style={{ 
-                    width: '46px', height: '46px', 
-                    background: step.bg, color: step.color, 
-                    borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                    {step.icon}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div className={`stat-icon-tile ${step.tile}`}>{step.icon}</div>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '1.2px', color: 'var(--color-text-muted)' }}>{step.step}</span>
                   </div>
-                  <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 700, color: 'var(--color-text)' }}>{step.title}</h3>
-                  <p className="text-muted" style={{ fontSize: '0.88rem', margin: 0, lineHeight: '1.5' }}>{step.desc}</p>
+                  <h3 style={{ fontSize: '1.15rem', margin: 0, fontWeight: 800, color: 'var(--color-text)' }}>{step.title}</h3>
+                  <p className="text-muted" style={{ fontSize: '0.88rem', margin: 0, lineHeight: 1.55 }}>{step.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* --- PREMIUM UTILITIES HIGHLIGHTS --- */}
-        <section id="features" style={{ background: 'var(--color-bg)', padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
-          <div className="container grid-2" style={{ alignItems: 'center', gap: 'var(--spacing-xl)' }}>
-            
-            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text)', lineHeight: 1.15 }}>Powerful event logistics.<br />Beautiful guest invitations.</h2>
-              <p className="text-muted" style={{ fontSize: '1.05rem', margin: 0 }}>All dashboards, communications, and check-in tools coordinate seamlessly behind the scenes.</p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.92rem', marginTop: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ background: 'rgba(255, 107, 53, 0.1)', color: 'var(--color-primary)', padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center' }}><Check size={12} /></div>
-                  <span style={{ fontWeight: 600 }}>High-aesthetic curated collection themes</span>
+        {/* ───────── WHY SAFALEVENTS: photo + feature band ───────── */}
+        <section id="features" style={{ background: 'var(--color-bg)', padding: 'var(--spacing-xl) 0', borderTop: '1px solid var(--color-border)' }}>
+          <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', alignItems: 'center', gap: 'var(--spacing-xl)' }}>
+
+            {/* Photo side */}
+            <div style={{ position: 'relative' }}>
+              <img
+                src={HERO_IMAGES.hosting}
+                alt="A host presenting on stage at a live event"
+                style={{ width: '100%', height: '420px', objectFit: 'cover', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', display: 'block' }}
+                loading="lazy"
+              />
+              {/* Floating proof card */}
+              <div className="glass-surface" style={{
+                position: 'absolute', bottom: '-18px', left: '20px', right: 'auto',
+                borderRadius: '16px', padding: '14px 18px', boxShadow: 'var(--shadow-lg)',
+                display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.95)'
+              }}>
+                <div className="avatar-stack">
+                  {AVATARS.slice(4, 7).map((src, i) => (
+                    <img key={i} src={src} alt="Host" className="avatar-img avatar-sm" />
+                  ))}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ background: 'rgba(255, 107, 53, 0.1)', color: 'var(--color-primary)', padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center' }}><Check size={12} /></div>
-                  <span style={{ fontWeight: 600 }}>Loginless guest flows with persistent token bypasses</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)' }}>10,000+ hosts onboard</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Star size={11} fill="#fbbf24" stroke="#fbbf24" /> 4.9 average host rating
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ background: 'rgba(255, 107, 53, 0.1)', color: 'var(--color-primary)', padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center' }}><Check size={12} /></div>
-                  <span style={{ fontWeight: 600 }}>Configurable self-edit deadlines and cutoff policies</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ background: 'rgba(255, 107, 53, 0.1)', color: 'var(--color-primary)', padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center' }}><Check size={12} /></div>
-                  <span style={{ fontWeight: 600 }}>Multi-channel OTP verification audit logging</span>
-                </div>
+              </div>
+              {/* Floating badge top-right */}
+              <div className="glass-surface" style={{
+                position: 'absolute', top: '18px', right: '18px',
+                borderRadius: '12px', padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.92)',
+                boxShadow: 'var(--shadow-md)', color: 'var(--color-text)'
+              }}>
+                <Shield size={14} style={{ color: 'var(--color-accent)' }} /> Dual-channel OTP secure
               </div>
             </div>
-            
-            {/* Widget Previews */}
-            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <div style={{ 
-                padding: '24px', width: '200px', borderRadius: '24px', border: '1px solid var(--color-border)', 
-                textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px', background: '#ffffff', 
-                boxShadow: 'var(--shadow-md)' 
-              }}>
-                <LayoutDashboard size={24} style={{ color: 'var(--color-primary)' }} />
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 750 }}>Host Console</h4>
-                <p className="text-muted" style={{ fontSize: '0.8rem', margin: 0, lineHeight: '1.4' }}>Track conversion analytics, download CSV lists, and edit templates.</p>
+
+            {/* Copy side */}
+            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <span className="badge badge-primary" style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Award size={13} /> Why SafalEvents
+              </span>
+              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text)', lineHeight: 1.15, margin: 0 }}>
+                Powerful event logistics.<br />Beautiful guest invitations.
+              </h2>
+              <p className="text-muted" style={{ fontSize: '1.05rem', margin: 0 }}>
+                All dashboards, communications, and check-in tools coordinate seamlessly behind the scenes — so you can focus on the room, not the spreadsheet.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '0.92rem', marginTop: '6px' }}>
+                {[
+                  'High-aesthetic curated collection themes',
+                  'Loginless guest flows with persistent token bypasses',
+                  'Configurable self-edit deadlines and cutoff policies',
+                  'Multi-channel OTP verification audit logging'
+                ].map((feat, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <CheckCircle size={20} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+                    <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{feat}</span>
+                  </div>
+                ))}
               </div>
-              <div style={{ 
-                padding: '24px', width: '200px', borderRadius: '24px', border: '1px solid var(--color-border)', 
-                textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px', background: '#ffffff', 
-                boxShadow: 'var(--shadow-md)' 
-              }}>
-                <QrCode size={24} style={{ color: 'var(--color-accent)' }} />
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 750 }}>QR Check-in</h4>
-                <p className="text-muted" style={{ fontSize: '0.8rem', margin: 0, lineHeight: '1.4' }}>Instant gateway scanning with verified SVG tickets at the door.</p>
+
+              <Link to="/login?signup=true" style={{ alignSelf: 'flex-start', marginTop: '8px' }}>
+                <Button variant="primary" style={{ padding: '13px 26px', fontSize: '0.9rem', borderRadius: 'var(--radius-full)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  Start hosting free <ArrowRight size={16} />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ───────── TESTIMONIALS ───────── */}
+        <section style={{ padding: 'var(--spacing-xl) 0', background: 'white', borderTop: '1px solid var(--color-border)' }}>
+          <div className="container">
+            <div className="text-center" style={{ marginBottom: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Heart size={13} /> Loved by hosts & guests
+              </span>
+              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text)', margin: 0 }}>People keep coming back</h2>
+              <p className="text-muted" style={{ fontSize: '1.05rem', maxWidth: '520px', margin: 0 }}>Real words from the community throwing (and attending) better gatherings.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '24px' }}>
+              {testimonials.map((t, idx) => (
+                <div
+                  key={idx}
+                  className="card-hover-lift"
+                  style={{
+                    background: 'var(--color-bg)', border: '1.5px solid var(--color-border)',
+                    borderRadius: 'var(--radius-lg)', padding: '26px', textAlign: 'left',
+                    display: 'flex', flexDirection: 'column', gap: '14px', boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '2px' }}>
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={14} fill="#fbbf24" stroke="#fbbf24" />
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--color-text)', margin: 0, fontStyle: 'italic' }}>
+                    “{t.quote}”
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 'auto', paddingTop: '6px' }}>
+                    <img src={getAvatar(t.seed)} alt={t.name} className="avatar-img" />
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text)' }}>{t.name}</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t.role}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ───────── FINAL CTA BANNER ───────── */}
+        <section style={{ padding: '0 0 var(--spacing-xl) 0', background: 'white' }}>
+          <div className="container">
+            <div className="page-hero" style={{ minHeight: '320px', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <img src={HERO_IMAGES.toast} alt="Friends toasting at a celebration" className="page-hero-img" />
+              <div className="page-hero-overlay"></div>
+              <div className="page-hero-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: 'var(--spacing-lg) var(--spacing-md)' }}>
+                <div className="avatar-stack">
+                  {AVATARS.slice(5, 9).map((src, i) => (
+                    <img key={i} src={src} alt="Community member" className="avatar-img" />
+                  ))}
+                  <div className="avatar-stack-more">10k+</div>
+                </div>
+                <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 800, letterSpacing: '-0.03em', margin: 0, lineHeight: 1.1 }}>
+                  Ready to host something unforgettable?
+                </h2>
+                <p style={{ fontSize: '1.05rem', maxWidth: '520px', margin: 0 }}>
+                  Spin up a stunning invite page, share one link, and watch the RSVPs roll in. Free to start — gorgeous by default.
+                </p>
+                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '6px' }}>
+                  <Link to="/login?signup=true">
+                    <Button variant="primary" style={{ padding: '15px 32px', fontSize: '0.95rem', borderRadius: 'var(--radius-full)', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 10px 28px rgba(255, 107, 53, 0.4)' }}>
+                      <Sparkles size={16} /> Create your event
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    onClick={scrollToDiscover}
+                    style={{ padding: '15px 32px', fontSize: '0.95rem', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.95)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    Browse events <ArrowRight size={16} />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

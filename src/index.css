@@ -1228,3 +1228,180 @@ button.text-link:hover {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* ─── Image-rich UI utilities (shared across pages) ─── */
+
+/* Full-width page hero banner with photo + dark gradient overlay */
+.page-hero {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 220px;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--spacing-lg);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.page-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.page-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8, 8, 12, 0.82) 0%, rgba(8, 8, 12, 0.35) 55%, rgba(8, 8, 12, 0.15) 100%);
+  z-index: 2;
+}
+
+.page-hero-content {
+  position: relative;
+  z-index: 3;
+}
+
+.page-hero-content h1,
+.page-hero-content h2 {
+  color: white;
+}
+
+.page-hero-content p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Circular avatar image */
+.avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.avatar-img.avatar-sm { width: 28px; height: 28px; }
+.avatar-img.avatar-lg { width: 64px; height: 64px; }
+.avatar-img.avatar-xl { width: 96px; height: 96px; border-width: 3px; }
+
+/* Overlapping avatar stack ("12 people going") */
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-stack .avatar-img {
+  margin-left: -10px;
+}
+
+.avatar-stack .avatar-img:first-child {
+  margin-left: 0;
+}
+
+.avatar-stack-more {
+  margin-left: -10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-text);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 2px solid white;
+  flex-shrink: 0;
+}
+
+/* Event photo card: image top, content below */
+.event-photo-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.event-photo-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+
+.event-photo-card-img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+}
+
+.event-photo-card-body {
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Small photo thumbnail (table rows, lists) */
+.thumb-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Empty state with illustration-style image */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: var(--spacing-xl) var(--spacing-md);
+}
+
+.empty-state-img {
+  width: 200px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  opacity: 0.9;
+  box-shadow: var(--shadow-md);
+}
+
+/* Gradient icon tile for stat cards */
+.stat-icon-tile {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.stat-icon-orange { background: linear-gradient(135deg, #FF6B35, #e0531f); }
+.stat-icon-green { background: linear-gradient(135deg, #00C853, #00963f); }
+.stat-icon-blue { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+.stat-icon-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.stat-icon-red { background: linear-gradient(135deg, #FF1744, #c4123a); }
+
+@media (max-width: 767px) {
+  .page-hero {
+    min-height: 180px;
+    padding: var(--spacing-md);
+  }
+}
+

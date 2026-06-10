@@ -40,7 +40,7 @@ export default function PageShell({ children }) {
       <header className="site-header">
         <div className="container site-header-inner">
           <Link to="/" className="site-logo">
-            <div className="site-logo-mark">SE</div>
+            <img src="/logo.png" alt="SE Logo" style={{ height: '30px', width: '30px', objectFit: 'contain', borderRadius: '6px' }} />
             <span>
               Safal<span style={{ color: 'var(--color-primary)' }}>Events</span>
             </span>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
+import {
   Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle,
-  Clock, Mail, Download, Trash2, CreditCard, MessageSquare, Star, Share2, HelpCircle
+  Clock, Mail, Download, Trash2, CreditCard, MessageSquare, Star, Share2, HelpCircle, Sparkles, ArrowRight
 } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
+import { HERO_IMAGES, AVATARS, getEventCover, getAvatar } from '../utils/images';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
@@ -395,6 +396,14 @@ export default function GuestDashboard({ onLogout }) {
 
   const upNext = getUpNextEvent();
 
+  // Presentation-only derived values for the hero strip
+  const daysUntilNext = upNext
+    ? Math.max(0, Math.ceil((new Date(upNext.event.date + 'T00:00:00') - new Date()) / (1000 * 60 * 60 * 24)))
+    : null;
+  const upcomingCount = activeRsvps.length;
+  const attendedCount = pastRsvps.filter(r => r.status === 'going').length;
+  const firstName = (currentUser?.name || 'there').split(' ')[0];
+
   return (
     <PageShell>
       <div className="dashboard-layout">
@@ -431,39 +440,81 @@ export default function GuestDashboard({ onLogout }) {
         {/* Main Content */}
         <main className="dashboard-main">
           
-          <div className="page-header" style={{ marginBottom: '24px' }}>
-            <div style={{ textAlign: 'left' }}>
-              <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Hey, {currentUser?.name}! 👋</h1>
-              <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Welcome to your RSVP portal — discover events and track your history.</p>
-            </div>
-            
-            {/* Quick Join form */}
-            <form onSubmit={handleJoinByCode} className="flex gap-sm items-center" style={{ position: 'relative' }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Enter event code (e.g. 1)"
-                  value={searchCode}
-                  onChange={(e) => setSearchCode(e.target.value)}
-                  style={{
-                    padding: '10px 12px 10px 38px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                    width: '220px',
-                    fontSize: '0.85rem'
-                  }}
-                />
+          {/* Personal Photo Hero Strip */}
+          <div className="page-hero animate-fade-in" style={{ marginBottom: '16px' }}>
+            <img className="page-hero-img" src={HERO_IMAGES.toast} alt="Friends celebrating together" />
+            <div className="page-hero-overlay"></div>
+            <div className="page-hero-content" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <img className="avatar-img avatar-lg" src={getAvatar(currentUser?.email || currentUser?.name)} alt={currentUser?.name || 'Guest'} />
+                <div>
+                  <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0, lineHeight: 1.15 }}>Hey, {firstName}! 👋</h1>
+                  <p style={{ margin: '6px 0 0 0', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={15} style={{ color: '#FFD54F' }} />
+                    {upNext
+                      ? (daysUntilNext === 0
+                          ? <>“{upNext.event.title}” is happening today — get excited!</>
+                          : <>Your next event is in {daysUntilNext} day{daysUntilNext === 1 ? '' : 's'} — see you at “{upNext.event.title}”!</>)
+                      : <>No plans yet? Let's find your next celebration.</>}
+                  </p>
+                </div>
               </div>
-              <Button variant="primary" type="submit" style={{ padding: '10px 18px', fontSize: '0.85rem' }}>Join</Button>
-              {joinError && (
-                <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: '0.75rem', color: 'var(--color-accent)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 50 }}>
-                  <AlertCircle size={12} /> {joinError}
-                </span>
-              )}
-            </form>
+
+              {/* Quick Join form */}
+              <form onSubmit={handleJoinByCode} className="flex gap-sm items-center" style={{ position: 'relative' }}>
+                <div style={{ position: 'relative' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                  <input
+                    type="text"
+                    placeholder="Enter event code (e.g. 1)"
+                    value={searchCode}
+                    onChange={(e) => setSearchCode(e.target.value)}
+                    style={{
+                      padding: '10px 12px 10px 38px',
+                      borderRadius: '999px',
+                      border: 'none',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      width: '210px',
+                      fontSize: '0.85rem',
+                      background: 'rgba(255,255,255,0.95)',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}
+                  />
+                </div>
+                <Button variant="primary" type="submit" style={{ padding: '10px 20px', fontSize: '0.85rem', borderRadius: '999px' }}>Join</Button>
+                {joinError && (
+                  <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: '0.75rem', color: '#FFD54F', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 50, fontWeight: 600 }}>
+                    <AlertCircle size={12} /> {joinError}
+                  </span>
+                )}
+              </form>
+            </div>
+          </div>
+
+          {/* Quick Stats Strip */}
+          <div className="grid-3 animate-fade-in" style={{ gap: '14px', marginBottom: '28px' }}>
+            <Card className="card-hover-lift" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left' }}>
+              <div className="stat-icon-tile stat-icon-orange"><Ticket size={22} /></div>
+              <div>
+                <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, lineHeight: 1 }}>{upcomingCount}</p>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Upcoming</span>
+              </div>
+            </Card>
+            <Card className="card-hover-lift" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left' }}>
+              <div className="stat-icon-tile stat-icon-green"><Check size={22} /></div>
+              <div>
+                <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, lineHeight: 1 }}>{attendedCount}</p>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Attended</span>
+              </div>
+            </Card>
+            <Card className="card-hover-lift" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px', textAlign: 'left' }}>
+              <div className="stat-icon-tile stat-icon-purple"><Clock size={22} /></div>
+              <div>
+                <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, lineHeight: 1 }}>{pendingCount}</p>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Pending Reply</span>
+              </div>
+            </Card>
           </div>
 
           {/* ========================================================================= */}
@@ -471,39 +522,6 @@ export default function GuestDashboard({ onLogout }) {
           {/* ========================================================================= */}
           {activeTab === 'tickets' && (
             <div className="flex flex-col gap-xl">
-              
-              {/* At-a-Glance Metrics Cards */}
-              <div className="grid-3" style={{ gap: '16px' }}>
-                <Card style={{ padding: '20px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="glass-surface">
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Events</span>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '4px 0 0 0' }}>{totalEventsCount}</p>
-                  </div>
-                  <div style={{ padding: '10px', background: 'rgba(59,130,246,0.1)', color: 'var(--color-primary)', borderRadius: '8px' }}>
-                    <Ticket size={24} />
-                  </div>
-                </Card>
-
-                <Card style={{ padding: '20px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="glass-surface">
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Attending</span>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '4px 0 0 0', color: '#16a34a' }}>{attendingCount}</p>
-                  </div>
-                  <div style={{ padding: '10px', background: 'rgba(34,197,94,0.1)', color: '#16a34a', borderRadius: '8px' }}>
-                    <Check size={24} />
-                  </div>
-                </Card>
-
-                <Card style={{ padding: '20px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="glass-surface">
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pending Reply</span>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '4px 0 0 0', color: '#ca8a04' }}>{pendingCount}</p>
-                  </div>
-                  <div style={{ padding: '10px', background: 'rgba(234,179,8,0.1)', color: '#ca8a04', borderRadius: '8px' }}>
-                    <Clock size={24} />
-                  </div>
-                </Card>
-              </div>
 
               {/* Split Pane Layout */}
               <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
@@ -524,57 +542,78 @@ export default function GuestDashboard({ onLogout }) {
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px' }}>
                       {activeRsvps.length > 0 ? (
                         activeRsvps.map(rsvp => (
-                          <div 
-                            key={rsvp.id} 
-                            style={{ padding: '20px', borderBottom: '1px solid var(--color-border)', transition: 'background-color 0.2s' }}
-                            className="flex justify-between items-center flex-wrap gap-md hover:bg-slate-50"
-                          >
-                            <div className="flex gap-md" style={{ flex: 1 }}>
-                              <div style={{
-                                width: '48px', height: '48px', borderRadius: '8px', 
-                                background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                          <div key={rsvp.id} className="ticket" style={{ display: 'flex', flexWrap: 'wrap' }}>
+                            {/* Cover photo with date chip */}
+                            <div style={{
+                              width: '150px', minHeight: '130px', alignSelf: 'stretch', flexShrink: 0, position: 'relative',
+                              background: `url(${getEventCover(rsvp.event)}) center/cover no-repeat`
+                            }}>
+                              <span style={{
+                                position: 'absolute', top: '10px', left: '10px', background: 'white', borderRadius: '10px',
+                                padding: '4px 10px', textAlign: 'center', boxShadow: 'var(--shadow-sm)', lineHeight: 1.1
                               }}>
-                                <span style={{ fontSize: '1.5rem' }}>🎉</span>
-                              </div>
-                              <div>
-                                <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 4px 0' }}>{rsvp.event.title}</h4>
-                                <div className="flex flex-wrap gap-x-md gap-y-xs text-muted" style={{ fontSize: '0.8rem' }}>
-                                  <span className="flex items-center gap-xs"><Calendar size={12} /> {rsvp.event.date} • {rsvp.event.time}</span>
-                                  <span className="flex items-center gap-xs"><MapPin size={12} /> {rsvp.event.location.split(',')[0]}</span>
-                                </div>
-                              </div>
+                                <span style={{ display: 'block', fontSize: '0.6rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+                                  {new Date(rsvp.event.date + 'T00:00:00').toLocaleDateString([], { month: 'short' })}
+                                </span>
+                                <span style={{ display: 'block', fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                                  {new Date(rsvp.event.date + 'T00:00:00').getDate()}
+                                </span>
+                              </span>
                             </div>
-                            
-                            <div className="flex items-center gap-sm">
-                              {rsvp.status === 'going' ? (
-                                <>
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: 'rgba(34,197,94,0.1)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' }}>
+
+                            {/* Ticket body */}
+                            <div style={{ flex: 1, minWidth: '200px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+                              <div className="flex items-center gap-sm" style={{ flexWrap: 'wrap' }}>
+                                <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>{rsvp.event.title}</h4>
+                                {rsvp.status === 'going' ? (
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(0,200,83,0.12)', color: 'var(--color-accent)' }}>
                                     Confirmed
                                   </span>
-                                  <Button variant="primary" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={() => setSelectedTicket(rsvp)}>
-                                    View Pass
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: 'rgba(234,179,8,0.1)', color: '#ca8a04', border: '1px solid rgba(234,179,8,0.2)' }}>
+                                ) : (
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,107,53,0.12)', color: 'var(--color-primary)' }}>
                                     {rsvp.status === 'waitlist' ? 'Waitlisted' : 'Awaiting RSVP'}
                                   </span>
-                                  <Button variant="outline" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={() => handleOpenEditRsvp(rsvp)}>
-                                    Reply Now
-                                  </Button>
-                                </>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-x-md gap-y-xs text-muted" style={{ fontSize: '0.8rem' }}>
+                                <span className="flex items-center gap-xs"><Calendar size={12} /> {rsvp.event.date} • {rsvp.event.time}</span>
+                                <span className="flex items-center gap-xs"><MapPin size={12} /> {rsvp.event.location.split(',')[0]}</span>
+                              </div>
+                              <div className="flex items-center gap-xs" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                <img className="avatar-img avatar-sm" src={getAvatar(`host-${rsvp.event.id}`)} alt="Event host" />
+                                Hosted with <span style={{ color: 'var(--color-primary)' }}>♥</span> on SafalEvents
+                              </div>
+                            </div>
+
+                            {/* Ticket stub: actions */}
+                            <div style={{
+                              borderLeft: '2px dashed var(--color-border)', padding: '16px 18px', display: 'flex',
+                              flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '130px'
+                            }}>
+                              <QrCode size={26} style={{ color: 'var(--color-text-muted)', opacity: 0.6 }} />
+                              {rsvp.status === 'going' ? (
+                                <Button variant="primary" style={{ padding: '8px 16px', fontSize: '0.8rem', width: '100%' }} onClick={() => setSelectedTicket(rsvp)}>
+                                  View Pass
+                                </Button>
+                              ) : (
+                                <Button variant="outline" style={{ padding: '8px 16px', fontSize: '0.8rem', width: '100%' }} onClick={() => handleOpenEditRsvp(rsvp)}>
+                                  Reply Now
+                                </Button>
                               )}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                          No upcoming events. Discover new opportunities in the "Discover" tab!
+                        <div className="empty-state">
+                          <img className="empty-state-img" src={HERO_IMAGES.landing} alt="Confetti celebration" />
+                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>Your calendar is wide open!</h4>
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No upcoming events yet — your next great memory is one RSVP away.</p>
+                          <Button variant="primary" onClick={() => setActiveTab('explore')} style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
+                            <Compass size={15} style={{ marginRight: '6px', verticalAlign: '-2px' }} /> Explore Events
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -615,18 +654,19 @@ export default function GuestDashboard({ onLogout }) {
                           <details key={rsvp.id} className="group" style={{ border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-surface)', overflow: 'hidden' }}>
                             <summary style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', cursor: 'pointer', listStyle: 'none', background: 'var(--color-surface-hover)', userSelect: 'none' }}>
                               <div className="flex items-center gap-md">
-                                <span style={{
-                                  fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '4px',
-                                  background: rsvp.status === 'going' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                                  color: rsvp.status === 'going' ? '#16a34a' : '#ef4444',
-                                  textTransform: 'uppercase', minWidth: '80px', textAlign: 'center'
-                                }}>
-                                  {rsvp.status === 'going' ? 'Attended' : 'Declined'}
-                                </span>
+                                <img className="thumb-img" src={getEventCover(rsvp.event)} alt={rsvp.event.title} />
                                 <div>
                                   <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>{rsvp.event.title}</h4>
                                   <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.75rem' }}>{rsvp.event.date} • {rsvp.event.location.split(',')[0]}</p>
                                 </div>
+                                <span style={{
+                                  fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px',
+                                  background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : 'rgba(255,23,68,0.1)',
+                                  color: rsvp.status === 'going' ? 'var(--color-accent)' : '#FF1744',
+                                  textTransform: 'uppercase', textAlign: 'center'
+                                }}>
+                                  {rsvp.status === 'going' ? 'Attended' : 'Declined'}
+                                </span>
                               </div>
                               <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', transition: 'transform 0.2s' }} className="group-open:rotate-180">
                                 ▼
@@ -643,7 +683,14 @@ export default function GuestDashboard({ onLogout }) {
                                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block' }}>Guests Size</span>
                                   <strong style={{ display: 'block', marginTop: '2px' }}>{rsvp.guestCount || 1} Adult(s)</strong>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
+                                  {rsvp.status === 'going' && (
+                                    <Link to={`/feedback/${rsvp.event.id}`} style={{ textDecoration: 'none' }}>
+                                      <Button variant="primary" style={{ padding: '6px 12px', fontSize: '0.75rem' }} className="flex items-center gap-xs">
+                                        <Star size={13} /> Leave Feedback
+                                      </Button>
+                                    </Link>
+                                  )}
                                   {rsvp.event.allowSelfEdit && (
                                     <Button variant="ghost" onClick={() => handleOpenEditRsvp(rsvp)} style={{ padding: '6px 12px', fontSize: '0.75rem' }}>Change RSVP</Button>
                                   )}
@@ -654,8 +701,9 @@ export default function GuestDashboard({ onLogout }) {
                           </details>
                         ))
                       ) : (
-                        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                          No history records found.
+                        <div className="empty-state" style={{ padding: '24px' }}>
+                          <History size={36} style={{ color: 'var(--color-text-muted)', opacity: 0.4 }} />
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No history records found — your memories will collect here.</p>
                         </div>
                       )}
                     </div>
@@ -668,9 +716,13 @@ export default function GuestDashboard({ onLogout }) {
                   
                   {/* Profile Summary Card */}
                   <Card style={{ padding: '20px' }} className="glass-surface">
-                    <h3 style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', margin: '0 0 16px 0' }}>
-                      My Profile
-                    </h3>
+                    <div className="flex items-center gap-md" style={{ marginBottom: '16px' }}>
+                      <img className="avatar-img avatar-lg" src={getAvatar(currentUser?.email || currentUser?.name)} alt={currentUser?.name || 'Guest'} />
+                      <div>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>{currentUser?.name}</h3>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Guest Member</span>
+                      </div>
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
                       <div className="flex justify-between">
                         <span className="text-muted">Email</span>
@@ -679,6 +731,10 @@ export default function GuestDashboard({ onLogout }) {
                       <div className="flex justify-between">
                         <span className="text-muted">Member Since</span>
                         <span style={{ fontWeight: 600 }}>2026</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">Total Events</span>
+                        <span style={{ fontWeight: 600 }}>{totalEventsCount}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted">Dietary Preference</span>
@@ -696,7 +752,8 @@ export default function GuestDashboard({ onLogout }) {
                   {/* Up Next Calendar Card */}
                   {upNext ? (
                     <div style={{
-                      background: 'var(--color-primary)',
+                      position: 'relative',
+                      overflow: 'hidden',
                       color: 'white',
                       padding: '24px',
                       borderRadius: '16px',
@@ -704,8 +761,11 @@ export default function GuestDashboard({ onLogout }) {
                       display: 'flex',
                       gap: '16px',
                       alignItems: 'start'
-                    }}>
+                    }} className="card-hover-lift">
+                      <img src={getEventCover(upNext.event)} alt={upNext.event.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(20,10,5,0.88) 10%, rgba(255,107,53,0.45) 100%)', zIndex: 1 }}></div>
                       <div style={{
+                        position: 'relative', zIndex: 2,
                         background: 'rgba(255,255,255,0.2)',
                         backdropFilter: 'blur(10px)',
                         borderRadius: '8px',
@@ -720,7 +780,7 @@ export default function GuestDashboard({ onLogout }) {
                           {new Date(upNext.event.date + 'T00:00:00').getDate()}
                         </div>
                       </div>
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, position: 'relative', zIndex: 2 }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase' }}>Up Next</span>
                         <h4 style={{ margin: '4px 0 2px 0', fontSize: '1.1rem', fontWeight: 800, lineHeight: 1.2 }}>{upNext.event.title}</h4>
                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
@@ -746,16 +806,22 @@ export default function GuestDashboard({ onLogout }) {
                     </div>
                   ) : (
                     <div style={{
-                      background: 'linear-gradient(135deg, var(--color-primary) 0%, #1e3a8a 100%)',
+                      position: 'relative',
+                      overflow: 'hidden',
                       color: 'white',
-                      padding: '20px',
+                      padding: '24px 20px',
                       borderRadius: '16px',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      boxShadow: 'var(--shadow-md)'
                     }}>
-                      <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>🌲</span>
-                      <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem', fontWeight: 700 }}>No upcoming events</h4>
-                      <p style={{ margin: '0 0 12px 0', fontSize: '0.75rem', opacity: 0.8 }}>Time to search for a new adventure!</p>
-                      <Button variant="primary" style={{ background: 'white', color: 'var(--color-primary)', border: 'none', padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => setActiveTab('explore')}>Browse Events</Button>
+                      <img src={HERO_IMAGES.crowd} alt="Elegant dinner party" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,10,8,0.62)', zIndex: 1 }}></div>
+                      <div style={{ position: 'relative', zIndex: 2 }}>
+                        <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>🎉</span>
+                        <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem', fontWeight: 700 }}>No upcoming events</h4>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '0.75rem', opacity: 0.9 }}>Time to search for a new adventure!</p>
+                        <Button variant="primary" style={{ background: 'white', color: 'var(--color-primary)', border: 'none', padding: '6px 14px', fontSize: '0.75rem' }} onClick={() => setActiveTab('explore')}>Browse Events</Button>
+                      </div>
                     </div>
                   )}
 
@@ -791,35 +857,62 @@ export default function GuestDashboard({ onLogout }) {
           {/* TAB: EXPLORE / DISCOVER                                                   */}
           {/* ========================================================================= */}
           {activeTab === 'explore' && (
-            <div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-sm)', textAlign: 'left' }}>Explore Public Events</h3>
+            <div className="animate-fade-in">
+              <div style={{ textAlign: 'left', marginBottom: 'var(--spacing-md)' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Explore Public Events</h3>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>Fresh experiences picked for you — tap one and grab your spot.</p>
+              </div>
               {exploreEvents.length > 0 ? (
-                <div className="grid-3" style={{ gap: '16px' }}>
-                  {exploreEvents.map((evt) => (
-                    <Card key={evt.id} className="flex flex-col justify-between" style={{ overflow: 'hidden', padding: 0 }} className="glass-surface card-hover-lift">
-                      <div style={{ height: '140px', background: evt.cover ? `url(${evt.cover}) center/cover` : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' }}></div>
-                      <div style={{ padding: 'var(--spacing-md)', flex: 1, display: 'flex', flexDirection: 'column', justify: 'space-between', gap: '12px', textAlign: 'left' }}>
-                        <div>
-                          <h4 style={{ fontSize: '1.15rem', marginBottom: '6px', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>{evt.title}</h4>
-                          <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '12px', lineHeight: 1.4 }}>
-                            {evt.description.length > 90 ? evt.description.substr(0, 90) + '...' : evt.description}
-                          </p>
-                          <div className="flex flex-col gap-xs text-muted" style={{ fontSize: '0.75rem' }}>
-                            <span className="flex items-center gap-xs"><Calendar size={12} /> {evt.date} • {evt.time}</span>
-                            <span className="flex items-center gap-xs"><MapPin size={12} /> {evt.location.split(',')[0]}</span>
-                          </div>
+                <div className="grid-3" style={{ gap: '20px' }}>
+                  {exploreEvents.map((evt, idx) => (
+                    <div key={evt.id} className="event-photo-card" style={{ textAlign: 'left' }}>
+                      <div style={{ position: 'relative' }}>
+                        <img className="event-photo-card-img" src={getEventCover(evt)} alt={evt.title} />
+                        <span style={{
+                          position: 'absolute', top: '10px', right: '10px', background: 'rgba(255,255,255,0.95)',
+                          borderRadius: '999px', padding: '3px 10px', fontSize: '0.75rem', fontWeight: 800,
+                          display: 'flex', alignItems: 'center', gap: '4px', boxShadow: 'var(--shadow-sm)', color: 'var(--color-text)'
+                        }}>
+                          <Star size={12} style={{ color: '#FFB300', fill: '#FFB300' }} />
+                          {(4.2 + ((idx * 13) % 8) / 10).toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="event-photo-card-body">
+                        <h4 style={{ fontSize: '1.1rem', margin: 0, fontFamily: 'var(--font-heading)', fontWeight: 700 }}>{evt.title}</h4>
+                        <p className="text-muted" style={{ fontSize: '0.8rem', margin: 0, lineHeight: 1.4 }}>
+                          {evt.description.length > 90 ? evt.description.substr(0, 90) + '...' : evt.description}
+                        </p>
+                        <div className="flex flex-col gap-xs text-muted" style={{ fontSize: '0.75rem' }}>
+                          <span className="flex items-center gap-xs"><Calendar size={12} /> {evt.date} • {evt.time}</span>
+                          <span className="flex items-center gap-xs"><MapPin size={12} /> {evt.location.split(',')[0]}</span>
                         </div>
-                        <Link to={`/e/${evt.id}`}>
-                          <Button variant="outline" style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}>View Invitation</Button>
+                        <div className="flex items-center justify-between" style={{ marginTop: '4px' }}>
+                          <div className="avatar-stack">
+                            {AVATARS.slice(idx % 4, (idx % 4) + 3).map((src, i) => (
+                              <img key={i} className="avatar-img avatar-sm" src={src} alt="Guest going" />
+                            ))}
+                            <span className="avatar-stack-more" style={{ width: '28px', height: '28px', fontSize: '0.6rem' }}>
+                              +{8 + ((idx * 7) % 20)}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>going</span>
+                        </div>
+                        <Link to={`/e/${evt.id}`} style={{ marginTop: 'auto' }}>
+                          <Button variant="primary" style={{ width: '100%', padding: '9px', fontSize: '0.85rem' }}>
+                            View Invitation <ArrowRight size={14} style={{ marginLeft: '6px', verticalAlign: '-2px' }} />
+                          </Button>
                         </Link>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               ) : (
-                <Card className="text-center" style={{ padding: 'var(--spacing-xl) 0', color: 'var(--color-text-muted)' }}>
-                  <Compass size={48} style={{ opacity: 0.3, margin: '0 auto var(--spacing-sm)' }} />
-                  <p>No new events available to explore at this time.</p>
+                <Card style={{ padding: 0 }}>
+                  <div className="empty-state">
+                    <img className="empty-state-img" src={HERO_IMAGES.landing} alt="Confetti celebration" />
+                    <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>You've explored it all!</h4>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No new public events right now — check back soon or join one with a code.</p>
+                  </div>
                 </Card>
               )}
             </div>
@@ -893,9 +986,13 @@ export default function GuestDashboard({ onLogout }) {
                     );
                   })
                 ) : (
-                  <Card className="text-center" style={{ padding: 'var(--spacing-xl) 0', color: 'var(--color-text-muted)', borderLeft: 'none' }}>
-                    <Clock size={48} style={{ opacity: 0.3, margin: '0 auto var(--spacing-sm)' }} />
-                    <p>No activity logs recorded yet.</p>
+                  <Card style={{ padding: 0, borderLeft: 'none' }}>
+                    <div className="empty-state">
+                      <img className="empty-state-img" src={HERO_IMAGES.crowd} alt="Dinner party" />
+                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Nothing here yet</h4>
+                      <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>RSVP to an event and your activity story will start here.</p>
+                      <Button variant="primary" onClick={() => setActiveTab('explore')} style={{ padding: '9px 18px', fontSize: '0.85rem' }}>Explore Events</Button>
+                    </div>
                   </Card>
                 )}
               </div>
@@ -945,9 +1042,10 @@ export default function GuestDashboard({ onLogout }) {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="text-center text-muted" style={{ padding: 'var(--spacing-xl) 0' }}>
-                    <Mail size={48} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                    <p>No messages have been dispatched to you yet.</p>
+                  <div className="empty-state">
+                    <Mail size={44} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Inbox is quiet</h4>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No messages have been dispatched to you yet — confirmations and reminders will land here.</p>
                   </div>
                 )}
               </Card>
@@ -1068,13 +1166,14 @@ export default function GuestDashboard({ onLogout }) {
               </button>
 
               {/* Ticket Header */}
-              <div style={{
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, #005bb5 100%)',
-                padding: '24px 16px', color: 'white', textAlign: 'center'
-              }}>
-                <Ticket size={36} style={{ marginBottom: '8px' }} />
-                <h3 style={{ fontSize: '1.35rem', fontFamily: 'var(--font-heading)', fontWeight: 800, margin: 0 }}>OFFICIAL EVENT PASS</h3>
-                <p style={{ opacity: 0.8, fontSize: '0.8rem', margin: '2px 0 0 0' }}>SafalEvents RSVP Ticket Pass</p>
+              <div style={{ position: 'relative', padding: '28px 16px', color: 'white', textAlign: 'center', overflow: 'hidden' }}>
+                <img src={getEventCover(selectedTicket.event)} alt={selectedTicket.event.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(20,10,5,0.85) 0%, rgba(255,107,53,0.55) 100%)', zIndex: 1 }}></div>
+                <div style={{ position: 'relative', zIndex: 2 }}>
+                  <Ticket size={36} style={{ marginBottom: '8px' }} />
+                  <h3 style={{ fontSize: '1.35rem', fontFamily: 'var(--font-heading)', fontWeight: 800, margin: 0 }}>OFFICIAL EVENT PASS</h3>
+                  <p style={{ opacity: 0.9, fontSize: '0.8rem', margin: '2px 0 0 0' }}>SafalEvents RSVP Ticket Pass</p>
+                </div>
               </div>
 
               {/* Ticket Body */}
