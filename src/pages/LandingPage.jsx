@@ -2,11 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Sparkles, Calendar, Ticket, Send, QrCode, BarChart3, Webhook,
-  Users, Link2, Repeat, Check, MapPin, Heart, Star
+  Users, Link2, Repeat, Check, MapPin, Heart, Star, Clock
 } from 'lucide-react';
 import Button from '../components/Button';
 import PageShell from '../components/PageShell';
-import { AVATARS, EVENT_COVERS, getAvatar } from '../utils/images';
+import { AVATARS, EVENT_COVERS, getAvatar, getEventCover } from '../utils/images';
+import { mockStore } from '../utils/mockStore';
 
 export default function LandingPage() {
   const modules = [
@@ -54,6 +55,18 @@ export default function LandingPage() {
     { icon: <Heart size={20} />, title: 'Privacy first', desc: 'Guest data only you can see.' },
     { icon: <Repeat size={20} />, title: 'Recurring events', desc: 'Save templates and reuse them every time.' },
   ];
+
+  // Occasions strip — name the moments people actually host (Partiful-style warmth)
+  const occasions = [
+    '🎂 Birthdays', '🍝 Dinner parties', '💍 Weddings', '🚀 Launch parties',
+    '🤝 Meetups', '🎮 Game nights', '🧘 Wellness', '🎓 Reunions', '🎤 Concerts',
+  ];
+
+  // Live preview: the next few real public events on the platform
+  const upcomingEvents = mockStore.getEvents()
+    .filter(e => e.status === 'Published' && e.privacy === 'Public' && new Date(e.date) >= new Date())
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 3);
 
   return (
     <PageShell>
@@ -373,6 +386,36 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ───────── OCCASIONS STRIP ───────── */}
+        <section style={{ background: 'var(--color-bg)', padding: '0 0 clamp(32px, 4vw, 48px)' }}>
+          <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--color-text-muted)' }}>
+              Perfect for every occasion
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', maxWidth: '720px' }}>
+              {occasions.map((o, i) => (
+                <span
+                  key={i}
+                  className={`animate-fade-in animate-delay-${(i % 3) + 1}`}
+                  style={{
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    color: 'var(--color-text)',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-full)',
+                    padding: '8px 16px',
+                    boxShadow: 'var(--shadow-sm)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {o}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ───────── STATS STRIP ───────── */}
         <section style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', padding: 'var(--spacing-md) 0' }}>
           <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
@@ -600,22 +643,117 @@ Designed with intention
 
         {/* ───────── EXPLORE EVENTS ───────── */}
         <section style={{ padding: 'var(--spacing-xl) 0', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}>
-          <div className="container text-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' }}>
-            <h2
-              style={{
-                fontSize: 'clamp(1.7rem, 3.4vw, 2.3rem)',
-                fontWeight: 800,
-                letterSpacing: '-0.03em',
-                color: 'var(--color-text)',
-                margin: 0,
-                lineHeight: 1.1,
-              }}
-            >
-              Looking for events?
-            </h2>
-            <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', margin: 0, maxWidth: '560px' }}>
-              Browse upcoming events in your area. See who's going. Get your spot before it fills up.
-            </p>
+          <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' }}>
+            <div className="text-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+              <h2
+                style={{
+                  fontSize: 'clamp(1.7rem, 3.4vw, 2.3rem)',
+                  fontWeight: 800,
+                  letterSpacing: '-0.03em',
+                  color: 'var(--color-text)',
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                Happening now on SafalEvents
+              </h2>
+              <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', margin: 0, maxWidth: '560px' }}>
+                Real events, real people. See who's going and grab your spot before it fills up.
+              </p>
+            </div>
+
+            {/* Live event preview cards */}
+            {upcomingEvents.length > 0 && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '20px',
+                  width: '100%',
+                  maxWidth: '960px',
+                  margin: '12px 0 4px',
+                }}
+              >
+                {upcomingEvents.map((evt, i) => {
+                  const going = mockStore.getRSVPs(evt.id).filter(r => r.status === 'going').length;
+                  const evtDate = new Date(evt.date + 'T00:00:00');
+                  return (
+                    <Link key={evt.id} to={`/e/${evt.id}`} style={{ textDecoration: 'none' }}>
+                      <div
+                        className={`card-hover-lift animate-fade-in animate-delay-${i + 1}`}
+                        style={{
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-md)',
+                          overflow: 'hidden',
+                          textAlign: 'left',
+                          height: '100%',
+                          boxShadow: 'var(--shadow-sm)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ position: 'relative', height: '150px', overflow: 'hidden' }}>
+                          <img
+                            src={getEventCover(evt)}
+                            alt={evt.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: '10px',
+                              left: '10px',
+                              background: 'rgba(255,255,255,0.95)',
+                              borderRadius: '10px',
+                              padding: '5px 11px',
+                              textAlign: 'center',
+                              lineHeight: 1.1,
+                              boxShadow: 'var(--shadow-md)',
+                            }}
+                          >
+                            <span style={{ display: 'block', fontSize: '0.58rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              {evtDate.toLocaleDateString('en-US', { month: 'short' })}
+                            </span>
+                            <span style={{ display: 'block', fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                              {evtDate.getDate()}
+                            </span>
+                          </span>
+                        </div>
+                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
+                            {evt.title}
+                          </h3>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontWeight: 600 }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Clock size={12} style={{ color: 'var(--color-primary)' }} /> {evt.time}
+                            </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <MapPin size={12} style={{ color: 'var(--color-primary)' }} /> {evt.location.split(',')[0]}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div className="avatar-stack">
+                                {AVATARS.slice(i * 2, i * 2 + 3).map((src, j) => (
+                                  <img key={j} src={src} alt="" className="avatar-img avatar-sm" style={{ width: '22px', height: '22px' }} />
+                                ))}
+                              </div>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                {going > 0 ? `${going} going` : 'Be the first'}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              RSVP <ArrowRight size={13} />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
             <Link to="/explore">
               <Button
                 variant="primary"
@@ -629,7 +767,7 @@ Designed with intention
                   marginTop: '8px',
                 }}
               >
-                Explore events <ArrowRight size={18} />
+                Explore all events <ArrowRight size={18} />
               </Button>
             </Link>
           </div>
@@ -707,7 +845,7 @@ Designed with intention
                   Product
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <Link to="/" className="footer-link">
+                  <Link to="/explore" className="footer-link">
                     Explore events
                   </Link>
                   <Link to="/login?signup=true" className="footer-link">
