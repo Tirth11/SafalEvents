@@ -5,7 +5,7 @@ import {
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
   UserCheck, AlertCircle, Copy, Share2, ArrowRight, DollarSign, Ticket, TrendingUp,
-  MapPin, Eye, Webhook
+  MapPin, Eye, Webhook, Compass
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';

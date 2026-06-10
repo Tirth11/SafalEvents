@@ -61,6 +61,8 @@ export default function LandingPage() {
 
         {/* ───────── HERO ───────── */}
         <section className="platform-hero">
+          <div className="hero-blob hero-blob-1" aria-hidden="true"></div>
+          <div className="hero-blob hero-blob-2" aria-hidden="true"></div>
           <div
             className="container"
             style={{
@@ -161,7 +163,7 @@ export default function LandingPage() {
 
             {/* Product mockup */}
             <div className="animate-fade-in animate-delay-1" style={{ position: 'relative' }}>
-              <div className="hero-mockup">
+              <div className="hero-mockup hero-mockup-tilt">
                 <div className="hero-mockup-bar">
                   <span className="hero-mockup-dot" style={{ background: '#ff5f57' }}></span>
                   <span className="hero-mockup-dot" style={{ background: '#febc2e' }}></span>
@@ -340,7 +342,7 @@ export default function LandingPage() {
 
               {/* Floating proof */}
               <div
-                className="glass-surface"
+                className="glass-surface float-gentle"
                 style={{
                   position: 'absolute',
                   bottom: '-16px',
@@ -379,7 +381,7 @@ export default function LandingPage() {
               { value: '< 2 min', label: 'Setup time' },
               { value: '100%', label: 'Password-free' },
             ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '8px 4px' }}>
+              <div key={i} className="stat-cell" style={{ textAlign: 'center', padding: '8px 4px' }}>
                 <div
                   style={{
                     fontSize: 'clamp(1.4rem, 2.4vw, 1.8rem)',
@@ -550,6 +552,7 @@ How it works
 
             {/* Quote card */}
             <div
+              className="quote-card"
               style={{
                 background: 'var(--color-surface)',
                 border: '1px solid var(--color-border)',
@@ -703,10 +706,10 @@ How it works
                   Product
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <Link to="/" style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
+                  <Link to="/" className="footer-link">
                     Explore events
                   </Link>
-                  <Link to="/login?signup=true" style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
+                  <Link to="/login?signup=true" className="footer-link">
                     Create invite
                   </Link>
                 </div>
@@ -716,10 +719,10 @@ How it works
                   Company
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <a href="#" style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
+                  <a href="#" className="footer-link">
                     About
                   </a>
-                  <a href="#" style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
+                  <a href="#" className="footer-link">
                     Blog
                   </a>
                 </div>
@@ -729,10 +732,10 @@ How it works
                   Legal
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <a href="#" style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
+                  <a href="#" className="footer-link">
                     Privacy
                   </a>
-                  <a href="#" style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
+                  <a href="#" className="footer-link">
                     Terms
                   </a>
                 </div>

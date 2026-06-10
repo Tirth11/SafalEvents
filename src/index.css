@@ -281,12 +281,19 @@ a {
   border: 1px solid var(--color-border);
 }
 
-/* Gradient Text */
+/* Gradient Text — warm brand sweep with a slow shimmer */
 .text-gradient {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  background: linear-gradient(120deg, #F2541B 0%, #FF7A45 45%, #FF5E7A 100%);
+  background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: gradientShift 7s ease-in-out infinite alternate;
+}
+
+@keyframes gradientShift {
+  from { background-position: 0% center; }
+  to { background-position: 100% center; }
 }
 
 /* Responsive Utilities */
@@ -1713,9 +1720,10 @@ a .event-photo-card:hover {
   justify-content: center;
   font-weight: 800;
   font-size: 1.05rem;
-  background: var(--color-text);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(var(--color-primary-rgb), 0.28);
 }
 
 /* Soft tag pill (badges on cards) */
@@ -1746,4 +1754,395 @@ a .event-photo-card:hover {
     linear-gradient(135deg, #141210 0%, #221913 100%);
 }
 .cta-band h2 { color: #fff; }
+.cta-band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% -30%, rgba(255, 255, 255, 0.14), transparent 58%);
+  pointer-events: none;
+}
+
+/* ─── Landing beautification pass (visual polish only) ─── */
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+/* Soft floating color glows behind the hero */
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-blob-1 {
+  width: 420px;
+  height: 420px;
+  background: rgba(var(--color-primary-rgb), 0.16);
+  top: -120px;
+  left: -110px;
+  animation: blobDrift 16s ease-in-out infinite alternate;
+}
+.hero-blob-2 {
+  width: 360px;
+  height: 360px;
+  background: rgba(0, 200, 83, 0.10);
+  bottom: -150px;
+  right: 6%;
+  animation: blobDrift 20s ease-in-out infinite alternate-reverse;
+}
+@keyframes blobDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(44px, 26px) scale(1.07); }
+}
+
+/* Product mockup: gentle 3D tilt that straightens on hover */
+.hero-mockup-tilt {
+  transform: perspective(1400px) rotateY(-7deg) rotateX(2.5deg);
+  box-shadow: 0 30px 70px -18px rgba(25, 14, 8, 0.22), 0 10px 26px rgba(25, 14, 8, 0.08);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-mockup-tilt:hover {
+  transform: perspective(1400px) rotateY(0deg) rotateX(0deg) translateY(-4px);
+  box-shadow: 0 36px 80px -20px rgba(25, 14, 8, 0.26), 0 12px 30px rgba(25, 14, 8, 0.10);
+}
+
+/* Gentle bob for the floating proof chip */
+.float-gentle {
+  animation: gentleBob 5.5s ease-in-out infinite;
+}
+@keyframes gentleBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+/* Module tiles: gradient accent line + playful icon nudge on hover */
+.module-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), #FF9A62);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.module-tile:hover::before {
+  opacity: 1;
+}
+.feature-chip {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.module-tile:hover .feature-chip {
+  transform: scale(1.1) rotate(-4deg);
+}
+
+/* Stats strip: hairline dividers between cells */
+@media (min-width: 768px) {
+  .stat-cell {
+    position: relative;
+  }
+  .stat-cell + .stat-cell::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 55%;
+    width: 1px;
+    background: var(--color-border);
+  }
+}
+
+/* Quote card: oversized decorative quote mark */
+.quote-card {
+  position: relative;
+  overflow: hidden;
+}
+.quote-card::before {
+  content: '“';
+  position: absolute;
+  top: -26px;
+  right: 18px;
+  font-size: 9rem;
+  line-height: 1;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: rgba(var(--color-primary-rgb), 0.10);
+  pointer-events: none;
+}
+
+/* Footer links: warm hover */
+.footer-link {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  transition: color 0.2s ease;
+}
+.footer-link:hover {
+  color: var(--color-primary);
+}
+
+/* ─── Admin Dashboard Theme (matches Host Dashboard) ─── */
+
+/* Admin page header */
+.admin-header {
+  padding: clamp(28px, 4vw, 48px) 0;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%);
+}
+
+.admin-header h1 {
+  font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.admin-header p {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 6px 0 0 0;
+}
+
+/* Admin tabs/navigation */
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--color-border);
+  padding: 0;
+  margin: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-tab-btn {
+  background: none;
+  border: none;
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.admin-tab-btn:hover {
+  color: var(--color-text);
+}
+
+.admin-tab-btn.active {
+  color: var(--color-primary);
+}
+
+.admin-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+/* Admin content sections */
+.admin-section {
+  padding: clamp(28px, 4vw, 40px) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-section:last-child {
+  border-bottom: none;
+}
+
+/* Admin stats grid */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.admin-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-stat-card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.admin-stat-value {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+  margin: 0 0 8px 0;
+}
+
+.admin-stat-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Admin table styling */
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.admin-table thead {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(var(--color-primary-rgb), 0.04);
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Admin action buttons in tables */
+.admin-btn-approve {
+  background: rgba(0, 200, 83, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(0, 200, 83, 0.3);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-btn-approve:hover {
+  background: rgba(0, 200, 83, 0.2);
+  border-color: rgba(0, 200, 83, 0.5);
+}
+
+.admin-btn-reject {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-btn-reject:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Admin list items */
+.admin-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.admin-list-item:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-list-item-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin-list-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-list-item-title {
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.admin-list-item-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 4px 0 0 0;
+}
+
+/* Admin badge styling */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-badge-active {
+  background: rgba(0, 200, 83, 0.12);
+  color: #16a34a;
+}
+
+.admin-badge-pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #ca8a04;
+}
+
+.admin-badge-rejected {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.admin-badge-suspended {
+  background: rgba(107, 114, 128, 0.12);
+  color: #4b5563;
+}
 
