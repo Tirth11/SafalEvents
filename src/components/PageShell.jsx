@@ -198,6 +198,9 @@ export default function PageShell({ children }) {
               </>
             ) : (
               <>
+                <Link to="/explore" className="site-nav-link" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Explore Events
+                </Link>
                 <Link to="/login" className="site-nav-link" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <LogIn size={15} /> Sign In
                 </Link>
@@ -275,6 +278,9 @@ export default function PageShell({ children }) {
               </>
             ) : (
               <>
+                <Link to="/explore" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '1rem', color: 'var(--color-text)', fontWeight: 600 }}>
+                  Explore Events
+                </Link>
                 <Link to="/login" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '1rem', color: 'var(--color-text)', fontWeight: 600 }}>
                   <LogIn size={18} style={{ color: 'var(--color-primary)' }} /> Sign In
                 </Link>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
+import ExploreEvents from './pages/ExploreEvents'
 import HostDashboard from './pages/HostDashboard'
 import GuestDashboard from './pages/GuestDashboard'
 import CreateEvent from './pages/CreateEvent'
@@ -96,6 +97,7 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/explore" element={<ExploreEvents />} />
       <Route path="/dashboard" element={<DashboardWrapper />} />
       <Route path="/create" element={<CreateEvent />} />
       <Route path="/e/:eventId" element={<EventPage />} />
