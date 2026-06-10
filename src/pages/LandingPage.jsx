@@ -616,7 +616,7 @@ Designed with intention
             <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', margin: 0, maxWidth: '560px' }}>
               Browse upcoming events in your area. See who's going. Get your spot before it fills up.
             </p>
-            <Link to="/?tab=explore">
+            <Link to="/explore">
               <Button
                 variant="primary"
                 style={{
