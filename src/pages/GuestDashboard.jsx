@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-  Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle,
-  Clock, Mail, Download, Trash2, CreditCard, MessageSquare, Star, Share2, HelpCircle, Sparkles, ArrowRight
-} from 'lucide-react';
+import { Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { HERO_IMAGES, AVATARS, getEventCover, getAvatar } from '../utils/images';
 import Button from '../components/Button';
