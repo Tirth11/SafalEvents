@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle, Clock, ArrowRight, Download, HelpCircle, Mail, Sparkles, Star, Trash2, CreditCard, MessageSquare } from 'lucide-react';
+import { Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle, Clock, ArrowRight, Download, HelpCircle, Mail, Sparkles, Star, Trash2, CreditCard, MessageSquare, Send } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { HERO_IMAGES, AVATARS, getEventCover, getAvatar } from '../utils/images';
 import Button from '../components/Button';
@@ -34,6 +34,15 @@ export default function GuestDashboard({ onLogout }) {
   const [messageLogs, setMessageLogs] = useState([]);
   const [viewLogDetail, setViewLogDetail] = useState(null);
 
+  // Host messaging
+  const [conversations, setConversations] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
+  const [composeText, setComposeText] = useState('');
+  const [messagesView, setMessagesView] = useState('chats'); // chats | logs
+  // Compose-to-host modal (launched from an RSVP ticket)
+  const [messageHostFor, setMessageHostFor] = useState(null); // rsvp object
+  const [hostMessageText, setHostMessageText] = useState('');
+
   // Search & Filter state for History
   const [historySearch, setHistorySearch] = useState('');
   const [historyYear, setHistoryYear] = useState('All');
@@ -46,14 +55,14 @@ export default function GuestDashboard({ onLogout }) {
     myUserRsvps.forEach(rsvp => {
       const event = db.events?.find(e => e.id === rsvp.eventId);
       if (!event) return;
+      const ctx = { eventId: event.id, eventTitle: event.title };
 
       // 1. RSVP Creation
       items.push({
+        ...ctx,
         id: `rsvp_${rsvp.id}`,
-        title: rsvp.status === 'waitlist' 
-          ? `Waitlist entry registered for "${event.title}"` 
-          : `RSVP registered for "${event.title}"`,
-        description: `Status set to: ${rsvp.status.toUpperCase()}. Guest Count: ${rsvp.guestCount || 1}.`,
+        title: rsvp.status === 'waitlist' ? 'Joined the waitlist' : 'RSVP registered',
+        description: `Status set to ${rsvp.status.toUpperCase()} · Guest count: ${rsvp.guestCount || 1}.`,
         timestamp: rsvp.timestamp,
         type: 'booking'
       });
@@ -61,9 +70,10 @@ export default function GuestDashboard({ onLogout }) {
       // 2. Check-in
       if (rsvp.checkedIn) {
         items.push({
+          ...ctx,
           id: `checkin_${rsvp.id}`,
-          title: `Checked-in to "${event.title}"`,
-          description: `QR pass scanned and entry approved at the venue.`,
+          title: 'Checked in at the venue',
+          description: 'QR pass scanned and entry approved.',
           timestamp: rsvp.timestamp,
           type: 'checkin'
         });
@@ -73,9 +83,10 @@ export default function GuestDashboard({ onLogout }) {
       if (event.enablePayments && rsvp.status !== 'declined' && rsvp.status !== 'waitlist') {
         const totalPaid = (event.ticketPrice || 0) * (rsvp.guestCount || 1);
         items.push({
+          ...ctx,
           id: `payment_${rsvp.id}`,
-          title: `Payment Received for "${event.title}"`,
-          description: `Paid $${totalPaid.toFixed(2)} via Credit Card (Booking ID: ${rsvp.id.toUpperCase()}). Receipt email sent.`,
+          title: `Payment received · $${totalPaid.toFixed(2)}`,
+          description: `Paid via Credit Card · Booking ID ${rsvp.id.toUpperCase()}. Receipt emailed.`,
           timestamp: rsvp.timestamp,
           type: 'payment'
         });
@@ -85,36 +96,54 @@ export default function GuestDashboard({ onLogout }) {
       const myComments = db.comments?.filter(c => c.eventId === event.id && (c.name === user.name || c.email === user.email)) || [];
       myComments.forEach(comment => {
         items.push({
+          ...ctx,
           id: `comment_${comment.id}`,
-          title: `Posted Comment on "${event.title}"`,
-          description: `Text: "${comment.text}"`,
+          title: 'Posted a comment',
+          description: `“${comment.text}”`,
           timestamp: comment.timestamp,
           type: 'comment'
         });
       });
 
+      // 4b. Messages exchanged with the host for this event
+      const eventConvo = db.conversations?.find(c => c.eventId === event.id && c.guestEmail === user.email);
+      if (eventConvo) {
+        eventConvo.messages.forEach(msg => {
+          items.push({
+            ...ctx,
+            id: `msg_${eventConvo.id}_${msg.id}`,
+            title: msg.sender === 'guest' ? 'You messaged the host' : `${eventConvo.hostName} replied`,
+            description: `“${msg.text}”`,
+            timestamp: msg.timestamp,
+            type: 'message'
+          });
+        });
+      }
+
       // 5. Feedback
       const myFeedback = db.feedbackResponses?.filter(f => f.eventId === event.id && (f.name === user.name || f.email === user.email)) || [];
       myFeedback.forEach(fb => {
         items.push({
+          ...ctx,
           id: `feedback_${fb.id}`,
-          title: `Submitted Feedback Survey for "${event.title}"`,
-          description: `Rating: ${fb.rating}/5 stars. Review: "${fb.comments || 'No comment text'}"`,
+          title: `Submitted feedback · ${fb.rating}/5 ★`,
+          description: `“${fb.comments || 'No written review'}”`,
           timestamp: fb.submittedAt,
           type: 'feedback'
         });
       });
-    });
 
-    // 6. Notification Logs
-    const myNotifs = db.notificationLogs?.filter(log => log.guestEmail === user.email) || [];
-    myNotifs.forEach(log => {
-      items.push({
-        id: `notif_${log.id}`,
-        title: `${log.channel} Notification Dispatch`,
-        description: `Subject: "${log.subject}". Status: ${log.status || 'Sent'}`,
-        timestamp: log.sentAt,
-        type: 'notification'
+      // 6. Notification Logs for this event
+      const eventNotifs = db.notificationLogs?.filter(log => log.guestEmail === user.email && log.eventId === event.id) || [];
+      eventNotifs.forEach(log => {
+        items.push({
+          ...ctx,
+          id: `notif_${log.id}`,
+          title: `${log.channel} alert sent`,
+          description: `“${log.subject}” · ${log.status || 'Sent'}`,
+          timestamp: log.sentAt,
+          type: 'notification'
+        });
       });
     });
 
@@ -164,6 +193,9 @@ export default function GuestDashboard({ onLogout }) {
       return !userHasRsvp;
     });
     setExploreEvents(exploreList);
+
+    // Host conversations for this guest
+    setConversations(mockStore.getGuestConversations(user.email));
 
     // Timeline & Message logs
     setTimelineItems(getTimelineData(user, db));
@@ -222,6 +254,45 @@ export default function GuestDashboard({ onLogout }) {
     setShowEditModal(false);
     setSelectedTicket(null);
     loadData();
+  };
+
+  // Open the "Message Host" composer for a given RSVP'd event
+  const handleOpenMessageHost = (rsvp) => {
+    setMessageHostFor(rsvp);
+    setHostMessageText('');
+    setSelectedTicket(null);
+  };
+
+  // Send the first message to a host from the composer modal
+  const handleSendHostMessage = () => {
+    if (!messageHostFor || !hostMessageText.trim()) return;
+    const convo = mockStore.sendGuestMessage(messageHostFor.eventId, currentUser, hostMessageText.trim());
+    setMessageHostFor(null);
+    setHostMessageText('');
+    loadData();
+    // Jump to the conversation in the Messages tab
+    setActiveTab('messages');
+    setMessagesView('chats');
+    if (convo) setActiveConversationId(convo.id);
+  };
+
+  // Reply within an open conversation thread
+  const handleSendReply = () => {
+    if (!activeConversationId || !composeText.trim()) return;
+    mockStore.sendGuestMessage(
+      conversations.find(c => c.id === activeConversationId)?.eventId,
+      currentUser,
+      composeText.trim()
+    );
+    setComposeText('');
+    const refreshed = mockStore.getGuestConversations(currentUser.email);
+    setConversations(refreshed);
+  };
+
+  const handleOpenConversation = (convoId) => {
+    setActiveConversationId(convoId);
+    mockStore.markConversationRead(convoId, 'guest');
+    setConversations(mockStore.getGuestConversations(currentUser.email));
   };
 
   const checkCancellationAllowed = (rsvp) => {
@@ -580,15 +651,15 @@ export default function GuestDashboard({ onLogout }) {
                                 <span className="flex items-center gap-xs"><MapPin size={12} /> {rsvp.event.location.split(',')[0]}</span>
                               </div>
                               <div className="flex items-center gap-xs" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                <img className="avatar-img avatar-sm" src={getAvatar(`host-${rsvp.event.id}`)} alt="Event host" />
-                                Hosted with <span style={{ color: 'var(--color-primary)' }}>♥</span> on SafalEvents
+                                <img className="avatar-img avatar-sm" src={getAvatar(rsvp.event.hostEmail || rsvp.event.hostName || `host-${rsvp.event.id}`)} alt="Event host" />
+                                Hosted by <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{rsvp.event.hostName || 'Organizer'}</span>
                               </div>
                             </div>
 
                             {/* Ticket stub: actions */}
                             <div style={{
                               borderLeft: '2px dashed var(--color-border)', padding: '16px 18px', display: 'flex',
-                              flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '130px'
+                              flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '140px'
                             }}>
                               <QrCode size={26} style={{ color: 'var(--color-text-muted)', opacity: 0.6 }} />
                               {rsvp.status === 'going' ? (
@@ -600,6 +671,14 @@ export default function GuestDashboard({ onLogout }) {
                                   Reply Now
                                 </Button>
                               )}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenMessageHost(rsvp)}
+                                className="flex items-center justify-center gap-xs"
+                                style={{ padding: '7px 12px', fontSize: '0.78rem', width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', fontWeight: 600 }}
+                              >
+                                <MessageSquare size={14} /> Message Host
+                              </button>
                             </div>
                           </div>
                         ))
@@ -918,72 +997,102 @@ export default function GuestDashboard({ onLogout }) {
           {/* ========================================================================= */}
           {/* TAB: TIMELINE                                                             */}
           {/* ========================================================================= */}
-          {activeTab === 'timeline' && (
-            <div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-sm)', textAlign: 'left' }}>Guest Activity Timeline</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', paddingLeft: '20px', borderLeft: '2px solid var(--color-border)', textAlign: 'left' }}>
-                {timelineItems.length > 0 ? (
-                  timelineItems.map((item, idx) => {
-                    let IconComponent = Clock;
-                    let iconBg = 'rgba(100,116,139,0.1)';
-                    let iconColor = 'var(--color-text-muted)';
-                    
-                    if (item.type === 'booking') {
-                      IconComponent = Ticket;
-                      iconBg = 'rgba(255,107,53,0.1)';
-                      iconColor = 'var(--color-primary)';
-                    } else if (item.type === 'checkin') {
-                      IconComponent = QrCode;
-                      iconBg = 'rgba(34,197,94,0.1)';
-                      iconColor = '#16a34a';
-                    } else if (item.type === 'payment') {
-                      IconComponent = CreditCard;
-                      iconBg = 'rgba(234,179,8,0.1)';
-                      iconColor = '#ca8a04';
-                    } else if (item.type === 'comment') {
-                      IconComponent = MessageSquare;
-                      iconBg = 'rgba(147,51,234,0.1)';
-                      iconColor = '#9333ea';
-                    } else if (item.type === 'feedback') {
-                      IconComponent = Star;
-                      iconBg = 'rgba(249,115,22,0.1)';
-                      iconColor = 'var(--color-accent)';
-                    } else if (item.type === 'notification') {
-                      IconComponent = Mail;
-                      iconBg = 'rgba(100,116,139,0.1)';
-                      iconColor = 'var(--color-text-muted)';
-                    }
+          {activeTab === 'timeline' && (() => {
+            // Visual meta per activity type
+            const metaFor = (type) => {
+              switch (type) {
+                case 'booking': return { Icon: Ticket, bg: 'rgba(255,107,53,0.12)', color: 'var(--color-primary)' };
+                case 'checkin': return { Icon: QrCode, bg: 'rgba(34,197,94,0.12)', color: '#16a34a' };
+                case 'payment': return { Icon: CreditCard, bg: 'rgba(234,179,8,0.12)', color: '#ca8a04' };
+                case 'comment': return { Icon: MessageSquare, bg: 'rgba(147,51,234,0.12)', color: '#9333ea' };
+                case 'feedback': return { Icon: Star, bg: 'rgba(249,115,22,0.12)', color: 'var(--color-accent)' };
+                case 'message': return { Icon: Send, bg: 'rgba(14,165,233,0.12)', color: '#0ea5e9' };
+                case 'notification': return { Icon: Mail, bg: 'rgba(100,116,139,0.12)', color: 'var(--color-text-muted)' };
+                default: return { Icon: Clock, bg: 'rgba(100,116,139,0.12)', color: 'var(--color-text-muted)' };
+              }
+            };
 
-                    return (
-                      <div key={item.id} style={{ position: 'relative', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                        <div style={{
-                          position: 'absolute', left: '-31px', top: '4px',
-                          width: '20px', height: '20px', borderRadius: '50%',
-                          background: 'var(--color-surface)', border: '2px solid var(--color-border)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: iconColor }}></div>
-                        </div>
-                        
-                        <Card style={{ flex: 1, padding: '16px' }} className="glass-surface">
-                          <div className="flex justify-between items-center" style={{ marginBottom: '6px' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ display: 'inline-flex', padding: '4px', borderRadius: '4px', background: iconBg, color: iconColor }}>
-                                <IconComponent size={14} />
-                              </span>
-                              {item.title}
-                            </span>
-                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>
-                              {new Date(item.timestamp).toLocaleString()}
+            // Event lookup (cover, date, location) from the guest's RSVPs
+            const eventsById = {};
+            myRsvps.forEach(r => { eventsById[r.event.id] = r.event; });
+
+            // Group chronological items by event (group order follows most-recent activity)
+            const groups = [];
+            const groupMap = {};
+            timelineItems.forEach(item => {
+              const key = item.eventId || 'general';
+              if (!groupMap[key]) {
+                groupMap[key] = { eventId: item.eventId, eventTitle: item.eventTitle || 'General activity', items: [] };
+                groups.push(groupMap[key]);
+              }
+              groupMap[key].items.push(item);
+            });
+
+            return (
+              <div className="animate-fade-in" style={{ textAlign: 'left' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Activity Timeline</h3>
+                  <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>
+                    Everything that's happened across the events you've RSVP'd to — grouped by event, newest first.
+                  </p>
+                </div>
+
+                {groups.length > 0 ? (
+                  <div className="flex flex-col gap-lg">
+                    {groups.map(group => {
+                      const evt = eventsById[group.eventId];
+                      return (
+                        <Card key={group.eventId || 'general'} style={{ padding: 0, overflow: 'hidden' }} className="glass-surface">
+                          {/* Event header */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-hover)' }}>
+                            {evt && (
+                              <div style={{ width: '52px', height: '52px', borderRadius: '12px', flexShrink: 0, background: `url(${getEventCover(evt)}) center/cover no-repeat`, boxShadow: 'var(--shadow-sm)' }} />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h4 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 800 }}>{group.eventTitle}</h4>
+                              {evt && (
+                                <p className="text-muted" style={{ margin: '3px 0 0 0', fontSize: '0.78rem', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                  <span className="flex items-center gap-xs"><Calendar size={12} /> {evt.date}</span>
+                                  <span className="flex items-center gap-xs"><MapPin size={12} /> {evt.location.split(',')[0]}</span>
+                                </p>
+                              )}
+                            </div>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', flexShrink: 0 }}>
+                              {group.items.length} {group.items.length === 1 ? 'update' : 'updates'}
                             </span>
                           </div>
-                          <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>{item.description}</p>
+
+                          {/* Sub-timeline of activities */}
+                          <div style={{ padding: '18px 18px 18px 34px', position: 'relative' }}>
+                            <div style={{ position: 'absolute', left: '24px', top: '24px', bottom: '24px', width: '2px', background: 'var(--color-border)' }} />
+                            <div className="flex flex-col gap-md">
+                              {group.items.map(item => {
+                                const { Icon, bg, color } = metaFor(item.type);
+                                return (
+                                  <div key={item.id} style={{ position: 'relative', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                    <div style={{ position: 'absolute', left: '-19px', top: '2px', width: '28px', height: '28px', borderRadius: '50%', background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--color-surface)' }}>
+                                      <Icon size={14} />
+                                    </div>
+                                    <div style={{ flex: 1, marginLeft: '20px' }}>
+                                      <div className="flex justify-between items-baseline" style={{ gap: '12px', flexWrap: 'wrap' }}>
+                                        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{item.title}</span>
+                                        <span className="text-muted" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
+                                          {new Date(item.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                      </div>
+                                      <p className="text-muted" style={{ fontSize: '0.83rem', margin: '3px 0 0 0', lineHeight: 1.45 }}>{item.description}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </Card>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <Card style={{ padding: 0, borderLeft: 'none' }}>
+                  <Card style={{ padding: 0 }} className="glass-surface">
                     <div className="empty-state">
                       <img className="empty-state-img" src={HERO_IMAGES.crowd} alt="Dinner party" />
                       <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Nothing here yet</h4>
@@ -993,61 +1102,212 @@ export default function GuestDashboard({ onLogout }) {
                   </Card>
                 )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ========================================================================= */}
           {/* TAB: MESSAGES                                                             */}
           {/* ========================================================================= */}
-          {activeTab === 'messages' && (
-            <div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-sm)', textAlign: 'left' }}>Message Delivery Logs</h3>
-              <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
-                {messageLogs.length > 0 ? (
-                  <table className="premium-table">
-                    <thead>
-                      <tr>
-                        <th>Date Sent</th>
-                        <th>Channel</th>
-                        <th>Alert Type</th>
-                        <th>Subject Line</th>
-                        <th>Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {messageLogs.map(log => (
-                        <tr key={log.id}>
-                          <td style={{ fontSize: '0.85rem' }}>{new Date(log.sentAt).toLocaleString()}</td>
-                          <td>
-                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(255,107,53,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
-                              {log.channel}
-                            </span>
-                          </td>
-                          <td style={{ textTransform: 'capitalize', fontSize: '0.85rem' }}>{log.type}</td>
-                          <td style={{ fontWeight: 500, fontSize: '0.85rem' }}>{log.subject}</td>
-                          <td>
-                            <Button 
-                              variant="ghost" 
-                              onClick={() => setViewLogDetail(log)}
-                              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+          {activeTab === 'messages' && (() => {
+            const activeConvo = conversations.find(c => c.id === activeConversationId) || null;
+            return (
+            <div className="animate-fade-in" style={{ textAlign: 'left' }}>
+              <div className="flex justify-between items-center" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Messages</h3>
+                  <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>
+                    Chat directly with hosts of events you've RSVP'd to, and review every alert sent to you.
+                  </p>
+                </div>
+              </div>
+
+              {/* Sub-tab selector */}
+              <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '20px' }}>
+                {[
+                  { key: 'chats', label: 'Host Conversations', count: conversations.length },
+                  { key: 'logs', label: 'Delivery Logs', count: messageLogs.length }
+                ].map(t => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setMessagesView(t.key)}
+                    style={{
+                      background: 'none', border: 'none', padding: '0 0 12px 0', cursor: 'pointer',
+                      fontWeight: 600, fontSize: '0.95rem',
+                      color: messagesView === t.key ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      borderBottom: messagesView === t.key ? '2.5px solid var(--color-primary)' : '2.5px solid transparent',
+                      display: 'flex', alignItems: 'center', gap: '6px'
+                    }}
+                  >
+                    {t.label}
+                    {t.count > 0 && (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '1px 7px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '10px' }}>
+                        {t.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* ───── HOST CONVERSATIONS ───── */}
+              {messagesView === 'chats' && (
+                conversations.length > 0 ? (
+                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'stretch' }}>
+                    {/* Thread list */}
+                    <Card style={{ padding: 0, flex: '1', minWidth: '260px', maxWidth: '340px', overflow: 'hidden' }} className="glass-surface">
+                      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-hover)', fontWeight: 700, fontSize: '0.9rem' }}>
+                        Your Hosts
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {conversations.map(convo => {
+                          const last = convo.messages[convo.messages.length - 1];
+                          const isActive = convo.id === activeConversationId;
+                          return (
+                            <button
+                              key={convo.id}
+                              type="button"
+                              onClick={() => handleOpenConversation(convo.id)}
+                              style={{
+                                display: 'flex', gap: '12px', alignItems: 'center', textAlign: 'left',
+                                padding: '14px 16px', border: 'none', cursor: 'pointer',
+                                borderBottom: '1px solid var(--color-border)',
+                                background: isActive ? 'rgba(255,107,53,0.06)' : 'transparent',
+                                borderLeft: isActive ? '3px solid var(--color-primary)' : '3px solid transparent'
+                              }}
                             >
-                              Read Message
+                              <img className="avatar-img" src={getAvatar(convo.hostEmail || convo.hostName)} alt={convo.hostName} style={{ width: '40px', height: '40px' }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className="flex justify-between items-center">
+                                  <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-text)' }}>{convo.hostName}</span>
+                                  {convo.unreadByGuest && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)' }} />}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{convo.eventTitle}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {last?.sender === 'guest' ? 'You: ' : ''}{last?.text}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Card>
+
+                    {/* Active thread */}
+                    <Card style={{ padding: 0, flex: '2', minWidth: '300px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} className="glass-surface">
+                      {activeConvo ? (
+                        <>
+                          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-surface-hover)' }}>
+                            <img className="avatar-img" src={getAvatar(activeConvo.hostEmail || activeConvo.hostName)} alt={activeConvo.hostName} style={{ width: '38px', height: '38px' }} />
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{activeConvo.hostName}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Host of {activeConvo.eventTitle}</div>
+                            </div>
+                          </div>
+
+                          <div style={{ flex: 1, padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '280px', maxHeight: '420px', overflowY: 'auto' }}>
+                            {activeConvo.messages.map(msg => (
+                              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'guest' ? 'flex-end' : 'flex-start' }}>
+                                <div style={{
+                                  maxWidth: '78%', padding: '10px 14px', borderRadius: '14px', fontSize: '0.88rem', lineHeight: 1.45,
+                                  background: msg.sender === 'guest' ? 'var(--color-primary)' : 'var(--color-surface-hover)',
+                                  color: msg.sender === 'guest' ? 'white' : 'var(--color-text)',
+                                  borderBottomRightRadius: msg.sender === 'guest' ? '4px' : '14px',
+                                  borderBottomLeftRadius: msg.sender === 'guest' ? '14px' : '4px'
+                                }}>
+                                  <div>{msg.text}</div>
+                                  <div style={{ fontSize: '0.65rem', opacity: 0.75, marginTop: '4px', textAlign: 'right' }}>
+                                    {new Date(msg.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div style={{ padding: '14px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                            <textarea
+                              value={composeText}
+                              onChange={(e) => setComposeText(e.target.value)}
+                              placeholder={`Message ${activeConvo.hostName}...`}
+                              rows={1}
+                              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(); } }}
+                              style={{ flex: 1, resize: 'none', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '0.88rem', outline: 'none', background: 'var(--color-bg)' }}
+                            />
+                            <Button variant="primary" onClick={handleSendReply} disabled={!composeText.trim()} className="flex items-center gap-xs" style={{ padding: '10px 16px' }}>
+                              <Send size={15} /> Send
                             </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="empty-state">
-                    <Mail size={44} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
-                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Inbox is quiet</h4>
-                    <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No messages have been dispatched to you yet — confirmations and reminders will land here.</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="empty-state" style={{ margin: 'auto' }}>
+                          <MessageSquare size={40} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
+                          <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Pick a conversation</h4>
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>Select a host on the left to read and reply.</p>
+                        </div>
+                      )}
+                    </Card>
                   </div>
-                )}
-              </Card>
+                ) : (
+                  <Card style={{ padding: 0 }} className="glass-surface">
+                    <div className="empty-state">
+                      <MessageSquare size={44} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
+                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>No conversations yet</h4>
+                      <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>RSVP to an event, then tap “Message Host” on your ticket to start a chat.</p>
+                      <Button variant="primary" onClick={() => setActiveTab('tickets')} style={{ padding: '9px 18px', fontSize: '0.85rem' }}>View my RSVPs</Button>
+                    </div>
+                  </Card>
+                )
+              )}
+
+              {/* ───── DELIVERY LOGS ───── */}
+              {messagesView === 'logs' && (
+                <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                  {messageLogs.length > 0 ? (
+                    <table className="premium-table">
+                      <thead>
+                        <tr>
+                          <th>Date Sent</th>
+                          <th>Channel</th>
+                          <th>Alert Type</th>
+                          <th>Subject Line</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {messageLogs.map(log => (
+                          <tr key={log.id}>
+                            <td style={{ fontSize: '0.85rem' }}>{new Date(log.sentAt).toLocaleString()}</td>
+                            <td>
+                              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(255,107,53,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
+                                {log.channel}
+                              </span>
+                            </td>
+                            <td style={{ textTransform: 'capitalize', fontSize: '0.85rem' }}>{log.type}</td>
+                            <td style={{ fontWeight: 500, fontSize: '0.85rem' }}>{log.subject}</td>
+                            <td>
+                              <Button
+                                variant="ghost"
+                                onClick={() => setViewLogDetail(log)}
+                                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                              >
+                                Read Message
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="empty-state">
+                      <Mail size={44} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
+                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Inbox is quiet</h4>
+                      <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No messages have been dispatched to you yet — confirmations and reminders will land here.</p>
+                    </div>
+                  )}
+                </Card>
+              )}
             </div>
-          )}
+            );
+          })()}
 
           {/* ========================================================================= */}
           {/* TAB: PROFILE                                                              */}
@@ -1232,6 +1492,15 @@ export default function GuestDashboard({ onLogout }) {
                   )}
                 </div>
 
+                <Button
+                  variant="outline"
+                  onClick={() => handleOpenMessageHost(selectedTicket)}
+                  className="flex items-center justify-center gap-xs"
+                  style={{ width: '100%', marginTop: '10px' }}
+                >
+                  <MessageSquare size={15} /> Message the Host
+                </Button>
+
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                   <a
                     href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selectedTicket.event.title)}&dates=${selectedTicket.event.date.replace(/-/g,'')}T${(selectedTicket.event.time||'180000').replace(':','')}00/${selectedTicket.event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(selectedTicket.event.location)}`}
@@ -1388,6 +1657,54 @@ export default function GuestDashboard({ onLogout }) {
 
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px', display: 'flex', justifyContent: 'end' }}>
                 <Button variant="ghost" onClick={() => setViewLogDetail(null)}>Close</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Host Composer Modal */}
+        {messageHostFor && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1002
+          }}>
+            <div style={{
+              background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '460px',
+              boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)',
+              overflow: 'hidden', textAlign: 'left'
+            }}>
+              {/* Header */}
+              <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-surface-hover)' }}>
+                <img className="avatar-img" src={getAvatar(messageHostFor.event.hostEmail || messageHostFor.event.hostName)} alt="Host" style={{ width: '42px', height: '42px' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: '1rem' }}>Message {messageHostFor.event.hostName || 'the Host'}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>About “{messageHostFor.event.title}”</div>
+                </div>
+                <button onClick={() => setMessageHostFor(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={20} /></button>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: '20px' }}>
+                <p className="text-muted" style={{ fontSize: '0.82rem', margin: '0 0 12px 0' }}>
+                  Ask about parking, accessibility, dress code, or anything else. Your message goes straight to the host and is saved in your conversation log.
+                </p>
+                <textarea
+                  value={hostMessageText}
+                  onChange={(e) => setHostMessageText(e.target.value)}
+                  placeholder="Type your message..."
+                  rows={5}
+                  autoFocus
+                  style={{ width: '100%', resize: 'vertical', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--color-border)', fontFamily: 'inherit', fontSize: '0.9rem', outline: 'none', background: 'var(--color-bg)' }}
+                />
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding: '0 20px 20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <Button variant="ghost" onClick={() => setMessageHostFor(null)}>Cancel</Button>
+                <Button variant="primary" onClick={handleSendHostMessage} disabled={!hostMessageText.trim()} className="flex items-center gap-xs">
+                  <Send size={15} /> Send Message
+                </Button>
               </div>
             </div>
           </div>

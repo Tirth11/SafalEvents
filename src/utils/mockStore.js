@@ -204,6 +204,25 @@ const defaultRSVPs = [
   { id: 'r8', eventId: '2', name: 'Harvey Specter', email: 'harvey@example.com', phone: '+1 (555) 890-1234', status: 'going', checkedIn: false, timestamp: '2026-06-07T08:45:00.000Z', answers: { 'What startup are you building or working at?': 'Pearson Specter LegalTech', 'Are you looking for funding?': 'No, investing' } }
 ];
 
+// Two-way guest <-> host conversations (persisted). One thread per (event, guest).
+const defaultConversations = [
+  {
+    id: 'conv_1_alice',
+    eventId: '1',
+    eventTitle: 'Summer Rooftop Mixer',
+    guestName: 'Alice Vance',
+    guestEmail: 'alice@example.com',
+    hostName: 'Alex Rivera',
+    hostEmail: 'alex@safalevent.com',
+    messages: [
+      { id: 'm1', sender: 'guest', text: 'Hi! Is there a dress code for the rooftop mixer?', timestamp: '2026-06-02T16:12:00.000Z' },
+      { id: 'm2', sender: 'host', text: 'Hi Alice! Smart-casual is perfect. Looking forward to seeing you there!', timestamp: '2026-06-02T16:20:00.000Z' }
+    ],
+    unreadByHost: false,
+    unreadByGuest: false
+  }
+];
+
 const defaultPolls = [
   {
     id: 'p1',
@@ -360,7 +379,8 @@ const getDB = () => {
       users: defaultUsers,
       signupSessions: [],
       rsvpSessions: [],
-      verificationLogs: []
+      verificationLogs: [],
+      conversations: defaultConversations
     };
   } else {
     try {
@@ -401,6 +421,9 @@ const getDB = () => {
   }
   if (!db.verificationLogs) {
     db.verificationLogs = [];
+  }
+  if (!db.conversations) {
+    db.conversations = defaultConversations;
   }
   if (!db.hostNotifications) {
     db.hostNotifications = [
@@ -650,6 +673,107 @@ export const mockStore = {
   getRSVPs: (eventId) => {
     const db = getDB();
     return db.rsvps.filter(r => r.eventId === eventId);
+  },
+
+  // --- Conversations (two-way guest <-> host messaging) ---
+  getConversations: () => {
+    const db = getDB();
+    return db.conversations || [];
+  },
+
+  // All conversation threads belonging to a guest (by email)
+  getGuestConversations: (email) => {
+    if (!email) return [];
+    const db = getDB();
+    return (db.conversations || [])
+      .filter(c => c.guestEmail === email)
+      .sort((a, b) => {
+        const at = a.messages[a.messages.length - 1]?.timestamp || 0;
+        const bt = b.messages[b.messages.length - 1]?.timestamp || 0;
+        return new Date(bt) - new Date(at);
+      });
+  },
+
+  // Find the thread for a given event + guest, or null
+  getConversation: (eventId, guestEmail) => {
+    const db = getDB();
+    return (db.conversations || []).find(c => c.eventId === eventId && c.guestEmail === guestEmail) || null;
+  },
+
+  // Guest sends a message to the host of an event they've RSVP'd to.
+  // Creates the thread if it does not exist yet. Returns the conversation.
+  sendGuestMessage: (eventId, guest, text) => {
+    const db = getDB();
+    if (!db.conversations) db.conversations = [];
+    const event = db.events.find(e => e.id === eventId);
+    let convo = db.conversations.find(c => c.eventId === eventId && c.guestEmail === guest.email);
+
+    const message = {
+      id: `m_${Math.floor(performance.now() * 1000)}`,
+      sender: 'guest',
+      text,
+      timestamp: new Date().toISOString()
+    };
+
+    if (!convo) {
+      convo = {
+        id: `conv_${eventId}_${(guest.email || 'guest').split('@')[0]}`,
+        eventId,
+        eventTitle: event?.title || 'Event',
+        guestName: guest.name || 'Guest',
+        guestEmail: guest.email || '',
+        hostName: event?.hostName || 'Event Organizer',
+        hostEmail: event?.hostEmail || 'host@safalevents.com',
+        messages: [message],
+        unreadByHost: true,
+        unreadByGuest: false
+      };
+      db.conversations.push(convo);
+    } else {
+      convo.messages.push(message);
+      convo.unreadByHost = true;
+    }
+
+    // Surface a host-side activity notification so the host knows a guest wrote in
+    if (!db.hostNotifications) db.hostNotifications = [];
+    db.hostNotifications.unshift({
+      id: `n_msg_${message.id}`,
+      type: 'message',
+      title: 'New Guest Message',
+      message: `${guest.name || 'A guest'} messaged you about "${event?.title || 'your event'}".`,
+      timestamp: message.timestamp,
+      read: false,
+      eventId
+    });
+
+    saveDB(db);
+    return convo;
+  },
+
+  // Host replies to a guest thread. Returns the conversation.
+  sendHostMessage: (conversationId, text) => {
+    const db = getDB();
+    const convo = (db.conversations || []).find(c => c.id === conversationId);
+    if (!convo) return null;
+    convo.messages.push({
+      id: `m_${Math.floor(performance.now() * 1000)}`,
+      sender: 'host',
+      text,
+      timestamp: new Date().toISOString()
+    });
+    convo.unreadByGuest = true;
+    saveDB(db);
+    return convo;
+  },
+
+  // Clear unread flags for whichever side opened the thread
+  markConversationRead: (conversationId, side = 'guest') => {
+    const db = getDB();
+    const convo = (db.conversations || []).find(c => c.id === conversationId);
+    if (!convo) return;
+    if (side === 'guest') convo.unreadByGuest = false;
+    else convo.unreadByHost = false;
+    saveDB(db);
   },
 
   addRSVP: (eventId, rsvpData) => {

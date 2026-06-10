@@ -229,6 +229,18 @@ export default function HostDashboard({ onLogout }) {
     setConnectedIntegrations(connectedIntegrations.filter(i => i.id !== id));
   };
 
+  // Normalize a persisted store conversation into the host-hub display shape
+  const normalizeConvo = (c) => ({
+    ...c,
+    unread: c.unreadByHost,
+    messages: (c.messages || []).map(m => ({
+      ...m,
+      time: m.timestamp
+        ? new Date(m.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : (m.time || '')
+    }))
+  });
+
   useEffect(() => {
     loadDashboardData();
     const currentUser = mockStore.getCurrentUser();
@@ -238,6 +250,17 @@ export default function HostDashboard({ onLogout }) {
         setBankForm(bank);
         setStripeConnected(true);
       }
+    }
+
+    // Merge real guest->host conversations from the store ahead of demo threads
+    const persisted = mockStore.getConversations().map(normalizeConvo);
+    if (persisted.length > 0) {
+      setConversations(prev => {
+        const persistedIds = new Set(persisted.map(p => p.id));
+        const demoOnly = prev.filter(d => !persistedIds.has(d.id));
+        return [...persisted, ...demoOnly];
+      });
+      setActiveConversationId(persisted[0].id);
     }
   }, []);
 
@@ -751,7 +774,14 @@ export default function HostDashboard({ onLogout }) {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!replyText.trim()) return;
-    
+
+    // Persist replies to real guest conversations so the guest sees them
+    const activeC = conversations.find(c => c.id === activeConversationId);
+    if (activeC && String(activeC.id).startsWith('conv_')) {
+      mockStore.sendHostMessage(activeC.id, replyText.trim());
+      mockStore.markConversationRead(activeC.id, 'host');
+    }
+
     setConversations(conversations.map(c => {
       if (c.id === activeConversationId) {
         return {
@@ -2733,7 +2763,10 @@ export default function HostDashboard({ onLogout }) {
                           key={c.id}
                           onClick={() => {
                             setActiveConversationId(c.id);
-                            // Mark read
+                            // Mark read (persist for real guest threads)
+                            if (String(c.id).startsWith('conv_')) {
+                              mockStore.markConversationRead(c.id, 'host');
+                            }
                             setConversations(conversations.map(conv => conv.id === c.id ? { ...conv, unread: false } : conv));
                           }}
                           style={{
