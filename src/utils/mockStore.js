@@ -359,6 +359,26 @@ const defaultUsers = [
     password: 'password123',
     status: 'ACTIVE',
     createdAt: new Date().toISOString()
+  },
+  {
+    id: 'u3',
+    role: 'host',
+    name: 'Maya Sharma',
+    email: 'org@safalevent.com',
+    phone: '+1 (555) 777-6666',
+    password: 'password123',
+    hostType: 'organization',
+    orgProfile: {
+      orgName: 'Safal Foundation',
+      orgType: 'Non-profit',
+      website: 'https://safalfoundation.org',
+      country: 'USA',
+      city: 'New York',
+      state: 'NY',
+      docs: []
+    },
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString()
   }
 ];
 
@@ -412,6 +432,10 @@ const getDB = () => {
   }
   if (!db.users) {
     db.users = defaultUsers;
+  }
+  // Backfill the demo organization host for databases seeded before it existed
+  if (!db.users.some(u => u.email === 'org@safalevent.com')) {
+    db.users.push(defaultUsers.find(u => u.email === 'org@safalevent.com'));
   }
   if (!db.signupSessions) {
     db.signupSessions = [];
@@ -1300,6 +1324,21 @@ export const mockStore = {
       });
     }
     return db.users.find(u => u.id === userId);
+  },
+
+  // Persist organization verification documents to the host's user record
+  saveOrgDocuments: (email, docNames) => {
+    const db = getDB();
+    db.users = db.users.map(u => {
+      if (u.email !== email) return u;
+      return {
+        ...u,
+        orgDocsUploaded: true,
+        orgProfile: { ...(u.orgProfile || {}), docs: docNames }
+      };
+    });
+    saveDB(db);
+    return db.users.find(u => u.email === email) || null;
   },
 
   createSignupSession: (hostType, formData) => {

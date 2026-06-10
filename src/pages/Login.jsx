@@ -200,7 +200,10 @@ export default function Login() {
           role: user.role,
           name: user.name,
           email: user.email,
-          phone: user.phone
+          phone: user.phone,
+          hostType: user.hostType,
+          orgProfile: user.orgProfile,
+          status: user.status
         });
         navigate('/dashboard');
       } else {

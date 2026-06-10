@@ -16,17 +16,20 @@ import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/imag
 export default function HostDashboard({ onLogout }) {
   const navigate = useNavigate();
 
-  // Get current user from mockStore to check if org host
+  // Get current user from mockStore to check if org host.
+  // Fall back to the registered user record — older sessions may lack hostType.
   const currentUser = mockStore.getCurrentUser();
-  const isOrgHost = currentUser?.hostType === 'organization';
+  const userRecord = mockStore.getUsers().find(u => u.email === currentUser?.email) || null;
+  const isOrgHost = (currentUser?.hostType || userRecord?.hostType) === 'organization';
+  const docsAlreadyVerified = !!userRecord?.orgDocsUploaded;
 
   // Navigation: dashboard, events, earnings, messages, audience, settings
   const [activeSidebar, setActiveSidebar] = useState('dashboard');
 
-  // Org document upload state
-  const [orgDocsUploaded, setOrgDocsUploaded] = useState(false);
-  const [uploadedDocuments, setUploadedDocuments] = useState([]);
-  const [showOrgDocModal, setShowOrgDocModal] = useState(isOrgHost && !orgDocsUploaded);
+  // Org document upload state (seeded from the persisted user record)
+  const [orgDocsUploaded, setOrgDocsUploaded] = useState(docsAlreadyVerified);
+  const [uploadedDocuments, setUploadedDocuments] = useState(userRecord?.orgProfile?.docs || []);
+  const [showOrgDocModal, setShowOrgDocModal] = useState(isOrgHost && !docsAlreadyVerified);
 
   // Integrations state
   const [connectedIntegrations, setConnectedIntegrations] = useState([]);
@@ -205,6 +208,7 @@ export default function HostDashboard({ onLogout }) {
 
   const handleOrgDocSubmit = () => {
     if (uploadedDocuments.length > 0) {
+      mockStore.saveOrgDocuments(currentUser?.email, uploadedDocuments);
       setOrgDocsUploaded(true);
       setShowOrgDocModal(false);
       alert('Organization documents uploaded successfully! Your account is now fully activated.');

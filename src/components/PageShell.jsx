@@ -202,7 +202,7 @@ export default function PageShell({ children }) {
                   <LogIn size={15} /> Sign In
                 </Link>
                 <Link to="/login?signup=true" className="site-nav-cta">
-                  <Sparkles size={14} /> Create Invite <ArrowRight size={14} />
+                  <Sparkles size={14} /> Create an invite <ArrowRight size={14} />
                 </Link>
               </>
             )}
@@ -279,7 +279,7 @@ export default function PageShell({ children }) {
                   <LogIn size={18} style={{ color: 'var(--color-primary)' }} /> Sign In
                 </Link>
                 <Link to="/login?signup=true" className="site-nav-cta" onClick={() => setMobileMenuOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: '100%', justifyContent: 'center' }}>
-                  <Sparkles size={16} /> Become a Host <ArrowRight size={16} />
+                  <Sparkles size={16} /> Create an invite <ArrowRight size={16} />
                 </Link>
               </>
             )}

@@ -56,12 +56,6 @@ export default function LandingPage() {
     { icon: <Repeat size={20} />, title: 'Recurring events', desc: 'Save templates and reuse them every time.' },
   ];
 
-  // Occasions strip — name the moments people actually host (Partiful-style warmth)
-  const occasions = [
-    '🎂 Birthdays', '🍝 Dinner parties', '💍 Weddings', '🚀 Launch parties',
-    '🤝 Meetups', '🎮 Game nights', '🧘 Wellness', '🎓 Reunions', '🎤 Concerts',
-  ];
-
   // Live preview: the next few real public events on the platform
   const upcomingEvents = mockStore.getEvents()
     .filter(e => e.status === 'Published' && e.privacy === 'Public' && new Date(e.date) >= new Date())
@@ -130,7 +124,7 @@ export default function LandingPage() {
                       gap: '8px',
                     }}
                   >
-                    Make an invite <ArrowRight size={18} />
+                    Create an invite <ArrowRight size={18} />
                   </Button>
                 </Link>
                 <Link to="/e/1">
@@ -382,36 +376,6 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ───────── OCCASIONS STRIP ───────── */}
-        <section style={{ background: 'var(--color-bg)', padding: '0 0 clamp(32px, 4vw, 48px)' }}>
-          <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--color-text-muted)' }}>
-              Perfect for every occasion
-            </span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', maxWidth: '720px' }}>
-              {occasions.map((o, i) => (
-                <span
-                  key={i}
-                  className={`animate-fade-in animate-delay-${(i % 3) + 1}`}
-                  style={{
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text)',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '8px 16px',
-                    boxShadow: 'var(--shadow-sm)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {o}
-                </span>
-              ))}
             </div>
           </div>
         </section>
@@ -805,7 +769,7 @@ Designed with intention
                         gap: '8px',
                       }}
                     >
-                      Make an invite <ArrowRight size={16} />
+                      Create an invite <ArrowRight size={16} />
                     </Button>
                   </Link>
                   <Link to="/e/1">
@@ -849,7 +813,7 @@ Designed with intention
                     Explore events
                   </Link>
                   <Link to="/login?signup=true" className="footer-link">
-                    Create invite
+                    Create an invite
                   </Link>
                 </div>
               </div>
