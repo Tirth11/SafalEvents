@@ -5,7 +5,7 @@ import {
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
   UserCheck, AlertCircle, Copy, Share2, ArrowRight, DollarSign, Ticket, TrendingUp,
-  MapPin, Eye, Webhook, Compass
+  MapPin, Eye, Webhook, Compass, Search
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -35,7 +35,10 @@ export default function HostDashboard({ onLogout }) {
 
   // My Events sub-tab: live, today, thisWeek, upcoming, past, drafts
   const [activeEventTab, setActiveEventTab] = useState('thisWeek');
-  
+  // My Events search & filter
+  const [eventSearch, setEventSearch] = useState('');
+  const [eventTypeFilter, setEventTypeFilter] = useState('');
+
   // State for events, RSVPs, global stats
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(null); // Managed event ID
@@ -93,6 +96,8 @@ export default function HostDashboard({ onLogout }) {
 
   // Guest List checkboxes
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
+  // Guest List search (within event management)
+  const [guestSearch, setGuestSearch] = useState('');
   
   // Conversations Inbox Simulator
   const [conversations, setConversations] = useState([
@@ -748,6 +753,23 @@ export default function HostDashboard({ onLogout }) {
     });
   };
 
+  // Apply search + type filter on top of the time-bucket
+  const getFilteredEventsForTab = (tab) => {
+    const q = eventSearch.trim().toLowerCase();
+    return getEventsForTab(tab).filter(e => {
+      const matchesSearch = !q ||
+        e.title.toLowerCase().includes(q) ||
+        (e.location && e.location.toLowerCase().includes(q)) ||
+        (e.eventType && e.eventType.toLowerCase().includes(q)) ||
+        e.id.toLowerCase().includes(q);
+      const matchesType = !eventTypeFilter || e.eventType === eventTypeFilter;
+      return matchesSearch && matchesType;
+    });
+  };
+
+  // Distinct event types across all of the host's events (for the filter dropdown)
+  const hostEventTypes = [...new Set(events.map(e => e.eventType).filter(Boolean))].sort();
+
   // Payout bank transfer simulation
   const handleBankTransfer = () => {
     if (availableBalance <= 0) {
@@ -1320,10 +1342,41 @@ export default function HostDashboard({ onLogout }) {
                 })}
               </div>
 
+              {/* Search + Filter toolbar */}
+              <div className="flex" style={{ gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: '1 1 260px', minWidth: '220px' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search by title, location, type, or code..."
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.88rem', outline: 'none', background: 'var(--color-surface)', fontFamily: 'inherit' }}
+                  />
+                </div>
+                <select
+                  value={eventTypeFilter}
+                  onChange={(e) => setEventTypeFilter(e.target.value)}
+                  style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', background: 'var(--color-surface)', outline: 'none' }}
+                >
+                  <option value="">All Types</option>
+                  {hostEventTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                {(eventSearch || eventTypeFilter) && (
+                  <button
+                    type="button"
+                    onClick={() => { setEventSearch(''); setEventTypeFilter(''); }}
+                    style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
               {/* Events Grid */}
               <div className="flex flex-col gap-md">
-                {getEventsForTab(activeEventTab).length > 0 ? (
-                  getEventsForTab(activeEventTab).map(event => {
+                {getFilteredEventsForTab(activeEventTab).length > 0 ? (
+                  getFilteredEventsForTab(activeEventTab).map(event => {
                     const rsvps = mockStore.getRSVPs(event.id);
                     const going = rsvps.filter(r => r.status === 'going').length;
                     const maybe = rsvps.filter(r => r.status === 'maybe').length;
@@ -1498,6 +1551,17 @@ export default function HostDashboard({ onLogout }) {
                       </Card>
                     );
                   })
+                ) : (eventSearch || eventTypeFilter) ? (
+                  <div className="empty-state" style={{ padding: '48px var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <Search size={44} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>No events match your search</h3>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '380px' }}>
+                      Nothing in this tab matches your search or type filter. Try a different keyword or clear the filters.
+                    </p>
+                    <Button variant="primary" className="flex items-center gap-xs" onClick={() => { setEventSearch(''); setEventTypeFilter(''); }}>
+                      Clear filters
+                    </Button>
+                  </div>
                 ) : (
                   <div className="empty-state" style={{ padding: '48px var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
                     <img src={HERO_IMAGES.toast} alt="Friends celebrating" className="empty-state-img" />
@@ -1757,7 +1821,18 @@ export default function HostDashboard({ onLogout }) {
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
                         👥 Registered Attendees
                       </h4>
-                      
+
+                      <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: '300px', minWidth: '180px' }}>
+                        <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                        <input
+                          type="text"
+                          placeholder="Search guests by name, email, phone..."
+                          value={guestSearch}
+                          onChange={(e) => setGuestSearch(e.target.value)}
+                          style={{ width: '100%', padding: '8px 10px 8px 34px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.82rem', outline: 'none', background: 'var(--color-surface)', fontFamily: 'inherit' }}
+                        />
+                      </div>
+
                       {/* Bulk actions tool bar */}
                       {selectedGuestIds.length > 0 && (
                         <div style={{ display: 'flex', gap: '8px', background: 'var(--color-surface-hover)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', alignItems: 'center' }}>
@@ -1796,10 +1871,17 @@ export default function HostDashboard({ onLogout }) {
                           </tr>
                         </thead>
                         <tbody>
-                          {managedEventRsvps.filter(r => r.status === 'going').map(rsvp => (
+                          {managedEventRsvps.filter(r => {
+                            if (r.status !== 'going') return false;
+                            const q = guestSearch.trim().toLowerCase();
+                            if (!q) return true;
+                            return (r.name && r.name.toLowerCase().includes(q)) ||
+                                   (r.email && r.email.toLowerCase().includes(q)) ||
+                                   (r.phone && r.phone.toLowerCase().includes(q));
+                          }).map(rsvp => (
                             <tr key={rsvp.id}>
                               <td style={{ textAlign: 'center' }}>
-                                <input 
+                                <input
                                   type="checkbox"
                                   checked={selectedGuestIds.includes(rsvp.id)}
                                   onChange={(e) => {

@@ -14,7 +14,6 @@ export default function GuestDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('tickets'); // tickets, explore, timeline, messages, past, profile
   const [myRsvps, setMyRsvps] = useState([]);
   const [exploreEvents, setExploreEvents] = useState([]);
-  const [searchCode, setSearchCode] = useState('');
   const [selectedTicket, setSelectedTicket] = useState(null); // ticket details modal
   const [editRsvpStatus, setEditRsvpStatus] = useState('');
   const [editAnswers, setEditAnswers] = useState({});
@@ -29,7 +28,6 @@ export default function GuestDashboard({ onLogout }) {
     optOutSms: false
   });
   const [profileSaved, setProfileSaved] = useState(false);
-  const [joinError, setJoinError] = useState('');
   const [timelineItems, setTimelineItems] = useState([]);
   const [messageLogs, setMessageLogs] = useState([]);
   const [viewLogDetail, setViewLogDetail] = useState(null);
@@ -231,18 +229,6 @@ export default function GuestDashboard({ onLogout }) {
     }
     loadData();
   }, []);
-
-  const handleJoinByCode = (e) => {
-    e.preventDefault();
-    if (!searchCode.trim()) return;
-    const evt = mockStore.getEventById(searchCode.trim());
-    if (evt) {
-      setJoinError('');
-      navigate(`/e/${evt.id}`);
-    } else {
-      setJoinError('Event not found. Try entering code "1" or "2".');
-    }
-  };
 
   const handleOpenEditRsvp = (rsvp) => {
     setSelectedTicket(rsvp);
@@ -558,35 +544,15 @@ export default function GuestDashboard({ onLogout }) {
                 </div>
               </div>
 
-              {/* Quick Join form */}
-              <form onSubmit={handleJoinByCode} className="flex gap-sm items-center" style={{ position: 'relative' }}>
-                <div style={{ position: 'relative' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
-                  <input
-                    type="text"
-                    placeholder="Enter event code (e.g. 1)"
-                    value={searchCode}
-                    onChange={(e) => setSearchCode(e.target.value)}
-                    style={{
-                      padding: '10px 12px 10px 38px',
-                      borderRadius: '999px',
-                      border: 'none',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                      width: '210px',
-                      fontSize: '0.85rem',
-                      background: 'rgba(255,255,255,0.95)',
-                      boxShadow: 'var(--shadow-sm)'
-                    }}
-                  />
-                </div>
-                <Button variant="primary" type="submit" style={{ padding: '10px 20px', fontSize: '0.85rem', borderRadius: '999px' }}>Join</Button>
-                {joinError && (
-                  <span style={{ position: 'absolute', top: '100%', left: 0, fontSize: '0.75rem', color: '#FFD54F', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 50, fontWeight: 600 }}>
-                    <AlertCircle size={12} /> {joinError}
-                  </span>
-                )}
-              </form>
+              {/* Discover CTA */}
+              <Button
+                variant="primary"
+                onClick={() => setActiveTab('explore')}
+                className="flex items-center gap-xs"
+                style={{ padding: '11px 22px', fontSize: '0.88rem', borderRadius: '999px' }}
+              >
+                <Compass size={16} /> Discover Events
+              </Button>
             </div>
           </div>
 
