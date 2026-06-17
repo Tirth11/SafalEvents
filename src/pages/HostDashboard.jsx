@@ -23,8 +23,13 @@ export default function HostDashboard({ onLogout }) {
   const isOrgHost = (currentUser?.hostType || userRecord?.hostType) === 'organization';
   const docsAlreadyVerified = !!userRecord?.orgDocsUploaded;
 
+  // UC-08: a staff member sees a permission-limited version of the portal,
+  // scoped to only the events they have been added to.
+  const isStaffViewer = currentUser?.role === 'staff';
+  const staffEventIds = isStaffViewer ? mockStore.getStaffForEmail(currentUser?.email).map(s => s.eventId) : null;
+
   // Navigation: dashboard, events, earnings, messages, audience, settings
-  const [activeSidebar, setActiveSidebar] = useState('dashboard');
+  const [activeSidebar, setActiveSidebar] = useState(currentUser?.role === 'staff' ? 'events' : 'dashboard');
 
   // Org document upload state (seeded from the persisted user record)
   const [orgDocsUploaded, setOrgDocsUploaded] = useState(docsAlreadyVerified);
@@ -76,7 +81,11 @@ export default function HostDashboard({ onLogout }) {
     { name: 'Marcus Chen', role: 'Co-Manager', email: 'marcus@safalevent.com', status: 'Active' },
     { name: 'Sarah Jenkins', role: 'Check-in Staff', email: 'sarah@safalevent.com', status: 'Active' }
   ]);
-  const [inviteStaffForm, setInviteStaffForm] = useState({ name: '', email: '', role: 'Check-in Staff' });
+  const [inviteStaffForm, setInviteStaffForm] = useState({ name: '', email: '', roleId: 'role_coordinator' });
+  // Staff & Roles (UC-06/07): role builder form for creating/editing a role
+  const emptyRoleBuilder = { id: null, name: '', description: '', permissions: {} };
+  const [roleBuilder, setRoleBuilder] = useState(emptyRoleBuilder);
+  const [showRoleBuilder, setShowRoleBuilder] = useState(false);
   const [activeScannerStaff, setActiveScannerStaff] = useState('Alex Rivera (Host)');
   const [autoReplyRules, setAutoReplyRules] = useState([
     { id: 'rule_1', trigger: 'On Guest RSVP', condition: 'If Status is Waitlist', action: 'Send Waitlist email (rsvp_waitlist)', active: true },
@@ -175,8 +184,10 @@ export default function HostDashboard({ onLogout }) {
     allowPhotoUploads: false,
     enablePayments: false,
     ticketPrice: 0,
+    approvalRequired: false,
+    messagingEnabled: true,
     questions: [],
-    
+
     // Notification engine defaults
     sendRsvpConfirmationEmail: true,
     sendRsvpConfirmationSms: true,
@@ -348,6 +359,8 @@ export default function HostDashboard({ onLogout }) {
         allowPhotoUploads: evt.allowPhotoUploads !== undefined ? evt.allowPhotoUploads : false,
         enablePayments: evt.enablePayments !== undefined ? evt.enablePayments : false,
         ticketPrice: evt.ticketPrice || 0,
+        approvalRequired: evt.approvalRequired !== undefined ? evt.approvalRequired : false,
+        messagingEnabled: evt.messagingEnabled !== undefined ? evt.messagingEnabled : true,
         questions: evt.questions || [],
         
         // Notification settings
@@ -375,6 +388,35 @@ export default function HostDashboard({ onLogout }) {
 
   const handleApproveRSVP = (eventId, rsvpId, approve) => {
     mockStore.updateRSVP(eventId, rsvpId, { status: approve ? 'going' : 'declined' });
+    loadDashboardData();
+  };
+
+  // Actor label used in audit logs for whoever is acting (host or staff)
+  const viewerActor = () => `${currentUser?.name || 'Host'} (${currentUser?.role === 'staff' ? 'Staff' : 'Host'})`;
+
+  // UC-02: approve / reject / reopen a pending RSVP
+  const handleApproveDecision = (eventId, rsvpId) => {
+    mockStore.approveRSVP(eventId, rsvpId, viewerActor());
+    loadDashboardData();
+  };
+
+  const handleRejectDecision = (eventId, rsvpId) => {
+    const reason = window.prompt('Optional: add a reason for rejecting this RSVP (the guest will see it).', '');
+    if (reason === null) return; // cancelled
+    mockStore.rejectRSVP(eventId, rsvpId, reason.trim(), viewerActor());
+    loadDashboardData();
+  };
+
+  const handleReopenDecision = (eventId, rsvpId) => {
+    mockStore.reopenRSVP(eventId, rsvpId, viewerActor());
+    loadDashboardData();
+  };
+
+  const handleApproveAllPending = (eventId) => {
+    const pending = mockStore.getRSVPs(eventId).filter(r => r.approvalState === 'UNDER_APPROVAL' && r.status !== 'waitlist');
+    if (pending.length === 0) return;
+    if (!window.confirm(`Approve all ${pending.length} pending RSVP(s)?`)) return;
+    pending.forEach(r => mockStore.approveRSVP(eventId, r.id, viewerActor()));
     loadDashboardData();
   };
 
@@ -458,26 +500,60 @@ export default function HostDashboard({ onLogout }) {
     setAutoReplyRules(autoReplyRules.filter(r => r.id !== id));
   };
 
+  // UC-06: invite a staff member to the current event with an assigned role
   const handleInviteStaffSubmit = (e) => {
     e.preventDefault();
-    if (!inviteStaffForm.name || !inviteStaffForm.email) return;
-    const newStaff = {
+    if (!inviteStaffForm.name || !inviteStaffForm.email || !selectedEventId) return;
+    const role = mockStore.getRoleById(inviteStaffForm.roleId);
+    mockStore.inviteStaff(selectedEventId, {
       name: inviteStaffForm.name,
       email: inviteStaffForm.email,
-      role: inviteStaffForm.role,
-      status: 'Active'
-    };
-    setActiveStaffList([...activeStaffList, newStaff]);
-    setInviteStaffForm({ name: '', email: '', role: 'Check-in Staff' });
-    alert(`✉️ Invitation sent to ${newStaff.name} as ${newStaff.role}!`);
+      roleId: inviteStaffForm.roleId
+    });
+    setInviteStaffForm({ name: '', email: '', roleId: 'role_coordinator' });
+    loadDashboardData();
+    alert(`✉️ Invitation sent to ${inviteStaffForm.name} as ${role ? role.name : 'staff'}!`);
   };
 
-  const handleRemoveStaff = (email) => {
-    if (email === 'alex@safalevent.com') {
-      alert("Cannot remove the primary host!");
-      return;
+  const handleRemoveStaff = (staffId) => {
+    if (!window.confirm('Remove this team member from the event?')) return;
+    mockStore.removeStaff(staffId);
+    loadDashboardData();
+  };
+
+  const handleAcceptStaff = (staffId) => {
+    mockStore.updateStaff(staffId, { status: 'ACTIVE', acceptedAt: new Date().toISOString() });
+    loadDashboardData();
+  };
+
+  // UC-07: create or update a role definition with its permission toggles
+  const handleOpenRoleBuilder = (role) => {
+    if (role) {
+      setRoleBuilder({ id: role.id, name: role.name, description: role.description || '', permissions: { ...role.permissions } });
+    } else {
+      setRoleBuilder(emptyRoleBuilder);
     }
-    setActiveStaffList(activeStaffList.filter(s => s.email !== email));
+    setShowRoleBuilder(true);
+  };
+
+  const handleSaveRole = (e) => {
+    e.preventDefault();
+    if (!roleBuilder.name.trim()) { alert('Please name the role.'); return; }
+    if (roleBuilder.id) {
+      mockStore.updateRole(roleBuilder.id, { name: roleBuilder.name, description: roleBuilder.description, permissions: roleBuilder.permissions });
+    } else {
+      mockStore.createRole({ name: roleBuilder.name, description: roleBuilder.description, permissions: roleBuilder.permissions });
+    }
+    setShowRoleBuilder(false);
+    setRoleBuilder(emptyRoleBuilder);
+    loadDashboardData();
+  };
+
+  const handleDeleteRole = (roleId) => {
+    if (!window.confirm('Delete this role? Staff assigned to it will lose access until reassigned.')) return;
+    const ok = mockStore.deleteRole(roleId);
+    if (!ok) { alert('Built-in roles cannot be deleted.'); return; }
+    loadDashboardData();
   };
 
   // Export CSV
@@ -724,8 +800,9 @@ export default function HostDashboard({ onLogout }) {
   const getEventsForTab = (tab) => {
     const today = new Date();
     const todayString = today.toISOString().split('T')[0];
-    
-    return events.filter(e => {
+
+    const scoped = isStaffViewer ? events.filter(e => staffEventIds.includes(e.id)) : events;
+    return scoped.filter(e => {
       if (e.status === 'Draft') {
         return tab === 'drafts';
       }
@@ -831,6 +908,20 @@ export default function HostDashboard({ onLogout }) {
   const managedEventComments = selectedEventId ? mockStore.getComments(selectedEventId) : [];
   const managedEventViews = selectedEventId ? mockStore.getViews(selectedEventId) : 0;
 
+  // UC-07/08: resolve what the current viewer is allowed to do on this event.
+  // The host (owner) gets everything; staff get only their role's grants.
+  const allPerms = { guests_view: true, guests_approve: true, guests_edit: true, guests_export: true, messaging_view: true, messaging_reply: true, history_view: true, settings_view: true, settings_edit: true, staff_manage: true };
+  const viewerPerms = managedEvent
+    ? (isStaffViewer ? mockStore.getPermissionsForEvent(currentUser?.email, managedEvent.id) : allPerms)
+    : allPerms;
+  const can = (perm) => !!viewerPerms[perm];
+
+  // Pending-approval queue for the managed event (UC-02). Waitlisted guests are
+  // also UNDER_APPROVAL but shown in their own waitlist section below.
+  const pendingApprovalRsvps = managedEventRsvps
+    .filter(r => r.approvalState === 'UNDER_APPROVAL' && r.status !== 'waitlist')
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
   // Active conversation details
   const activeConversation = conversations.find(c => c.id === activeConversationId);
 
@@ -860,33 +951,37 @@ export default function HostDashboard({ onLogout }) {
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
           <div className="dashboard-sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.4rem' }}>👑</span> Host Portal
+            <span style={{ fontSize: '1.4rem' }}>{isStaffViewer ? '🛠️' : '👑'}</span> {isStaffViewer ? 'Team Portal' : 'Host Portal'}
           </div>
 
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-            <button 
-              onClick={() => { setActiveSidebar('dashboard'); setSelectedEventId(null); }} 
+            {!isStaffViewer && (
+            <button
+              onClick={() => { setActiveSidebar('dashboard'); setSelectedEventId(null); }}
               className={`dashboard-nav-btn ${activeSidebar === 'dashboard' ? 'active' : ''}`}
             >
               <Compass size={18} /> Dashboard
             </button>
-            
-            <button 
+            )}
+
+            <button
               onClick={() => { setActiveSidebar('events'); setSelectedEventId(null); }} 
               className={`dashboard-nav-btn ${activeSidebar === 'events' ? 'active' : ''}`}
             >
               <Calendar size={18} /> My Events
             </button>
             
-            <button 
-              onClick={() => { setActiveSidebar('earnings'); setSelectedEventId(null); }} 
+            {!isStaffViewer && (
+            <button
+              onClick={() => { setActiveSidebar('earnings'); setSelectedEventId(null); }}
               className={`dashboard-nav-btn ${activeSidebar === 'earnings' ? 'active' : ''}`}
             >
               <CreditCard size={18} /> Earnings
             </button>
+            )}
 
-            <button 
-              onClick={() => { setActiveSidebar('messages'); setSelectedEventId(null); }} 
+            <button
+              onClick={() => { setActiveSidebar('messages'); setSelectedEventId(null); }}
               className={`dashboard-nav-btn ${activeSidebar === 'messages' ? 'active' : ''}`}
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
             >
@@ -898,26 +993,32 @@ export default function HostDashboard({ onLogout }) {
               )}
             </button>
 
-            <button 
-              onClick={() => { setActiveSidebar('audience'); setSelectedEventId(null); }} 
+            {!isStaffViewer && (
+            <button
+              onClick={() => { setActiveSidebar('audience'); setSelectedEventId(null); }}
               className={`dashboard-nav-btn ${activeSidebar === 'audience' ? 'active' : ''}`}
             >
               <Users size={18} /> Audience
             </button>
+            )}
 
+            {!isStaffViewer && (
             <button
               onClick={() => { setActiveSidebar('settings'); setSelectedEventId(null); }}
               className={`dashboard-nav-btn ${activeSidebar === 'settings' ? 'active' : ''}`}
             >
               <Settings size={18} /> Settings
             </button>
+            )}
 
+            {!isStaffViewer && (
             <button
               onClick={() => { setActiveSidebar('integrations'); setSelectedEventId(null); }}
               className={`dashboard-nav-btn ${activeSidebar === 'integrations' ? 'active' : ''}`}
             >
               <Webhook size={18} /> Integrations
             </button>
+            )}
           </nav>
 
           <button 
@@ -1288,14 +1389,16 @@ export default function HostDashboard({ onLogout }) {
             <div>
               <div className="flex justify-between items-center" style={{ marginBottom: '24px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>My Events</h1>
-                  <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Deep dive into your invitation templates, guest check-ins, and outbox logs.</p>
+                  <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{isStaffViewer ? 'Assigned Events' : 'My Events'}</h1>
+                  <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>{isStaffViewer ? 'Events you help run. Your access is limited by your assigned role.' : 'Deep dive into your invitation templates, guest check-ins, and outbox logs.'}</p>
                 </div>
-                <Link to="/create">
-                  <Button variant="primary" className="flex items-center gap-xs">
-                    <Plus size={18} /> Create New Event
-                  </Button>
-                </Link>
+                {!isStaffViewer && (
+                  <Link to="/create">
+                    <Button variant="primary" className="flex items-center gap-xs">
+                      <Plus size={18} /> Create New Event
+                    </Button>
+                  </Link>
+                )}
               </div>
 
               {/* Sub-Tabs Selector */}
@@ -1665,17 +1768,17 @@ export default function HostDashboard({ onLogout }) {
               {/* Sub-Tabs for Event Management */}
               <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '24px', overflowX: 'auto', paddingBottom: '1px' }}>
                 {[
-                  { key: 'overview', label: 'Stats Overview' },
-                  { key: 'guests', label: `Guest List (${managedEventRsvps.length})` },
-                  { key: 'polls', label: `Polls (${managedEventPolls.length})` },
-                  { key: 'comments', label: `Comments (${managedEventComments.length})` },
-                  { key: 'edit', label: 'Details Editor' },
-                  { key: 'notifications', label: 'Notifications Schedule' },
-                  { key: 'invitations', label: 'Manual Add' },
-                  { key: 'checkin', label: 'QR Scan Check-in' },
-                  { key: 'payments', label: 'Payments' },
-                  { key: 'staff', label: 'Staff Roles' }
-                ].map(t => (
+                  { key: 'overview', label: 'Stats Overview', perm: 'guests_view' },
+                  { key: 'guests', label: `Guest List (${managedEventRsvps.length})`, perm: 'guests_view' },
+                  { key: 'polls', label: `Polls (${managedEventPolls.length})`, perm: 'guests_view' },
+                  { key: 'comments', label: `Comments (${managedEventComments.length})`, perm: 'messaging_view' },
+                  { key: 'edit', label: 'Details Editor', perm: 'settings_edit' },
+                  { key: 'notifications', label: 'Notifications Schedule', perm: 'settings_view' },
+                  { key: 'invitations', label: 'Manual Add', perm: 'guests_edit' },
+                  { key: 'checkin', label: 'QR Scan Check-in', perm: 'guests_edit' },
+                  { key: 'payments', label: 'Payments', perm: 'settings_view' },
+                  { key: 'staff', label: 'Staff & Roles', perm: 'staff_manage' }
+                ].filter(t => can(t.perm)).map(t => (
                   <button 
                     key={t.key}
                     onClick={() => setSelectedEventTab(t.key)}
@@ -1749,7 +1852,125 @@ export default function HostDashboard({ onLogout }) {
               {/* SUB-TAB: GUEST LIST (SECTION 5) */}
               {selectedEventTab === 'guests' && (
                 <div className="flex flex-col gap-lg">
-                  
+
+                  {/* UC-02: Pending Approval queue */}
+                  {pendingApprovalRsvps.length > 0 && (
+                    <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          🕒 Under Approval
+                          <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(245,158,11,0.12)', color: '#ca8a04', borderRadius: '12px' }}>
+                            {pendingApprovalRsvps.length} pending
+                          </span>
+                        </h4>
+                        {can('guests_approve') && (
+                          <button
+                            onClick={() => handleApproveAllPending(managedEvent.id)}
+                            style={{ border: 'none', background: 'rgba(34,197,94,0.12)', color: '#16a34a', cursor: 'pointer', padding: '8px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}
+                          >
+                            Approve All
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="premium-table">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Contact</th>
+                              <th>Response</th>
+                              <th>Requested</th>
+                              <th>Answers</th>
+                              <th>Decision</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pendingApprovalRsvps.map(rsvp => (
+                              <tr key={rsvp.id}>
+                                <td style={{ fontWeight: 600 }}>
+                                  <div className="flex items-center gap-sm">
+                                    <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
+                                    {rsvp.name}
+                                  </div>
+                                </td>
+                                <td>
+                                  <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
+                                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
+                                </td>
+                                <td style={{ textTransform: 'capitalize' }}>{rsvp.status} · {rsvp.guestCount || 1} guest(s)</td>
+                                <td>{new Date(rsvp.timestamp).toLocaleDateString()}</td>
+                                <td>
+                                  {Object.keys(rsvp.answers || {}).length > 0 ? (
+                                    <div style={{ fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                      {Object.entries(rsvp.answers).map(([q, ans]) => (
+                                        <div key={q}><strong>{q}:</strong> {ans}</div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>None</span>
+                                  )}
+                                </td>
+                                <td>
+                                  {can('guests_approve') ? (
+                                    <div className="flex gap-xs">
+                                      <button
+                                        onClick={() => handleApproveDecision(managedEvent.id, rsvp.id)}
+                                        style={{ border: 'none', background: 'rgba(34,197,94,0.12)', color: '#16a34a', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectDecision(managedEvent.id, rsvp.id)}
+                                        style={{ border: 'none', background: 'rgba(239,68,68,0.12)', color: '#ef4444', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>View only</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Rejected requests (UC-02: can be re-opened) */}
+                  {managedEventRsvps.filter(r => r.approvalState === 'REJECTED').length > 0 && (
+                    <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--color-border)' }}>
+                        <h4 style={{ fontSize: '0.98rem', fontWeight: 700, margin: 0, color: '#dc2626' }}>Rejected requests</h4>
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="premium-table">
+                          <thead><tr><th>Name</th><th>Contact</th><th>Reason</th><th></th></tr></thead>
+                          <tbody>
+                            {managedEventRsvps.filter(r => r.approvalState === 'REJECTED').map(rsvp => (
+                              <tr key={rsvp.id}>
+                                <td style={{ fontWeight: 600 }}>{rsvp.name}</td>
+                                <td style={{ fontSize: '0.8rem' }}>{rsvp.email}</td>
+                                <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{rsvp.rejectionReason || '—'}</td>
+                                <td>
+                                  {can('guests_approve') && (
+                                    <button
+                                      onClick={() => handleReopenDecision(managedEvent.id, rsvp.id)}
+                                      style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '5px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600 }}
+                                    >
+                                      Re-open
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  )}
+
                   {/* Waitlist (FIFO) */}
                   {(() => {
                     const waitlisted = managedEventRsvps.filter(r => r.status === 'waitlist')
@@ -1759,12 +1980,14 @@ export default function HostDashboard({ onLogout }) {
                       <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
                           <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            ⏳ Waitlist Queue (FIFO)
+                            ⏳ Waitlist — Under Approval
                             <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: '#fef3c7', color: '#b45309', borderRadius: '12px' }}>
                               {waitlisted.length} queued
                             </span>
                           </h4>
-                          <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>Ordered by signup date. Automatically promoted when spots open up.</p>
+                          <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>
+                            Event is at capacity ({managedEventRsvps.filter(r => r.status === 'going' && r.approvalState !== 'REJECTED').reduce((s, r) => s + (r.guestCount || 1), 0)}/{managedEvent.capacity} confirmed). Ordered by signup date — approve a guest to allow them in when a spot opens.
+                          </p>
                         </div>
                         <div style={{ overflowX: 'auto' }}>
                           <table className="premium-table">
@@ -1795,20 +2018,24 @@ export default function HostDashboard({ onLogout }) {
                                   <td>{new Date(rsvp.timestamp).toLocaleDateString()}</td>
                                   <td>{rsvp.guestCount || 1}</td>
                                   <td>
-                                    <div className="flex gap-xs">
-                                      <button 
-                                        onClick={() => handleApproveRSVP(managedEvent.id, rsvp.id, true)} 
-                                        style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
-                                      >
-                                        Confirm
-                                      </button>
-                                      <button 
-                                        onClick={() => handleApproveRSVP(managedEvent.id, rsvp.id, false)} 
-                                        style={{ border: 'none', background: 'rgba(239,68,68,0.1)', color: '#ef4444', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
-                                      >
-                                        Reject
-                                      </button>
-                                    </div>
+                                    {can('guests_approve') ? (
+                                      <div className="flex gap-xs">
+                                        <button
+                                          onClick={() => handleApproveDecision(managedEvent.id, rsvp.id)}
+                                          style={{ border: 'none', background: 'rgba(34,197,94,0.12)', color: '#16a34a', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+                                        >
+                                          Approve &amp; Allow In
+                                        </button>
+                                        <button
+                                          onClick={() => handleRejectDecision(managedEvent.id, rsvp.id)}
+                                          style={{ border: 'none', background: 'rgba(239,68,68,0.12)', color: '#ef4444', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>View only</span>
+                                    )}
                                   </td>
                                 </tr>
                               ))}
@@ -1841,9 +2068,9 @@ export default function HostDashboard({ onLogout }) {
                       {selectedGuestIds.length > 0 && (
                         <div style={{ display: 'flex', gap: '8px', background: 'var(--color-surface-hover)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{selectedGuestIds.length} Selected:</span>
-                          <button onClick={handleBulkCheckIn} style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Check-in</button>
-                          <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>
-                          <button onClick={handleBulkExport} style={{ border: 'none', background: 'rgba(71,85,105,0.1)', color: '#475569', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Export</button>
+                          {can('guests_edit') && <button onClick={handleBulkCheckIn} style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Check-in</button>}
+                          {can('messaging_reply') && <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>}
+                          {can('guests_export') && <button onClick={handleBulkExport} style={{ border: 'none', background: 'rgba(71,85,105,0.1)', color: '#475569', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Export</button>}
                           <button onClick={() => setSelectedGuestIds([])} style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
                         </div>
                       )}
@@ -1877,6 +2104,8 @@ export default function HostDashboard({ onLogout }) {
                         <tbody>
                           {managedEventRsvps.filter(r => {
                             if (r.status !== 'going') return false;
+                            // Pending/rejected requests live in their own sections above
+                            if (r.approvalState === 'UNDER_APPROVAL' || r.approvalState === 'REJECTED') return false;
                             const q = guestSearch.trim().toLowerCase();
                             if (!q) return true;
                             return (r.name && r.name.toLowerCase().includes(q)) ||
@@ -1925,11 +2154,12 @@ export default function HostDashboard({ onLogout }) {
                               </td>
                               <td>
                                 <div className="flex items-center gap-xs">
-                                  <input 
-                                    type="checkbox" 
+                                  <input
+                                    type="checkbox"
                                     checked={rsvp.checkedIn}
+                                    disabled={!can('guests_edit')}
                                     onChange={() => handleToggleCheckin(managedEvent.id, rsvp.id, rsvp.checkedIn)}
-                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                    style={{ width: '16px', height: '16px', cursor: can('guests_edit') ? 'pointer' : 'not-allowed' }}
                                   />
                                   <span style={{ fontSize: '0.75rem', color: rsvp.checkedIn ? '#16a34a' : 'var(--color-text-muted)' }}>
                                     {rsvp.checkedIn ? 'Checked in' : 'Not arrived'}
@@ -1948,13 +2178,17 @@ export default function HostDashboard({ onLogout }) {
                                 )}
                               </td>
                               <td>
-                                <button 
-                                  onClick={() => handleDeleteRSVP(managedEvent.id, rsvp.id)}
-                                  style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px' }}
-                                  title="Remove Guest"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                                {can('guests_edit') ? (
+                                  <button
+                                    onClick={() => handleDeleteRSVP(managedEvent.id, rsvp.id)}
+                                    style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px' }}
+                                    title="Remove Guest"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>—</span>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -2221,8 +2455,8 @@ export default function HostDashboard({ onLogout }) {
                         </div>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>RSVP Status</label>
-                          <select 
-                            value={editEventForm.rsvpStatus} 
+                          <select
+                            value={editEventForm.rsvpStatus}
                             onChange={(e) => setEditEventForm({ ...editEventForm, rsvpStatus: e.target.value })}
                             style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.85rem' }}
                           >
@@ -2230,6 +2464,29 @@ export default function HostDashboard({ onLogout }) {
                             <option value="Closed">Closed (Disabled bookings)</option>
                           </select>
                         </div>
+                      </div>
+
+                      {/* UC-02 & UC-09: approval workflow + per-event messaging */}
+                      <div className="flex justify-between items-center" style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 14px' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><UserCheck size={14} className="text-primary" /> Require RSVP approval</strong>
+                          <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.75rem' }}>New RSVPs are held as “Under Approval” until you approve or reject them.</p>
+                        </div>
+                        <label className="switch" style={{ flexShrink: 0 }}>
+                          <input type="checkbox" checked={editEventForm.approvalRequired} onChange={(e) => setEditEventForm({ ...editEventForm, approvalRequired: e.target.checked })} />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+
+                      <div className="flex justify-between items-center" style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 14px' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><MessageSquare size={14} className="text-primary" /> Allow guest messaging</strong>
+                          <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.75rem' }}>Guests can message you in-app. Turning this off hides messaging from guests (history is kept).</p>
+                        </div>
+                        <label className="switch" style={{ flexShrink: 0 }}>
+                          <input type="checkbox" checked={editEventForm.messagingEnabled} onChange={(e) => setEditEventForm({ ...editEventForm, messagingEnabled: e.target.checked })} />
+                          <span className="slider"></span>
+                        </label>
                       </div>
                     </div>
 
@@ -2581,43 +2838,153 @@ export default function HostDashboard({ onLogout }) {
                 </div>
               )}
 
-              {/* SUB-TAB: STAFF ROLES & AUDIT TRAILS */}
+              {/* SUB-TAB: STAFF & ROLES (UC-06/07) */}
               {selectedEventTab === 'staff' && (
                 <div className="flex flex-col gap-lg">
                   <div className="grid-2" style={{ gap: '20px' }}>
+                    {/* Team members for this event */}
                     <Card style={{ padding: '20px', textAlign: 'left' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Co-Hosts & Gate Staff</h4>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '4px' }}>Team members</h4>
+                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>Invite people to help run this event. Each member only sees and does what their role permits.</p>
                       <form onSubmit={handleInviteStaffSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '16px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Add team member</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Invite a team member</span>
                         <div className="grid-2" style={{ gap: '6px' }}>
-                          <input required placeholder="Staff Name" value={inviteStaffForm.name} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, name: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
+                          <input required placeholder="Name" value={inviteStaffForm.name} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, name: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
                           <input required type="email" placeholder="Email" value={inviteStaffForm.email} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, email: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
                         </div>
                         <div className="flex gap-sm">
-                          <select value={inviteStaffForm.role} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, role: e.target.value })} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
-                            <option value="Check-in Staff">Check-in Staff</option>
-                            <option value="Co-Manager">Co-Manager</option>
+                          <select value={inviteStaffForm.roleId} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, roleId: e.target.value })} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
+                            {mockStore.getRoles().map(r => (
+                              <option key={r.id} value={r.id}>{r.name}</option>
+                            ))}
                           </select>
-                          <Button type="submit" variant="primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>Invite</Button>
+                          <Button type="submit" variant="primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>Send Invite</Button>
                         </div>
                       </form>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {activeStaffList.map(s => (
-                          <div key={s.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
-                            <div className="flex items-center gap-sm">
-                              <img src={getAvatar(s.email)} alt={s.name} className="avatar-img avatar-sm" />
-                              <div>
-                                <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{s.role} • {s.email}</div>
+                        {/* Owner row (implicit full access) */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
+                          <div className="flex items-center gap-sm">
+                            <img src={getAvatar(managedEvent.hostEmail)} alt={managedEvent.hostName} className="avatar-img avatar-sm" />
+                            <div>
+                              <strong style={{ fontSize: '0.85rem' }}>{managedEvent.hostName} <span style={{ fontSize: '0.7rem' }}>👑</span></strong>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Host (owner) • Full access</div>
+                            </div>
+                          </div>
+                          <span className="admin-badge admin-badge-active">Owner</span>
+                        </div>
+
+                        {mockStore.getStaff(selectedEventId).map(s => {
+                          const role = mockStore.getRoleById(s.roleId);
+                          return (
+                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
+                              <div className="flex items-center gap-sm">
+                                <img src={getAvatar(s.email)} alt={s.name} className="avatar-img avatar-sm" />
+                                <div>
+                                  <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{role ? role.name : 'No role'} • {s.email}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-sm">
+                                <span className={`admin-badge ${s.status === 'ACTIVE' ? 'admin-badge-active' : 'admin-badge-pending'}`}>
+                                  {s.status === 'ACTIVE' ? 'Active' : 'Invited'}
+                                </span>
+                                {s.status === 'INVITED' && (
+                                  <button onClick={() => handleAcceptStaff(s.id)} title="Mark invite as accepted" style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Accept</button>
+                                )}
+                                <button onClick={() => handleRemoveStaff(s.id)} title="Remove" style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16} /></button>
                               </div>
                             </div>
-                            <button onClick={() => handleRemoveStaff(s.email)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16} /></button>
-                          </div>
-                        ))}
+                          );
+                        })}
+                        {mockStore.getStaff(selectedEventId).length === 0 && (
+                          <p className="text-muted" style={{ fontSize: '0.78rem', margin: '4px 0 0 0' }}>No team members yet. Invite someone above.</p>
+                        )}
                       </div>
                     </Card>
 
+                    {/* Roles & permissions */}
+                    <Card style={{ padding: '20px', textAlign: 'left' }}>
+                      <div className="flex justify-between items-center" style={{ marginBottom: '4px' }}>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Roles &amp; permissions</h4>
+                        <Button type="button" variant="outline" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={() => handleOpenRoleBuilder(null)}>
+                          <Plus size={13} style={{ verticalAlign: '-2px' }} /> New role
+                        </Button>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>A role is a named set of permissions. Default-deny: anything not granted is hidden and blocked.</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {mockStore.getRoles().map(role => {
+                          const grantedCount = Object.values(role.permissions || {}).filter(Boolean).length;
+                          return (
+                            <div key={role.id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px' }}>
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <strong style={{ fontSize: '0.88rem' }}>{role.name}{role.builtIn && <span style={{ fontSize: '0.65rem', marginLeft: '6px', color: 'var(--color-text-muted)' }}>built-in</span>}</strong>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>{role.description}</div>
+                                </div>
+                                <div className="flex items-center gap-sm">
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{grantedCount} perms</span>
+                                  <button onClick={() => handleOpenRoleBuilder(role)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Edit</button>
+                                  {!role.builtIn && (
+                                    <button onClick={() => handleDeleteRole(role.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Role builder (create / edit) */}
+                  {showRoleBuilder && (
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>{roleBuilder.id ? 'Edit role' : 'Create role'}</h4>
+                      <form onSubmit={handleSaveRole} className="flex flex-col gap-md">
+                        <div className="grid-2" style={{ gap: '12px' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Role name *</label>
+                            <input required value={roleBuilder.name} onChange={(e) => setRoleBuilder({ ...roleBuilder, name: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Description</label>
+                            <input value={roleBuilder.description} onChange={(e) => setRoleBuilder({ ...roleBuilder, description: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
+                          {[
+                            { key: 'guests_view', label: 'View guest list' },
+                            { key: 'guests_approve', label: 'Approve / reject RSVPs' },
+                            { key: 'guests_edit', label: 'Edit guests & check-in' },
+                            { key: 'guests_export', label: 'Export guest list' },
+                            { key: 'messaging_view', label: 'View messages' },
+                            { key: 'messaging_reply', label: 'Reply to guests' },
+                            { key: 'history_view', label: 'View history' },
+                            { key: 'settings_view', label: 'View settings' },
+                            { key: 'settings_edit', label: 'Edit settings' },
+                            { key: 'staff_manage', label: 'Manage staff & roles' }
+                          ].map(p => (
+                            <label key={p.key} className="flex items-center gap-xs" style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!roleBuilder.permissions[p.key]}
+                                onChange={(e) => setRoleBuilder({ ...roleBuilder, permissions: { ...roleBuilder.permissions, [p.key]: e.target.checked } })}
+                              />
+                              {p.label}
+                            </label>
+                          ))}
+                        </div>
+                        <div className="flex gap-sm">
+                          <Button type="submit" variant="primary">{roleBuilder.id ? 'Save role' : 'Create role'}</Button>
+                          <Button type="button" variant="ghost" onClick={() => { setShowRoleBuilder(false); setRoleBuilder(emptyRoleBuilder); }}>Cancel</Button>
+                        </div>
+                      </form>
+                    </Card>
+                  )}
+
+                  <div>
                     <Card style={{ padding: '20px', textAlign: 'left' }}>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Auto-Reply Notification Rules</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>

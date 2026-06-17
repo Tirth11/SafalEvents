@@ -249,9 +249,12 @@ export default function EventPage() {
       phone: phone
     });
 
-    const finalStatus = (event.approvalRequired && rsvpForm.status === 'going') ? 'waitlist' : rsvpForm.status;
+    // UC-01: the RSVP itself is held UNDER_APPROVAL by the store when the event
+    // requires approval — we keep the guest's chosen response as-is.
+    const finalStatus = rsvpForm.status;
 
-    if (event.enablePayments && finalStatus === 'going') {
+    // Approval-required events skip upfront payment (collected after approval).
+    if (event.enablePayments && finalStatus === 'going' && !event.approvalRequired) {
       setDrawerStep(3);
     } else {
       mockStore.addRSVP(event.id, {
@@ -473,7 +476,51 @@ export default function EventPage() {
                 </span>
               </div>
               <div style={{ padding: 'var(--spacing-md)', borderTop: '2px dashed var(--color-border)' }}>
-              {existingRsvp ? (
+              {existingRsvp && existingRsvp.status === 'waitlist' && existingRsvp.approvalState !== 'REJECTED' ? (
+                <div className="text-center">
+                  <Clock size={40} style={{ color: '#ca8a04', margin: '0 auto var(--spacing-sm) auto' }} />
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>You're on the waitlist</h3>
+                  <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '16px' }}>
+                    Status: <span className="badge" style={{ background: 'rgba(245,158,11,0.12)', color: '#ca8a04' }}>● WAITLISTED</span>
+                  </p>
+                  <p style={{ fontSize: '0.8rem', background: 'rgba(245,158,11,0.08)', padding: '10px 12px', borderRadius: '12px', marginBottom: '16px', color: '#92600a' }}>
+                    This event is currently full. If a spot opens up, the host will review the waitlist and approve guests — we'll email you if you're in.
+                  </p>
+                  <Link to="/dashboard">
+                    <Button variant="outline" style={{ width: '100%' }}>Track My Request</Button>
+                  </Link>
+                </div>
+              ) : existingRsvp && existingRsvp.approvalState === 'UNDER_APPROVAL' ? (
+                <div className="text-center">
+                  <Clock size={40} style={{ color: '#ca8a04', margin: '0 auto var(--spacing-sm) auto' }} />
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>Request received!</h3>
+                  <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '16px' }}>
+                    Status: <span className="badge" style={{ background: 'rgba(245,158,11,0.12)', color: '#ca8a04' }}>● UNDER APPROVAL</span>
+                  </p>
+                  <p style={{ fontSize: '0.8rem', background: 'rgba(245,158,11,0.08)', padding: '10px 12px', borderRadius: '12px', marginBottom: '16px', color: '#92600a' }}>
+                    The organizer is reviewing your request. We'll email you as soon as they approve it.
+                  </p>
+                  <Link to="/dashboard">
+                    <Button variant="outline" style={{ width: '100%' }}>Track My Request</Button>
+                  </Link>
+                </div>
+              ) : existingRsvp && existingRsvp.approvalState === 'REJECTED' ? (
+                <div className="text-center">
+                  <X size={40} style={{ color: '#dc2626', margin: '0 auto var(--spacing-sm) auto' }} />
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>Not approved</h3>
+                  <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '16px' }}>
+                    Status: <span className="badge" style={{ background: 'rgba(239,68,68,0.12)', color: '#dc2626' }}>● NOT APPROVED</span>
+                  </p>
+                  {existingRsvp.rejectionReason && (
+                    <p style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: '12px', marginBottom: '16px', color: 'var(--color-text-muted)' }}>
+                      Reason: {existingRsvp.rejectionReason}
+                    </p>
+                  )}
+                  <Link to="/dashboard">
+                    <Button variant="outline" style={{ width: '100%' }}>View in Dashboard</Button>
+                  </Link>
+                </div>
+              ) : existingRsvp ? (
                 <div className="text-center">
                   <CheckCircle size={40} style={{ color: 'var(--color-accent)', margin: '0 auto var(--spacing-sm) auto' }} />
                   <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>You're on the list!</h3>
@@ -523,7 +570,7 @@ export default function EventPage() {
                   </h3>
                   <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '14px' }}>
                     {event.approvalRequired
-                      ? 'This event requires organizer approval. Request to join the waitlist.'
+                      ? 'This event requires organizer approval. Submit your request and the host will review it.'
                       : 'RSVP now to save your spot. Capacity is limited!'}
                   </p>
 
@@ -542,7 +589,7 @@ export default function EventPage() {
                   )}
 
                   <Button variant="primary" onClick={handleOpenRsvpDrawer} style={{ width: '100%', padding: '14px 0', fontSize: '1rem', fontWeight: 700 }} className="flex justify-center items-center gap-xs">
-                    {event.approvalRequired ? 'Request to Join (Waitlist)' : 'RSVP Now'} <ArrowRight size={18} />
+                    {event.approvalRequired ? 'Request to Join' : 'RSVP Now'} <ArrowRight size={18} />
                   </Button>
                 </div>
               )}
@@ -552,8 +599,19 @@ export default function EventPage() {
             {/* Quick Contacts Info */}
             <Card style={{ padding: 'var(--spacing-md)' }} className="flex flex-col gap-xs">
               <span className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '4px' }}>Questions?</span>
-              <span className="flex items-center gap-xs" style={{ fontSize: '0.85rem' }}><Mail size={15} style={{ color: 'var(--color-primary)' }} /> alex@safalevent.com</span>
+              <span className="flex items-center gap-xs" style={{ fontSize: '0.85rem' }}><Mail size={15} style={{ color: 'var(--color-primary)' }} /> {event.hostEmail || 'alex@safalevent.com'}</span>
               <span className="flex items-center gap-xs" style={{ fontSize: '0.85rem' }}><Phone size={15} style={{ color: 'var(--color-accent)' }} /> +1 (555) 999-8888</span>
+              {/* UC-10: guests only see the in-app messaging option when the host enabled it */}
+              {event.messagingEnabled && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="flex items-center justify-center gap-xs"
+                  style={{ marginTop: '8px', padding: '9px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                >
+                  <MessageSquare size={15} style={{ color: 'var(--color-primary)' }} /> Message Host
+                </button>
+              )}
             </Card>
 
              {/* Share Event Card */}

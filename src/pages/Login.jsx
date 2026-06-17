@@ -227,6 +227,13 @@ export default function Login() {
         email: 'admin@safalevent.com',
         phone: '+1 (555) 000-0000'
       });
+    } else if (role === 'staff') {
+      mockStore.setCurrentUser({
+        role: 'staff',
+        name: 'Sam Carter',
+        email: 'sam@safalevent.com',
+        phone: '+1 (555) 444-3333'
+      });
     } else {
       mockStore.setCurrentUser({
         role: 'guest',
@@ -273,6 +280,16 @@ export default function Login() {
       color: '#0ea5e9',
       tint: 'rgba(14,165,233,0.1)',
       avatar: getAvatar('admin@safalevent.com')
+    },
+    {
+      role: 'staff',
+      name: 'Sam Carter',
+      title: 'Sam Carter · Team Member',
+      desc: 'Help run events with role-limited access (approvals, check-in).',
+      tag: 'Team Portal',
+      color: '#7c3aed',
+      tint: 'rgba(124,58,237,0.1)',
+      avatar: getAvatar('sam@safalevent.com')
     },
     {
       role: 'guest',

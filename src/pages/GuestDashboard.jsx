@@ -426,7 +426,7 @@ export default function GuestDashboard({ onLogout }) {
   // Compute metrics variables
   const totalEventsCount = myRsvps.length;
   const attendingCount = myRsvps.filter(r => r.status === 'going').length;
-  const pendingCount = myRsvps.filter(r => r.status === 'waitlist').length;
+  const pendingCount = myRsvps.filter(r => r.status === 'waitlist' || r.approvalState === 'UNDER_APPROVAL').length;
 
   // Search and Filter Past Records
   const filteredPastRsvps = pastRsvps.filter(r => {
@@ -632,7 +632,19 @@ export default function GuestDashboard({ onLogout }) {
                             <div style={{ flex: 1, minWidth: '200px', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
                               <div className="flex items-center gap-sm" style={{ flexWrap: 'wrap' }}>
                                 <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>{rsvp.event.title}</h4>
-                                {rsvp.status === 'going' ? (
+                                {rsvp.status === 'waitlist' && rsvp.approvalState !== 'REJECTED' ? (
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(245,158,11,0.12)', color: '#ca8a04' }}>
+                                    Waitlisted · Under Approval
+                                  </span>
+                                ) : rsvp.approvalState === 'UNDER_APPROVAL' ? (
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(245,158,11,0.12)', color: '#ca8a04' }}>
+                                    Under Approval
+                                  </span>
+                                ) : rsvp.approvalState === 'REJECTED' ? (
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(239,68,68,0.12)', color: '#dc2626' }}>
+                                    Not Approved
+                                  </span>
+                                ) : rsvp.status === 'going' ? (
                                   <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(0,200,83,0.12)', color: 'var(--color-accent)' }}>
                                     Confirmed
                                   </span>
@@ -658,7 +670,19 @@ export default function GuestDashboard({ onLogout }) {
                               flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '140px'
                             }}>
                               <QrCode size={26} style={{ color: 'var(--color-text-muted)', opacity: 0.6 }} />
-                              {rsvp.status === 'going' ? (
+                              {rsvp.status === 'waitlist' && rsvp.approvalState !== 'REJECTED' ? (
+                                <Button variant="outline" disabled style={{ padding: '8px 16px', fontSize: '0.8rem', width: '100%', opacity: 0.85 }}>
+                                  Waitlisted
+                                </Button>
+                              ) : rsvp.approvalState === 'UNDER_APPROVAL' ? (
+                                <Button variant="outline" disabled style={{ padding: '8px 16px', fontSize: '0.8rem', width: '100%', opacity: 0.85 }}>
+                                  Awaiting Approval
+                                </Button>
+                              ) : rsvp.approvalState === 'REJECTED' ? (
+                                <Button variant="outline" disabled style={{ padding: '8px 16px', fontSize: '0.8rem', width: '100%', opacity: 0.7 }}>
+                                  Not Approved
+                                </Button>
+                              ) : rsvp.status === 'going' ? (
                                 <Button variant="primary" style={{ padding: '8px 16px', fontSize: '0.8rem', width: '100%' }} onClick={() => setSelectedTicket(rsvp)}>
                                   View Pass
                                 </Button>
@@ -667,14 +691,17 @@ export default function GuestDashboard({ onLogout }) {
                                   Reply Now
                                 </Button>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenMessageHost(rsvp)}
-                                className="flex items-center justify-center gap-xs"
-                                style={{ padding: '7px 12px', fontSize: '0.78rem', width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', fontWeight: 600 }}
-                              >
-                                <MessageSquare size={14} /> Message Host
-                              </button>
+                              {/* UC-10: messaging shown only when the host enabled it for this event */}
+                              {rsvp.event.messagingEnabled && rsvp.approvalState !== 'REJECTED' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenMessageHost(rsvp)}
+                                  className="flex items-center justify-center gap-xs"
+                                  style={{ padding: '7px 12px', fontSize: '0.78rem', width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', fontWeight: 600 }}
+                                >
+                                  <MessageSquare size={14} /> Message Host
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))
@@ -1552,14 +1579,16 @@ export default function GuestDashboard({ onLogout }) {
                   )}
                 </div>
 
-                <Button
-                  variant="outline"
-                  onClick={() => handleOpenMessageHost(selectedTicket)}
-                  className="flex items-center justify-center gap-xs"
-                  style={{ width: '100%', marginTop: '10px' }}
-                >
-                  <MessageSquare size={15} /> Message the Host
-                </Button>
+                {selectedTicket.event?.messagingEnabled && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOpenMessageHost(selectedTicket)}
+                    className="flex items-center justify-center gap-xs"
+                    style={{ width: '100%', marginTop: '10px' }}
+                  >
+                    <MessageSquare size={15} /> Message the Host
+                  </Button>
+                )}
 
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                   <a

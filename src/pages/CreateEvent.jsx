@@ -35,6 +35,8 @@ export default function CreateEvent() {
     allowSelfCancellation: true,
     cancellationCutoff: 24, // hours
     requireCancellationReason: false,
+    approvalRequired: false,   // UC-01/02: hold RSVPs for host approval
+    messagingEnabled: true,    // UC-09: allow guest <-> host messaging
 
     sendRsvpConfirmationEmail: true,
     sendRsvpConfirmationSms: true,
@@ -492,6 +494,22 @@ export default function CreateEvent() {
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Users size={14} className="text-primary" /> Guest Self-Service Policies
                 </h4>
+
+                <ToggleRow
+                  title="Require RSVP approval"
+                  desc="New RSVPs are held as “Under Approval” until you approve or reject each one."
+                  checked={formData.approvalRequired}
+                  onChange={(e) => setFormData({ ...formData, approvalRequired: e.target.checked })}
+                  small
+                />
+
+                <ToggleRow
+                  title="Allow guest messaging"
+                  desc="Guests can message you in-app from the event page and their dashboard."
+                  checked={formData.messagingEnabled}
+                  onChange={(e) => setFormData({ ...formData, messagingEnabled: e.target.checked })}
+                  small
+                />
 
                 <ToggleRow
                   title="Allow guests to self-edit RSVP details"

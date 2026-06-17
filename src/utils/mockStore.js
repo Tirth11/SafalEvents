@@ -53,6 +53,7 @@ const defaultEvents = [
     cover: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
     theme: 'mesh-gradient-ocean',
     approvalRequired: true,
+    messagingEnabled: true,
     questions: ['What startup are you building or working at?', 'Are you looking for funding?'],
     eventType: 'Meetup',
     privacy: 'Public',
@@ -90,6 +91,7 @@ const defaultEvents = [
     cover: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80',
     theme: 'mesh-gradient-forest',
     approvalRequired: false,
+    messagingEnabled: false,
     questions: ['Do you need a yoga mat?'],
     eventType: 'Fitness',
     privacy: 'Public',
@@ -335,6 +337,22 @@ export const defaultTemplates = {
   ticket_invoice: {
     subject: "Receipt for your ticket: {{event_name}}",
     body: "Hi {{guest_name}},\n\nHere is your receipt for {{event_name}}.\n\nTotal Paid: {{event_price}}\nBooking ID: {{booking_id}}\n\nAccess QR ticket: {{manage_rsvp_link}}"
+  },
+  rsvp_under_approval: {
+    subject: "We received your RSVP for {{event_name}} — pending approval",
+    body: "Hi {{guest_name}},\n\nThanks for your RSVP to {{event_name}}! Because this event requires organizer approval, your request is now UNDER APPROVAL.\n\nWe'll email you as soon as the host reviews it.\n\nDate: {{event_date}} at {{event_start_time}}\nLocation: {{event_location}}\nRequest ID: {{booking_id}}\n\nTrack your status: {{manage_rsvp_link}}\n\n{{host_name}}"
+  },
+  rsvp_approved: {
+    subject: "You're approved for {{event_name}}!",
+    body: "Hi {{guest_name}},\n\nGreat news — the host has APPROVED your RSVP for {{event_name}}. You're confirmed!\n\nDate: {{event_date}} at {{event_start_time}}\nLocation: {{event_location}}\nBooking ID: {{booking_id}}\n\nView your pass: {{manage_rsvp_link}}\n\nSee you there,\n{{host_name}}"
+  },
+  rsvp_rejected: {
+    subject: "Update on your RSVP for {{event_name}}",
+    body: "Hi {{guest_name}},\n\nThank you for your interest in {{event_name}}. Unfortunately the host was unable to approve your RSVP at this time.\n\nReason: {{rejection_reason}}\n\nWe hope to see you at a future event.\n\n{{host_name}}"
+  },
+  staff_invite: {
+    subject: "You've been invited to help run {{event_name}}",
+    body: "Hi {{staff_name}},\n\n{{host_name}} has invited you to join the team for {{event_name}} as {{staff_role}}.\n\nAccept your invite and sign in here: {{manage_rsvp_link}}\n\nYour access is limited to what the {{staff_role}} role permits.\n\nSafalEvent Team"
   }
 };
 
@@ -379,6 +397,84 @@ const defaultUsers = [
     },
     status: 'ACTIVE',
     createdAt: new Date().toISOString()
+  },
+  {
+    id: 'u4',
+    role: 'staff',
+    name: 'Sam Carter',
+    email: 'sam@safalevent.com',
+    phone: '+1 (555) 444-3333',
+    password: 'password123',
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString()
+  }
+];
+
+// --- Staff Roles: named, tab/action-level permission sets (UC-07) ---
+// Permission keys map to tabs/actions in the host portal. Default-deny:
+// anything not present (or false) is hidden in the UI and blocked in the store.
+export const PERMISSION_KEYS = [
+  'guests_view',      // see the guest list & RSVP details
+  'guests_approve',   // approve / reject / reopen RSVPs
+  'guests_edit',      // edit guests, manual add, check-in
+  'guests_export',    // export the guest list
+  'messaging_view',   // read guest <-> host conversations
+  'messaging_reply',  // reply to guests
+  'history_view',     // view activity / audit history
+  'settings_view',    // view event settings & notifications
+  'settings_edit',    // edit event settings
+  'staff_manage'      // invite/manage staff & roles
+];
+
+const ALL_PERMS = PERMISSION_KEYS.reduce((acc, k) => ({ ...acc, [k]: true }), {});
+const buildPerms = (granted) => PERMISSION_KEYS.reduce((acc, k) => ({ ...acc, [k]: granted.includes(k) }), {});
+
+const defaultRoles = [
+  {
+    id: 'role_coordinator',
+    name: 'Coordinator',
+    description: 'Runs the event day-to-day: manage guests, approvals, and messaging.',
+    builtIn: true,
+    permissions: buildPerms([
+      'guests_view', 'guests_approve', 'guests_edit', 'guests_export',
+      'messaging_view', 'messaging_reply', 'history_view', 'settings_view'
+    ])
+  },
+  {
+    id: 'role_frontdesk',
+    name: 'Front-desk',
+    description: 'Check-in and door duty. Can see the guest list and check guests in.',
+    builtIn: true,
+    permissions: buildPerms(['guests_view', 'guests_edit', 'messaging_view', 'history_view'])
+  },
+  {
+    id: 'role_viewer',
+    name: 'Viewer',
+    description: 'Read-only access to guests, messages, and history.',
+    builtIn: true,
+    permissions: buildPerms(['guests_view', 'messaging_view', 'history_view'])
+  }
+];
+
+// Staff assignments link a person (by email) + role to an event (UC-06/08).
+const defaultStaff = [
+  {
+    id: 'st_1',
+    eventId: '2',
+    name: 'Sam Carter',
+    email: 'sam@safalevent.com',
+    roleId: 'role_coordinator',
+    status: 'ACTIVE',
+    invitedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
+  },
+  {
+    id: 'st_2',
+    eventId: '1',
+    name: 'Sam Carter',
+    email: 'sam@safalevent.com',
+    roleId: 'role_frontdesk',
+    status: 'ACTIVE',
+    invitedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
   }
 ];
 
@@ -400,7 +496,9 @@ const getDB = () => {
       signupSessions: [],
       rsvpSessions: [],
       verificationLogs: [],
-      conversations: defaultConversations
+      conversations: defaultConversations,
+      roles: defaultRoles,
+      staff: defaultStaff
     };
   } else {
     try {
@@ -449,6 +547,26 @@ const getDB = () => {
   if (!db.conversations) {
     db.conversations = defaultConversations;
   }
+  // Staff & Roles (UC-06/07/08)
+  if (!db.roles) {
+    db.roles = defaultRoles;
+  }
+  if (!db.staff) {
+    db.staff = defaultStaff;
+  }
+  // Backfill the demo staff user for databases seeded before it existed
+  if (db.users && !db.users.some(u => u.email === 'sam@safalevent.com')) {
+    db.users.push(defaultUsers.find(u => u.email === 'sam@safalevent.com'));
+  }
+  // Backfill per-RSVP approval state (UC-01). Events that require approval keep
+  // new submissions UNDER_APPROVAL; everything else is implicitly APPROVED.
+  db.rsvps = db.rsvps.map(r => {
+    if (r.approvalState === undefined) {
+      const ev = db.events.find(e => e.id === r.eventId);
+      r.approvalState = (ev && ev.approvalRequired) ? 'UNDER_APPROVAL' : 'APPROVED';
+    }
+    return r;
+  });
   if (!db.hostNotifications) {
     db.hostNotifications = [
       {
@@ -550,7 +668,10 @@ const getDB = () => {
       reminder1Offset: 24,
       reminder2Enabled: false,
       reminder2Offset: 3,
-      feedbackDelay: 3
+      feedbackDelay: 3,
+      // Per-event guest <-> host messaging (UC-09). Existing events default to
+      // enabled to preserve current behavior; new events choose during creation.
+      messagingEnabled: true
     };
 
     Object.keys(defaults).forEach(key => {
@@ -625,7 +746,8 @@ export const mockStore = {
       reminderSchedule: '24h',
       hostAlerts: true,
       enablePayments: false,
-      
+      messagingEnabled: true,
+
       // Default notification settings
       sendRsvpConfirmationEmail: true,
       sendRsvpConfirmationSms: true,
@@ -806,8 +928,9 @@ export const mockStore = {
     let finalStatus = rsvpData.status || 'going';
 
     if (event) {
+      // Only confirmed/approved-going guests consume capacity (rejected don't count)
       const currentGoingCount = db.rsvps
-        .filter(r => r.eventId === eventId && r.status === 'going')
+        .filter(r => r.eventId === eventId && r.status === 'going' && r.approvalState !== 'REJECTED')
         .reduce((sum, r) => sum + (r.guestCount || 1), 0);
       const capacity = event.capacity || 100;
 
@@ -815,6 +938,15 @@ export const mockStore = {
         finalStatus = 'waitlist';
       }
     }
+
+    const isWaitlist = finalStatus === 'waitlist';
+
+    // UC-01/02: an RSVP is held UNDER_APPROVAL when (a) the event requires
+    // organizer approval, or (b) it landed on the waitlist because the event is
+    // full — the host then decides who to admit if a spot frees up.
+    const approvalState = rsvpData.approvalState ||
+      ((isWaitlist || (event && event.approvalRequired)) ? 'UNDER_APPROVAL' : 'APPROVED');
+    const pendingApproval = approvalState === 'UNDER_APPROVAL';
 
     const newRsvp = {
       id: 'r_' + Math.random().toString(36).substr(2, 9),
@@ -827,7 +959,8 @@ export const mockStore = {
       reminderSchedule: rsvpData.reminderSchedule || 'both',
       optOutSms: rsvpData.optOutSms || false,
       ...rsvpData,
-      status: finalStatus
+      status: finalStatus,
+      approvalState
     };
     db.rsvps.push(newRsvp);
     saveDB(db);
@@ -835,12 +968,56 @@ export const mockStore = {
     // Add Host Notification & Audit Log
     if (event) {
       const eventTitle = event.title || 'Event';
-      if (finalStatus === 'waitlist') {
-        mockStore.addHostNotification('rsvp', 'Waitlist Join', `${newRsvp.name} joined the waitlist for ${eventTitle} (Capacity full).`, eventId);
+      if (isWaitlist) {
+        mockStore.addHostNotification('rsvp', 'Waitlist — Review Needed', `${newRsvp.name} is waitlisted for ${eventTitle} (capacity full). Approve to allow them in if a spot opens.`, eventId);
+      } else if (pendingApproval) {
+        mockStore.addHostNotification('rsvp', 'RSVP Awaiting Approval', `${newRsvp.name} requested to join ${eventTitle}. Review in Manage → Guests.`, eventId);
       } else {
         mockStore.addHostNotification('rsvp', 'New RSVP', `${newRsvp.name} registered for ${eventTitle}.`, eventId);
       }
-      mockStore.addAuditLog(newRsvp.name + ' (Guest)', `RSVP registered with status: ${finalStatus}`, eventId);
+      mockStore.addAuditLog(
+        newRsvp.name + ' (Guest)',
+        isWaitlist
+          ? `RSVP waitlisted — Under Approval (capacity full)`
+          : pendingApproval
+            ? `RSVP submitted — Under Approval (response: ${finalStatus})`
+            : `RSVP registered with status: ${finalStatus}`,
+        eventId
+      );
+
+      // Notify the host (and dashboard outbox) that a decision is pending (UC-03)
+      if (pendingApproval) {
+        const tmpls = event.templates || defaultTemplates;
+        mockStore.addNotificationLog(eventId, {
+          rsvpId: newRsvp.id,
+          guestEmail: event.hostEmail || 'host@safalevents.com',
+          type: 'rsvp',
+          channel: 'Email',
+          subject: mockStore.renderTemplate(tmpls.host_new_rsvp?.subject || defaultTemplates.host_new_rsvp.subject, event, newRsvp),
+          body: mockStore.renderTemplate(tmpls.host_new_rsvp?.body || defaultTemplates.host_new_rsvp.body, event, newRsvp),
+          status: 'Delivered'
+        });
+      }
+    }
+
+    // UC-03: tell the guest their request is pending approval, then stop — we
+    // do not send a confirmation/ticket until the host approves. Waitlisted
+    // guests get the waitlist notice instead of the generic approval one.
+    if (event && pendingApproval) {
+      const templates = event.templates || defaultTemplates;
+      if (event.sendRsvpConfirmationEmail && newRsvp.preferredChannel === 'Email') {
+        const key = isWaitlist ? 'rsvp_waitlist' : 'rsvp_under_approval';
+        mockStore.addNotificationLog(eventId, {
+          rsvpId: newRsvp.id,
+          guestEmail: newRsvp.email,
+          type: 'rsvp',
+          channel: 'Email',
+          subject: mockStore.renderTemplate(templates[key]?.subject || defaultTemplates[key].subject, event, newRsvp),
+          body: mockStore.renderTemplate(templates[key]?.body || defaultTemplates[key].body, event, newRsvp),
+          status: 'Delivered'
+        });
+      }
+      return newRsvp;
     }
 
     // Dynamic Trigger for RSVP Confirmation
@@ -903,6 +1080,89 @@ export const mockStore = {
     }
 
     return newRsvp;
+  },
+
+  // --- RSVP Approval Workflow (UC-02) ---
+  // Host (or staff with the guests_approve permission) approves a pending RSVP.
+  approveRSVP: (eventId, rsvpId, actor = 'Host') => {
+    const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    const rsvp = db.rsvps.find(r => r.id === rsvpId && r.eventId === eventId);
+    if (!rsvp) return null;
+
+    rsvp.approvalState = 'APPROVED';
+    rsvp.rejectionReason = '';
+    // Approval admits the guest: a waitlisted or previously declined response
+    // becomes "going" so they're allowed in.
+    if (rsvp.status === 'declined' || rsvp.status === 'waitlist') rsvp.status = 'going';
+    rsvp.approvedAt = new Date().toISOString();
+    saveDB(db);
+
+    const eventTitle = event ? event.title : 'Event';
+    mockStore.addAuditLog(actor, `Approved RSVP for ${rsvp.name}`, eventId);
+    mockStore.addHostNotification('rsvp', 'RSVP Approved', `${rsvp.name} was approved for ${eventTitle}.`, eventId);
+
+    // UC-03: email the guest that they are approved
+    if (event) {
+      const templates = event.templates || defaultTemplates;
+      mockStore.addNotificationLog(eventId, {
+        rsvpId: rsvp.id,
+        guestEmail: rsvp.email,
+        type: 'rsvp',
+        channel: 'Email',
+        subject: mockStore.renderTemplate(templates.rsvp_approved?.subject || defaultTemplates.rsvp_approved.subject, event, rsvp),
+        body: mockStore.renderTemplate(templates.rsvp_approved?.body || defaultTemplates.rsvp_approved.body, event, rsvp),
+        status: 'Delivered'
+      });
+    }
+    return rsvp;
+  },
+
+  // Host rejects a pending RSVP (optionally with a reason).
+  rejectRSVP: (eventId, rsvpId, reason = '', actor = 'Host') => {
+    const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    const rsvp = db.rsvps.find(r => r.id === rsvpId && r.eventId === eventId);
+    if (!rsvp) return null;
+
+    rsvp.approvalState = 'REJECTED';
+    rsvp.rejectionReason = reason || '';
+    rsvp.decidedAt = new Date().toISOString();
+    saveDB(db);
+
+    const eventTitle = event ? event.title : 'Event';
+    mockStore.addAuditLog(actor, `Rejected RSVP for ${rsvp.name}${reason ? ` (reason: ${reason})` : ''}`, eventId);
+    mockStore.addHostNotification('rsvp', 'RSVP Rejected', `${rsvp.name}'s request for ${eventTitle} was rejected.`, eventId);
+
+    // UC-03: email the guest that they were not approved
+    if (event) {
+      const templates = event.templates || defaultTemplates;
+      mockStore.addNotificationLog(eventId, {
+        rsvpId: rsvp.id,
+        guestEmail: rsvp.email,
+        type: 'rsvp',
+        channel: 'Email',
+        subject: mockStore.renderTemplate(templates.rsvp_rejected?.subject || defaultTemplates.rsvp_rejected.subject, event, rsvp),
+        body: mockStore.renderTemplate(
+          templates.rsvp_rejected?.body || defaultTemplates.rsvp_rejected.body,
+          event, rsvp, { '{{rejection_reason}}': reason || 'No reason provided.' }
+        ),
+        status: 'Delivered'
+      });
+    }
+    return rsvp;
+  },
+
+  // Re-open a rejected RSVP back to the pending queue (UC-02 business rule).
+  reopenRSVP: (eventId, rsvpId, actor = 'Host') => {
+    const db = getDB();
+    const rsvp = db.rsvps.find(r => r.id === rsvpId && r.eventId === eventId);
+    if (!rsvp) return null;
+    rsvp.approvalState = 'UNDER_APPROVAL';
+    rsvp.rejectionReason = '';
+    saveDB(db);
+    mockStore.addAuditLog(actor, `Re-opened RSVP for ${rsvp.name} (back to Under Approval)`, eventId);
+    return rsvp;
   },
 
   updateRSVP: (eventId, rsvpId, updatedData, actor = 'Organizer') => {
@@ -1151,13 +1411,16 @@ export const mockStore = {
       '{{event_end_time}}': event.endTime || '22:00',
       '{{event_location}}': event.location || '',
       '{{event_online_link}}': event.location?.includes('http') ? event.location : `http://localhost:5173/e/${event.id}`,
-      '{{host_name}}': 'Alex Rivera',
+      '{{host_name}}': event.hostName || 'Alex Rivera',
       '{{manage_rsvp_link}}': `http://localhost:5173/dashboard`,
       '{{guest_name}}': guest?.name || 'Valued Guest',
       '{{guest_guest_count}}': String(guest?.guestCount || 1),
       '{{booking_id}}': guest?.id?.toUpperCase() || 'RSVP-123',
       '{{feedback_survey_link}}': `http://localhost:5173/feedback/${event.id}`,
       '{{safalevent_support_email}}': 'support@safalevent.com',
+      '{{rejection_reason}}': 'No reason provided.',
+      '{{staff_name}}': guest?.name || 'Team member',
+      '{{staff_role}}': 'Team member',
       ...customVars
     };
 
@@ -1803,12 +2066,20 @@ export const mockStore = {
     // Sort waitlist guests by timestamp (FIFO)
     const waitlisted = db.rsvps.filter(r => r.eventId === eventId && r.status === 'waitlist')
                                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    
+
+    let needsHostReview = false;
+
     for (let rsvp of waitlisted) {
       if (currentGoing + (rsvp.guestCount || 1) <= capacity) {
+        // A spot is available. Waitlisted guests are held UNDER_APPROVAL, so the
+        // host decides who to admit rather than auto-promoting by FIFO.
+        if (rsvp.approvalState === 'UNDER_APPROVAL') {
+          needsHostReview = true;
+          continue;
+        }
         rsvp.status = 'going';
         currentGoing += (rsvp.guestCount || 1);
-        
+
         // Add a host notification
         db.hostNotifications = db.hostNotifications || [];
         db.hostNotifications.unshift({
@@ -1854,6 +2125,189 @@ export const mockStore = {
         break; // No more capacity
       }
     }
+
+    // A spot opened but the next guest(s) need host approval to be admitted
+    if (needsHostReview) {
+      db.hostNotifications = db.hostNotifications || [];
+      db.hostNotifications.unshift({
+        id: 'n_' + Math.random().toString(36).substr(2, 9),
+        type: 'rsvp',
+        title: 'Spot Opened — Review Waitlist',
+        message: `A spot opened for ${event.title}. Approve a waitlisted guest to allow them in.`,
+        timestamp: new Date().toISOString(),
+        read: false,
+        eventId
+      });
+    }
+  },
+
+  // --- Staff & Roles (UC-06/07/08) ---
+  getRoles: () => {
+    const db = getDB();
+    return db.roles || [];
+  },
+
+  getRoleById: (roleId) => {
+    const db = getDB();
+    return (db.roles || []).find(r => r.id === roleId) || null;
+  },
+
+  createRole: (roleData) => {
+    const db = getDB();
+    if (!db.roles) db.roles = [];
+    const newRole = {
+      id: 'role_' + Math.random().toString(36).substr(2, 9),
+      name: roleData.name || 'New Role',
+      description: roleData.description || '',
+      builtIn: false,
+      // Default-deny: only the explicitly granted permissions are true.
+      permissions: PERMISSION_KEYS.reduce((acc, k) => ({ ...acc, [k]: !!(roleData.permissions && roleData.permissions[k]) }), {})
+    };
+    db.roles.push(newRole);
+    saveDB(db);
+    mockStore.addAuditLog('Host', `Created role "${newRole.name}"`, null);
+    return newRole;
+  },
+
+  updateRole: (roleId, roleData) => {
+    const db = getDB();
+    db.roles = (db.roles || []).map(r => r.id === roleId ? {
+      ...r,
+      ...roleData,
+      permissions: { ...r.permissions, ...(roleData.permissions || {}) }
+    } : r);
+    saveDB(db);
+    const role = (db.roles || []).find(r => r.id === roleId);
+    if (role) mockStore.addAuditLog('Host', `Updated role "${role.name}"`, null);
+    return role || null;
+  },
+
+  deleteRole: (roleId) => {
+    const db = getDB();
+    const role = (db.roles || []).find(r => r.id === roleId);
+    if (role && role.builtIn) return false; // cannot delete built-in roles
+    db.roles = (db.roles || []).filter(r => r.id !== roleId);
+    // Detach any staff assigned to the deleted role
+    db.staff = (db.staff || []).map(s => s.roleId === roleId ? { ...s, roleId: null } : s);
+    saveDB(db);
+    return true;
+  },
+
+  // Staff assigned to a given event
+  getStaff: (eventId) => {
+    const db = getDB();
+    return (db.staff || []).filter(s => s.eventId === eventId && s.status !== 'REMOVED');
+  },
+
+  // All events a person (by email) is active staff on
+  getStaffForEmail: (email) => {
+    if (!email) return [];
+    const db = getDB();
+    return (db.staff || []).filter(s => s.email === email && s.status !== 'REMOVED');
+  },
+
+  inviteStaff: (eventId, { name, email, roleId }) => {
+    const db = getDB();
+    if (!db.staff) db.staff = [];
+    const event = db.events.find(e => e.id === eventId);
+    const role = (db.roles || []).find(r => r.id === roleId);
+
+    // If the email is not yet a user, create a pending staff user account
+    if (email && !db.users.some(u => u.email === email)) {
+      db.users.push({
+        id: 'u_' + Math.random().toString(36).substr(2, 9),
+        role: 'staff',
+        name: name || email,
+        email,
+        phone: '',
+        password: 'password123',
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    const newStaff = {
+      id: 'st_' + Math.random().toString(36).substr(2, 9),
+      eventId,
+      name: name || email,
+      email,
+      roleId: roleId || null,
+      status: 'INVITED',
+      invitedAt: new Date().toISOString()
+    };
+    db.staff.push(newStaff);
+    saveDB(db);
+
+    mockStore.addAuditLog('Host', `Invited ${newStaff.name} as ${role ? role.name : 'staff'}`, eventId);
+    mockStore.addHostNotification('rsvp', 'Staff Invited', `${newStaff.name} was invited to help run ${event ? event.title : 'the event'}.`, eventId);
+
+    // UC-03/06: send the invite email (recorded in the outbox)
+    if (event) {
+      const templates = event.templates || defaultTemplates;
+      mockStore.addNotificationLog(eventId, {
+        rsvpId: null,
+        guestEmail: email,
+        type: 'broadcast',
+        channel: 'Email',
+        subject: mockStore.renderTemplate(templates.staff_invite?.subject || defaultTemplates.staff_invite.subject, event, { name }),
+        body: mockStore.renderTemplate(
+          templates.staff_invite?.body || defaultTemplates.staff_invite.body,
+          event, { name },
+          { '{{staff_name}}': name || email, '{{staff_role}}': role ? role.name : 'Team member' }
+        ),
+        status: 'Delivered'
+      });
+    }
+    return newStaff;
+  },
+
+  updateStaff: (staffId, data) => {
+    const db = getDB();
+    db.staff = (db.staff || []).map(s => s.id === staffId ? { ...s, ...data } : s);
+    saveDB(db);
+    return (db.staff || []).find(s => s.id === staffId) || null;
+  },
+
+  acceptStaffInvite: (email) => {
+    const db = getDB();
+    let changed = false;
+    db.staff = (db.staff || []).map(s => {
+      if (s.email === email && s.status === 'INVITED') {
+        changed = true;
+        return { ...s, status: 'ACTIVE', acceptedAt: new Date().toISOString() };
+      }
+      return s;
+    });
+    if (changed) saveDB(db);
+    return changed;
+  },
+
+  removeStaff: (staffId) => {
+    const db = getDB();
+    const staff = (db.staff || []).find(s => s.id === staffId);
+    db.staff = (db.staff || []).map(s => s.id === staffId ? { ...s, status: 'REMOVED' } : s);
+    saveDB(db);
+    if (staff) mockStore.addAuditLog('Host', `Removed staff member ${staff.name}`, staff.eventId);
+    return true;
+  },
+
+  // Resolve the effective permission set for a viewer on a specific event.
+  // The host (owner) implicitly has full access; staff get their role's grants;
+  // everyone else is default-denied.
+  getPermissionsForEvent: (email, eventId) => {
+    const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    const denyAll = PERMISSION_KEYS.reduce((acc, k) => ({ ...acc, [k]: false }), {});
+    if (!event) return denyAll;
+    if (email && event.hostEmail === email) return { ...ALL_PERMS };
+
+    const assignment = (db.staff || []).find(
+      s => s.eventId === eventId && s.email === email && s.status === 'ACTIVE'
+    );
+    if (!assignment) return denyAll;
+    const role = (db.roles || []).find(r => r.id === assignment.roleId);
+    if (!role) return denyAll;
+    return { ...denyAll, ...role.permissions };
   },
 
   // --- Platform Settings ---

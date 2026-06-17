@@ -38,12 +38,14 @@ function DashboardWrapper() {
   };
 
   const toggleRole = (role) => {
-    const updated = role === 'host' 
+    const updated = role === 'host'
       ? { role: 'host', name: 'Alex Rivera', email: 'alex@safalevent.com', phone: '+1 (555) 999-8888' }
       : role === 'admin'
       ? { role: 'admin', name: 'Super Admin', email: 'admin@safalevent.com', phone: '+1 (555) 000-0000' }
+      : role === 'staff'
+      ? { role: 'staff', name: 'Sam Carter', email: 'sam@safalevent.com', phone: '+1 (555) 444-3333' }
       : { role: 'guest', name: 'Alice Vance', email: 'alice@example.com', phone: '+1 (555) 123-4567' };
-    
+
     mockStore.setCurrentUser(updated);
     setUser(updated);
     // Reload dashboard state by refreshing window or setting state (state setting is enough)
@@ -54,7 +56,7 @@ function DashboardWrapper() {
 
   return (
     <div style={{ position: 'relative' }}>
-      {user.role === 'host' ? (
+      {user.role === 'host' || user.role === 'staff' ? (
         <HostDashboard onLogout={handleLogout} />
       ) : user.role === 'admin' ? (
         <AdminDashboard onLogout={handleLogout} />
@@ -79,6 +81,13 @@ function DashboardWrapper() {
           className={`role-switcher-btn ${user.role === 'admin' ? 'active-admin' : ''}`}
         >
           Admin
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleRole('staff')}
+          className={`role-switcher-btn ${user.role === 'staff' ? 'active-staff' : ''}`}
+        >
+          Staff
         </button>
         <button
           type="button"

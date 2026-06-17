@@ -1043,6 +1043,12 @@ textarea:focus {
   border-color: var(--color-accent);
 }
 
+.role-switcher-btn.active-staff {
+  background: #7c3aed;
+  color: white;
+  border-color: #7c3aed;
+}
+
 /* ─── Badges ─── */
 .badge {
   display: inline-flex;
