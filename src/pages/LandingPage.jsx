@@ -846,7 +846,7 @@ Designed with intention
             </div>
             <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '24px', textAlign: 'center' }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                © {new Date().getFullYear()} SafalEvents. Made for events that actually happen.
+                © {new Date().getFullYear()} Safalvir Inc. All rights reserved.
               </p>
             </div>
           </div>

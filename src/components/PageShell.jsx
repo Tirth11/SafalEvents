@@ -294,7 +294,7 @@ export default function PageShell({ children }) {
       <footer className="site-footer">
         <div className="container site-footer-inner">
           <div>
-            <strong>© {new Date().getFullYear()} SafalEvents.</strong> Made for events that actually happen.
+            <strong>© {new Date().getFullYear()} Safalvir Inc.</strong> All rights reserved.
           </div>
           <div className="site-footer-links">
             <Link to="/terms" className="site-nav-link">Terms</Link>
