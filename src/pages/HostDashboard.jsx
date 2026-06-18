@@ -327,7 +327,19 @@ export default function HostDashboard({ onLogout }) {
 
   const handleManageEvent = (eventId) => {
     setSelectedEventId(eventId);
-    setSelectedEventTab('overview');
+    // UC-08: staff land on the first tab their role permits (e.g. a QR Scanner
+    // opens straight onto Check-in, since that's all their role exposes).
+    if (currentUser?.role === 'staff') {
+      const p = mockStore.getPermissionsForEvent(currentUser.email, eventId) || {};
+      const firstTab = p.guests_view ? 'overview'
+        : p.checkin ? 'checkin'
+        : p.messaging_view ? 'messaging'
+        : p.settings_view ? 'notifications'
+        : 'overview';
+      setSelectedEventTab(firstTab);
+    } else {
+      setSelectedEventTab('overview');
+    }
     setActiveSidebar('events');
     const evt = mockStore.getEventById(eventId);
     if (evt) {
@@ -427,32 +439,42 @@ export default function HostDashboard({ onLogout }) {
     }
   };
 
+  // UC-11: validate a scanned QR / pass ID against the event's APPROVED guest list
   const handleVerifyCheckin = (passId) => {
     const rsvp = managedEventRsvps.find(r => r.id === passId.trim());
+    // Not in this event's list at all → wrong event / invalid token
     if (!rsvp) {
-      setCheckinResult({ type: 'error', message: `Pass ID "${passId}" not found for this event.` });
+      setCheckinResult({ type: 'error', message: `Not valid for this event. Pass "${passId}" was not found on the guest list.` });
       return;
     }
-    if (rsvp.status === 'waitlist') {
-      setCheckinResult({ type: 'error', rsvp, message: 'Guest is currently waitlisted. Entry denied.' });
+    // Only approved guests may enter
+    if (rsvp.approvalState === 'REJECTED') {
+      setCheckinResult({ type: 'error', rsvp, message: 'This guest was not approved for the event. Entry denied.' });
       return;
     }
-    if (false) {
-      setCheckinResult({ type: 'error', rsvp, message: 'Guest RSVP has been declined. Entry denied.' });
+    if (rsvp.approvalState === 'UNDER_APPROVAL' || rsvp.status === 'waitlist') {
+      setCheckinResult({ type: 'error', rsvp, message: 'This guest is still Under Approval and not yet admitted. Entry denied.' });
       return;
     }
+    if (rsvp.status !== 'going') {
+      setCheckinResult({ type: 'error', rsvp, message: 'This guest is not confirmed for the event. Entry denied.' });
+      return;
+    }
+    // Already scanned → warn with the recorded time
     if (rsvp.checkedIn) {
-      setCheckinResult({ type: 'warning', rsvp, message: 'Warning: Pass has already been scanned. Duplicate entry detected!' });
+      const when = rsvp.checkedInAt ? new Date(rsvp.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'earlier';
+      setCheckinResult({ type: 'warning', rsvp, message: `Already scanned at ${when}. Duplicate entry detected.` });
       return;
     }
-    
-    // Success Check-in
-    mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }, activeScannerStaff);
+
+    // Success — mark arrived
+    const scanner = currentUser?.role === 'staff' ? `${currentUser.name} (Staff)` : activeScannerStaff;
+    mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true, checkedInAt: new Date().toISOString() }, scanner);
     loadDashboardData();
     setCheckinResult({
       type: 'success',
       rsvp: { ...rsvp, checkedIn: true },
-      message: `Entry Approved! Checked in by ${activeScannerStaff}.`
+      message: `Arrived! ${rsvp.name} checked in (${rsvp.guestCount || 1} attendee${(rsvp.guestCount || 1) > 1 ? 's' : ''}) by ${scanner}.`
     });
     setCheckinInput('');
   };
@@ -910,7 +932,7 @@ export default function HostDashboard({ onLogout }) {
 
   // UC-07/08: resolve what the current viewer is allowed to do on this event.
   // The host (owner) gets everything; staff get only their role's grants.
-  const allPerms = { guests_view: true, guests_approve: true, guests_edit: true, guests_export: true, messaging_view: true, messaging_reply: true, history_view: true, settings_view: true, settings_edit: true, staff_manage: true };
+  const allPerms = { guests_view: true, guests_approve: true, guests_edit: true, guests_export: true, checkin: true, messaging_view: true, messaging_reply: true, history_view: true, settings_view: true, settings_edit: true, staff_manage: true };
   const viewerPerms = managedEvent
     ? (isStaffViewer ? mockStore.getPermissionsForEvent(currentUser?.email, managedEvent.id) : allPerms)
     : allPerms;
@@ -1775,7 +1797,7 @@ export default function HostDashboard({ onLogout }) {
                   { key: 'edit', label: 'Details Editor', perm: 'settings_edit' },
                   { key: 'notifications', label: 'Notifications Schedule', perm: 'settings_view' },
                   { key: 'invitations', label: 'Manual Add', perm: 'guests_edit' },
-                  { key: 'checkin', label: 'QR Scan Check-in', perm: 'guests_edit' },
+                  { key: 'checkin', label: 'QR Scan Check-in', perm: 'checkin' },
                   { key: 'payments', label: 'Payments', perm: 'settings_view' },
                   { key: 'staff', label: 'Staff & Roles', perm: 'staff_manage' }
                 ].filter(t => can(t.perm)).map(t => (
@@ -2884,6 +2906,11 @@ export default function HostDashboard({ onLogout }) {
                                 <div>
                                   <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
                                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{role ? role.name : 'No role'} • {s.email}</div>
+                                  {s.inviteId && (
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                      Invite ID: <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{s.inviteId}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-sm">
@@ -2957,8 +2984,9 @@ export default function HostDashboard({ onLogout }) {
                           {[
                             { key: 'guests_view', label: 'View guest list' },
                             { key: 'guests_approve', label: 'Approve / reject RSVPs' },
-                            { key: 'guests_edit', label: 'Edit guests & check-in' },
+                            { key: 'guests_edit', label: 'Edit guests & manual add' },
                             { key: 'guests_export', label: 'Export guest list' },
+                            { key: 'checkin', label: 'Gate check-in (QR scan)' },
                             { key: 'messaging_view', label: 'View messages' },
                             { key: 'messaging_reply', label: 'Reply to guests' },
                             { key: 'history_view', label: 'View history' },

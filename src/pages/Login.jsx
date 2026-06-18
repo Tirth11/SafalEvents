@@ -62,6 +62,14 @@ export default function Login() {
   // Validation / Error Messages
   const [errorMsg, setErrorMsg] = useState('');
 
+  // UC-12: account-type chooser for signup ('guest' | 'host' | null)
+  const [signupRole, setSignupRole] = useState(null);
+  const [guestForm, setGuestForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+
+  // UC-13: "Login as Staff" path (Invite ID + email/phone)
+  const [staffMode, setStaffMode] = useState(false);
+  const [staffForm, setStaffForm] = useState({ inviteId: '', contact: '' });
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('signup') === 'true') {
@@ -111,6 +119,43 @@ export default function Login() {
     setSignupOtp('');
   };
 
+  // UC-12: guest signup — provisions a guest account, then lands in the guest flow
+  const handleGuestSignupSubmit = (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    const formData = {
+      firstName: guestForm.firstName.trim() || 'New',
+      lastName: guestForm.lastName.trim() || 'Guest',
+      email: guestForm.email.trim() || `guest${Date.now()}@example.com`,
+      phone: guestForm.phone.trim() || '+1 (555) 000-0000',
+    };
+
+    const existingUsers = mockStore.getUsers();
+    if (formData.email && existingUsers.some(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
+      setErrorMsg('An account with this email already exists. Try logging in instead.');
+      return;
+    }
+
+    const session = mockStore.createSignupSession('individual', formData, 'guest');
+    setSignupSession(session);
+    setResendCooldown(30);
+    setSignupOtp('');
+  };
+
+  // UC-13: validate an Invite ID against the email/phone it was issued to
+  const handleStaffLogin = (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    const res = mockStore.loginAsStaff(staffForm.inviteId, staffForm.contact);
+    if (!res.success) {
+      setErrorMsg(res.error);
+      return;
+    }
+    mockStore.setCurrentUser({ role: 'staff', name: res.staff.name, email: res.staff.email, phone: res.staff.phone });
+    navigate('/dashboard');
+  };
+
   const handleOtpVerifySubmit = (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -127,13 +172,20 @@ export default function Login() {
       return;
     }
 
+    // UC-12: a verified guest is logged straight into the guest flow
+    if (res.user && res.user.role === 'guest') {
+      mockStore.setCurrentUser({ role: 'guest', name: res.user.name, email: res.user.email, phone: res.user.phone });
+      navigate('/dashboard');
+      return;
+    }
+
     setSignupSuccess(true);
   };
 
   const handleResendSignupOtp = () => {
     if (resendCooldown > 0 || !signupSession) return;
 
-    const newSession = mockStore.createSignupSession(signupSession.hostType, signupSession.formData);
+    const newSession = mockStore.createSignupSession(signupSession.hostType, signupSession.formData, signupSession.accountType || 'host');
     setSignupSession(newSession);
     setResendCooldown(30);
     setSignupOtp('');
@@ -358,7 +410,7 @@ export default function Login() {
                   Verification successful! Your organization application is now pending admin review. An administrator will review your documents and activate your account shortly.
                 </p>
               )}
-              <Button variant="primary" onClick={() => { setIsSignup(false); setSignupSuccess(false); setSignupSession(null); }} style={{ width: '100%', padding: '13px', fontWeight: 600 }}>Proceed to Login</Button>
+              <Button variant="primary" onClick={() => { setIsSignup(false); setSignupSuccess(false); setSignupSession(null); setSignupRole(null); }} style={{ width: '100%', padding: '13px', fontWeight: 600 }}>Proceed to Login</Button>
             </div>
           ) : signupSession ? (
             /* SIGNUP OTP VERIFICATION VIEW */
@@ -427,10 +479,22 @@ export default function Login() {
                   <Sparkles size={12} /> SafalEvents
                 </span>
                 <h1 style={{ fontSize: '1.9rem', marginBottom: '6px', fontFamily: 'var(--font-heading)', lineHeight: 1.15 }}>
-                  {isSignup ? 'Become a Host' : 'Welcome back 👋'}
+                  {!isSignup
+                    ? 'Welcome back 👋'
+                    : !signupRole
+                    ? 'Join SafalEvents'
+                    : signupRole === 'guest'
+                    ? 'Create your guest account'
+                    : 'Become a Host'}
                 </h1>
                 <p className="text-muted" style={{ fontSize: '0.9rem' }}>
-                  {isSignup ? 'Share only what you want — every field is optional.' : 'Sign in with your email or phone. No password needed — we’ll text you a code.'}
+                  {!isSignup
+                    ? 'Sign in with your email or phone. No password needed — we’ll text you a code.'
+                    : !signupRole
+                    ? 'How would you like to use SafalEvents?'
+                    : signupRole === 'guest'
+                    ? 'RSVP to events, get your tickets, and message hosts.'
+                    : 'Share only what you want — every field is optional.'}
                 </p>
               </div>
 
@@ -441,9 +505,50 @@ export default function Login() {
                 </div>
               )}
 
-              {isSignup ? (
+              {isSignup && !signupRole ? (
+                /* UC-12: account-type chooser — Host vs Guest */
+                <div className="flex flex-col gap-md">
+                  <button type="button" onClick={() => { setSignupRole('host'); setErrorMsg(''); }} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: '#fff', cursor: 'pointer', textAlign: 'left' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', borderRadius: 'var(--radius-md)', background: 'var(--color-primary)', color: '#fff', flexShrink: 0 }}><Building2 size={20} /></span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontWeight: 700, fontSize: '1rem' }}>Host an event</span>
+                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>Create &amp; manage events, approvals, staff, and settings.</span>
+                    </span>
+                    <Sparkles size={18} style={{ color: 'var(--color-primary)' }} />
+                  </button>
+                  <button type="button" onClick={() => { setSignupRole('guest'); setErrorMsg(''); }} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: '#fff', cursor: 'pointer', textAlign: 'left' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', borderRadius: 'var(--radius-md)', background: 'var(--color-accent)', color: '#fff', flexShrink: 0 }}><User size={20} /></span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontWeight: 700, fontSize: '1rem' }}>Attend an event</span>
+                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>RSVP, view tickets &amp; QR passes, message hosts.</span>
+                    </span>
+                    <Sparkles size={18} style={{ color: 'var(--color-accent)' }} />
+                  </button>
+                  <p className="text-muted" style={{ fontSize: '0.78rem', textAlign: 'center', marginTop: '2px' }}>
+                    Team member? You join via an Invite ID from your host — use “Login as Staff”.
+                  </p>
+                  <div className="text-center" style={{ fontSize: '0.875rem' }}>
+                    <span className="text-muted">Already have an account? </span>
+                    <button type="button" onClick={() => { setIsSignup(false); setErrorMsg(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem' }}>Log in</button>
+                  </div>
+                </div>
+              ) : isSignup && signupRole === 'guest' ? (
+                /* UC-12: guest signup form */
+                <form onSubmit={handleGuestSignupSubmit} className="flex flex-col gap-md">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <FormField label="First name"><FormInput value={guestForm.firstName} onChange={(e) => setGuestForm({ ...guestForm, firstName: e.target.value })} placeholder="Alice" /></FormField>
+                    <FormField label="Last name"><FormInput value={guestForm.lastName} onChange={(e) => setGuestForm({ ...guestForm, lastName: e.target.value })} placeholder="Vance" /></FormField>
+                  </div>
+                  <FormField label="Email"><FormInput type="email" value={guestForm.email} onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })} placeholder="you@email.com" /></FormField>
+                  <FormField label="Phone"><FormInput value={guestForm.phone} onChange={(e) => setGuestForm({ ...guestForm, phone: e.target.value })} placeholder="+1 (555) 000-0000" /></FormField>
+                  <Button variant="primary" type="submit" style={{ width: '100%', padding: '13px', fontWeight: 700, fontSize: '1rem' }}><Mail size={16} /> Send verification code</Button>
+                  <button type="button" onClick={() => { setSignupRole(null); setErrorMsg(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', alignSelf: 'center' }}><ArrowLeft size={14} /> Back</button>
+                </form>
+              ) : isSignup ? (
                 /* HOST SIGNUP FORMS */
                 <form onSubmit={handleHostSignupSubmit} className="flex flex-col gap-md">
+
+                  <button type="button" onClick={() => { setSignupRole(null); setErrorMsg(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', alignSelf: 'flex-start' }}><ArrowLeft size={14} /> Back to account type</button>
 
                   <div>
                     <div style={{ ...sectionLabelStyle, marginBottom: '10px' }}>
@@ -599,8 +704,28 @@ export default function Login() {
                   </div>
                 </form>
               ) : (
-                /* LOGIN FORM */
+                /* LOGIN FORM (UC-13) */
                 <>
+                  {staffMode ? (
+                    /* "Login as Staff" — Invite ID + email/phone */
+                    <form onSubmit={handleStaffLogin} className="flex flex-col gap-md">
+                      <div style={{ background: orangeTint, border: '1px solid var(--color-primary)', borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: '0.8rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ShieldCheck size={16} /> Team member sign-in — use the Invite ID your host shared with you.
+                      </div>
+                      <FormField label="Invite ID" hint="Demo: INV-GATE-1 (QR Scanner) or INV-SAM-2026 (Coordinator).">
+                        <FormInput type="text" value={staffForm.inviteId} onChange={(e) => setStaffForm({ ...staffForm, inviteId: e.target.value })} placeholder="INV-XXXXXX" />
+                      </FormField>
+                      <FormField label="Email or phone" hint="The email/phone the invite was issued to.">
+                        <FormInput type="text" value={staffForm.contact} onChange={(e) => setStaffForm({ ...staffForm, contact: e.target.value })} placeholder="you@email.com" />
+                      </FormField>
+                      <Button variant="primary" type="submit" style={{ width: '100%', padding: '13px', fontWeight: 700, fontSize: '1rem', boxShadow: 'var(--shadow-md)' }}>
+                        <Lock size={16} /> Sign in as Staff
+                      </Button>
+                      <button type="button" onClick={() => { setStaffMode(false); setErrorMsg(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', alignSelf: 'center' }}>
+                        <ArrowLeft size={14} /> Back to normal login
+                      </button>
+                    </form>
+                  ) : (
                   <form onSubmit={handleLoginSubmit} className="flex flex-col gap-md">
                     {!showOtp ? (
                       <FormField label="Email or phone" hint="Or use a demo profile below to skip this step.">
@@ -616,11 +741,16 @@ export default function Login() {
                       {showOtp ? (<><Lock size={16} /> Verify &amp; Login</>) : (<><Mail size={16} /> Send Login OTP</>)}
                     </Button>
 
+                    <button type="button" onClick={() => { setStaffMode(true); setErrorMsg(''); setShowOtp(false); }} style={{ width: '100%', padding: '11px', fontWeight: 700, fontSize: '0.9rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-full)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <ShieldCheck size={15} /> Login as Staff
+                    </button>
+
                     <div className="text-center" style={{ fontSize: '0.875rem' }}>
                       <span className="text-muted">Want to host events? </span>
-                      <button type="button" onClick={() => { setIsSignup(true); setErrorMsg(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem' }}>Apply here</button>
+                      <button type="button" onClick={() => { setIsSignup(true); setSignupRole('host'); setErrorMsg(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem' }}>Apply here</button>
                     </div>
                   </form>
+                  )}
 
                   {/* Demo Quick Logins */}
                   <div style={{ marginTop: 'var(--spacing-lg)' }}>

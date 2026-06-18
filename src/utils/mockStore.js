@@ -416,8 +416,9 @@ const defaultUsers = [
 export const PERMISSION_KEYS = [
   'guests_view',      // see the guest list & RSVP details
   'guests_approve',   // approve / reject / reopen RSVPs
-  'guests_edit',      // edit guests, manual add, check-in
+  'guests_edit',      // edit guests, manual add
   'guests_export',    // export the guest list
+  'checkin',          // gate check-in via QR scanner (UC-11)
   'messaging_view',   // read guest <-> host conversations
   'messaging_reply',  // reply to guests
   'history_view',     // view activity / audit history
@@ -433,10 +434,10 @@ const defaultRoles = [
   {
     id: 'role_coordinator',
     name: 'Coordinator',
-    description: 'Runs the event day-to-day: manage guests, approvals, and messaging.',
+    description: 'Runs the event day-to-day: manage guests, approvals, check-in, and messaging.',
     builtIn: true,
     permissions: buildPerms([
-      'guests_view', 'guests_approve', 'guests_edit', 'guests_export',
+      'guests_view', 'guests_approve', 'guests_edit', 'guests_export', 'checkin',
       'messaging_view', 'messaging_reply', 'history_view', 'settings_view'
     ])
   },
@@ -445,7 +446,14 @@ const defaultRoles = [
     name: 'Front-desk',
     description: 'Check-in and door duty. Can see the guest list and check guests in.',
     builtIn: true,
-    permissions: buildPerms(['guests_view', 'guests_edit', 'messaging_view', 'history_view'])
+    permissions: buildPerms(['guests_view', 'guests_edit', 'checkin', 'messaging_view', 'history_view'])
+  },
+  {
+    id: 'role_scanner',
+    name: 'QR Scanner',
+    description: 'Gate check-in only — scans guest QR codes to mark arrivals. No editing, messaging, or settings.',
+    builtIn: true,
+    permissions: buildPerms(['checkin'])
   },
   {
     id: 'role_viewer',
@@ -457,6 +465,8 @@ const defaultRoles = [
 ];
 
 // Staff assignments link a person (by email) + role to an event (UC-06/08).
+// inviteId is the shareable token a staff member uses on the "Login as Staff"
+// path (UC-13), matched against the email it was issued to.
 const defaultStaff = [
   {
     id: 'st_1',
@@ -464,6 +474,7 @@ const defaultStaff = [
     name: 'Sam Carter',
     email: 'sam@safalevent.com',
     roleId: 'role_coordinator',
+    inviteId: 'INV-SAM-2026',
     status: 'ACTIVE',
     invitedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
   },
@@ -473,8 +484,19 @@ const defaultStaff = [
     name: 'Sam Carter',
     email: 'sam@safalevent.com',
     roleId: 'role_frontdesk',
+    inviteId: 'INV-SAM-2026',
     status: 'ACTIVE',
     invitedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
+  },
+  {
+    id: 'st_3',
+    eventId: '1',
+    name: 'Gabe Nguyen',
+    email: 'gabe@safalevent.com',
+    roleId: 'role_scanner',
+    inviteId: 'INV-GATE-1',
+    status: 'ACTIVE',
+    invitedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString()
   }
 ];
 
@@ -1604,16 +1626,17 @@ export const mockStore = {
     return db.users.find(u => u.email === email) || null;
   },
 
-  createSignupSession: (hostType, formData) => {
+  createSignupSession: (hostType, formData, accountType = 'host') => {
     const db = getDB();
     db.signupSessions = db.signupSessions.filter(s => s.formData.email !== formData.email);
-    
+
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    
+
     const newSession = {
       id: 'sess_' + Math.random().toString(36).substr(2, 9),
       hostType,
+      accountType, // 'host' | 'guest' (UC-12)
       formData,
       otpCode: code,
       otpExpiry: expiry,
@@ -1704,8 +1727,30 @@ export const mockStore = {
       return { success: false, error: `Invalid code. ${5 - session.attempts} attempts remaining.` };
     }
 
+    // UC-12: a guest account is provisioned active immediately and lands in the guest flow
+    if (session.accountType === 'guest') {
+      const guestUser = {
+        id: 'u_' + Math.random().toString(36).substr(2, 9),
+        role: 'guest',
+        name: `${session.formData.firstName} ${session.formData.lastName}`.trim() || 'New Guest',
+        email: session.formData.email,
+        phone: session.formData.phone,
+        password: session.formData.password || 'password123',
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString()
+      };
+      db.users.push(guestUser);
+      db.signupSessions = db.signupSessions.filter(s => s.id !== sessionId);
+      saveDB(db);
+      mockStore.logVerificationAttempt({
+        type: 'signup', targetEmail: session.formData.email, targetPhone: session.formData.phone,
+        otpCode: code, success: true, message: 'Guest verification successful'
+      });
+      return { success: true, user: guestUser };
+    }
+
     const userStatus = session.hostType === 'individual' ? 'ACTIVE' : 'PENDING_ADMIN_APPROVAL';
-    
+
     const newUser = {
       id: 'u_' + Math.random().toString(36).substr(2, 9),
       role: 'host',
@@ -2206,6 +2251,44 @@ export const mockStore = {
     return (db.staff || []).filter(s => s.email === email && s.status !== 'REMOVED');
   },
 
+  // UC-13: "Login as Staff" — validate an Invite ID against the email/phone it
+  // was issued to. Returns { success, staff } or { success, error }.
+  loginAsStaff: (inviteId, contact) => {
+    const db = getDB();
+    const code = (inviteId || '').trim().toLowerCase();
+    const c = (contact || '').trim().toLowerCase();
+    if (!code || !c) return { success: false, error: 'Enter your Invite ID and the email/phone it was sent to.' };
+
+    const matches = (db.staff || []).filter(s => (s.inviteId || '').toLowerCase() === code);
+    if (matches.length === 0) {
+      return { success: false, error: 'Invite ID not found. Check the ID or ask your host to resend it.' };
+    }
+    if (matches.every(s => s.status === 'REMOVED' || s.status === 'REVOKED')) {
+      return { success: false, error: 'This invite has been revoked. Ask your host to send a new one.' };
+    }
+    const matched = matches.find(
+      s => s.email.toLowerCase() === c ||
+           (contact && s.phone && s.phone.replace(/\D/g, '') === contact.replace(/\D/g, ''))
+    );
+    if (!matched) {
+      return { success: false, error: 'This Invite ID was issued to a different email/phone.' };
+    }
+
+    // Accepting the invite activates any pending assignments for this person
+    db.staff = db.staff.map(s =>
+      s.email === matched.email && s.status === 'INVITED'
+        ? { ...s, status: 'ACTIVE', acceptedAt: new Date().toISOString() }
+        : s
+    );
+    saveDB(db);
+    mockStore.addAuditLog(`${matched.name} (Staff)`, `Signed in via Invite ID ${matched.inviteId}`, matched.eventId);
+
+    return {
+      success: true,
+      staff: { role: 'staff', name: matched.name, email: matched.email, phone: matched.phone || '' },
+    };
+  },
+
   inviteStaff: (eventId, { name, email, roleId }) => {
     const db = getDB();
     if (!db.staff) db.staff = [];
@@ -2232,13 +2315,15 @@ export const mockStore = {
       name: name || email,
       email,
       roleId: roleId || null,
+      // UC-13: shareable Invite ID the staff member uses to log in
+      inviteId: 'INV-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
       status: 'INVITED',
       invitedAt: new Date().toISOString()
     };
     db.staff.push(newStaff);
     saveDB(db);
 
-    mockStore.addAuditLog('Host', `Invited ${newStaff.name} as ${role ? role.name : 'staff'}`, eventId);
+    mockStore.addAuditLog('Host', `Invited ${newStaff.name} as ${role ? role.name : 'staff'} (Invite ID ${newStaff.inviteId})`, eventId);
     mockStore.addHostNotification('rsvp', 'Staff Invited', `${newStaff.name} was invited to help run ${event ? event.title : 'the event'}.`, eventId);
 
     // UC-03/06: send the invite email (recorded in the outbox)
