@@ -124,7 +124,7 @@ export default function LandingPage() {
                       gap: '8px',
                     }}
                   >
-                    Create an invite <ArrowRight size={18} />
+                    Join Safal Events <ArrowRight size={18} />
                   </Button>
                 </Link>
                 <Link to="/e/1">
@@ -769,7 +769,7 @@ Designed with intention
                         gap: '8px',
                       }}
                     >
-                      Create an invite <ArrowRight size={16} />
+                      Join Safal Events <ArrowRight size={16} />
                     </Button>
                   </Link>
                   <Link to="/e/1">
@@ -813,7 +813,7 @@ Designed with intention
                     Explore events
                   </Link>
                   <Link to="/login?signup=true" className="footer-link">
-                    Create an invite
+                    Join Safal Events
                   </Link>
                 </div>
               </div>
