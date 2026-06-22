@@ -37,6 +37,17 @@ export default function PageShell({ children }) {
     navigate('/');
   };
 
+  const handlePricingClick = (e) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById('pricing');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    setMobileMenuOpen(false);
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
       <header className="site-header">
@@ -51,7 +62,7 @@ export default function PageShell({ children }) {
           {/* Desktop Navigation */}
           <nav className="site-nav site-nav-desktop">
             <Link to="/explore" className="site-nav-link">Explore</Link>
-            <Link to="/pricing" className="site-nav-link">Pricing</Link>
+            <Link to="/pricing" className="site-nav-link" onClick={handlePricingClick}>Pricing</Link>
             {currentUser && currentUser.role && location.pathname !== '/' ? (
               <>
                 {currentUser.role === 'host' && (
@@ -235,6 +246,12 @@ export default function PageShell({ children }) {
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div className="mobile-only" style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--color-bg)', padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 999 }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '12px', borderBottom: '1px solid var(--color-border)' }}>
+              <Link to="/explore" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'block', padding: '8px 0', fontSize: '1.05rem', fontWeight: 600 }}>Explore</Link>
+              <Link to="/pricing" className="site-nav-link" onClick={handlePricingClick} style={{ display: 'block', padding: '8px 0', fontSize: '1.05rem', fontWeight: 600 }}>Pricing</Link>
+            </div>
+
             {currentUser && location.pathname !== '/' ? (
               <>
                 {currentUser.role === 'host' && (
