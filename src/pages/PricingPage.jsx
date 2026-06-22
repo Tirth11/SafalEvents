@@ -704,14 +704,6 @@ export function PricingSection() {
 
           {/* Hero Section */}
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: 'linear-gradient(135deg, rgba(255,107,53,0.12), rgba(255,60,172,0.12))',
-              color: 'var(--color-primary)', padding: '8px 20px', borderRadius: 'var(--radius-full)',
-              fontSize: '0.85rem', fontWeight: 700, marginBottom: '16px'
-            }}>
-              <Sparkles size={16} /> Transparent Pricing
-            </span>
             <h1 style={{
               fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 900, fontFamily: 'var(--font-heading)',
               lineHeight: 1.1, margin: '16px 0 12px',
@@ -965,24 +957,6 @@ export function PricingSection() {
             </div>
           </Card>
 
-          {/* CTA */}
-          <div style={{
-            textAlign: 'center', padding: '48px 24px', borderRadius: '24px',
-            background: 'linear-gradient(135deg, rgba(255,107,53,0.06), rgba(255,60,172,0.06))',
-            border: '1px solid rgba(255,107,53,0.15)'
-          }}>
-            <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 900, fontFamily: 'var(--font-heading)', marginBottom: '12px' }}>
-              Ready to host your next event?
-            </h2>
-            <p className="text-muted" style={{ fontSize: '1rem', marginBottom: '24px', maxWidth: '450px', margin: '0 auto 24px' }}>
-              Start with a free plan, no credit card required. Upgrade anytime as your events grow.
-            </p>
-            <Link to="/login?signup=true" style={{ textDecoration: 'none' }}>
-              <Button variant="primary" style={{ padding: '14px 40px', fontSize: '1.05rem', fontWeight: 700 }}>
-                <Sparkles size={18} /> Get Started Free <ArrowRight size={18} />
-              </Button>
-            </Link>
-          </div>
 
         </div>
       </div>
