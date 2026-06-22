@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String
+  password      String
+  avatar        String?
+  phone         String?
+  currency      String    @default("USD")
+  language      String    @default("en")
+  role          String    @default("user")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  expenses      Expense[]
+  purchases     PurchaseItem[]
+  receipts      Receipt[]
+  warranties    Warranty[]
+  expiryItems   ExpiryItem[]
+  familyMembers FamilyMember[]
+  events        Event[]
+  credits       CreditTransaction[]
+  notifications Notification[]
+
+  @@index([email])
+}
+
+// Expense model
+model Expense {
+  id              String   @id @default(uuid())
+  userId          String
+  amount          Float
+  currency        String   @default("USD")
+  category        String
+  subcategory     String?
+  description     String
+  date            DateTime
+  paymentMethod   String?
+  tags            String[]
+  familyMemberId  String?
+  eventId         String?
+  receiptId       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receipt         Receipt? @relation(fields: [receiptId], references: [id])
+
+  @@index([userId, date])
+  @@index([userId, category])
+}
+
+// Purchase Item model
+model PurchaseItem {
+  id              String    @id @default(uuid())
+  userId          String
+  name            String
+  brand           String?
+  category        String
+  price           Float
+  currency        String    @default("USD")
+  purchaseDate    DateTime
+  store           String?
+  quantity        Int       @default(1)
+  notes           String?
+  familyMemberId  String?
+  receiptId       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  warranty        Warranty?
+  receipt         Receipt?  @relation(fields: [receiptId], references: [id])
+
+  @@index([userId, purchaseDate])
+}
+
+// Receipt model
+model Receipt {
+  id              String   @id @default(uuid())
+  userId          String
+  imageUrl        String
+  ocrData         Json?
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses        Expense[]
+  purchases       PurchaseItem[]
+
+  @@index([userId, status])
+}
+
+// Warranty model
+model Warranty {
+  id              String   @id @default(uuid())
+  userId          String
+  purchaseItemId  String   @unique
+  startDate       DateTime
+  endDate         DateTime
+  durationMonths  Int
+  provider        String?
+  warrantyNumber  String?
+  documentUrl     String?
+  notes           String?
+  remindersEnabled Boolean @default(true)
+  reminderDays    Int[]    @default([30, 7])
+  createdAt       DateTime @default(now())
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchaseItem    PurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([endDate])
+}
+
+// Expiry Item model
+model ExpiryItem {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String
+  category        String
+  expiryDate      DateTime
+  purchaseDate    DateTime?
+  notes           String?
+  reminderEnabled Boolean  @default(true)
+  reminderDays    Int[]    @default([7, 3, 1])
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiryDate])
+}
+
+// Family Member model
+model FamilyMember {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  email         String?
+  phone         String?
+  avatar        String?
+  relationship  String
+  role          String   @default("member")
+  joinedAt      DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Event model
+model Event {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  description   String?
+  budget        Float
+  currency      String   @default("USD")
+  startDate     DateTime
+  endDate       DateTime?
+  status        String   @default("planned")
+  shareLink     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  participants  EventParticipant[]
+  expenses      EventExpense[]
+
+  @@index([userId, startDate])
+}
+
+// Event Participant model
+model EventParticipant {
+  id          String   @id @default(uuid())
+  eventId     String
+  name        String
+  email       String?
+  phone       String?
+  amountPaid  Float    @default(0)
+  amountOwed  Float    @default(0)
+  status      String   @default("pending")
+
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+// Event Expense model
+model EventExpense {
+  id          String   @id @default(uuid())
+  eventId     String
+  description String
+  amount      Float
+  paidBy      String
+  date        DateTime @default(now())
+  splitType   String   @default("equal")
+
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+// Credit Transaction model
+model CreditTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  amount      Int
+  type        String
+  action      String
+  description String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// Notification model
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  title       String
+  message     String
+  data        Json?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
