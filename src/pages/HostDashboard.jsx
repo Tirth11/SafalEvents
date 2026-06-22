@@ -11,6 +11,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
 import HostPhotosAdmin from '../components/HostPhotosAdmin';
+import BillingPanel from '../components/BillingPanel';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 
@@ -1007,6 +1008,15 @@ export default function HostDashboard({ onLogout }) {
               className={`dashboard-nav-btn ${activeSidebar === 'earnings' ? 'active' : ''}`}
             >
               <CreditCard size={18} /> Earnings
+            </button>
+            )}
+
+            {!isStaffViewer && (
+            <button
+              onClick={() => { setActiveSidebar('billing'); setSelectedEventId(null); }}
+              className={`dashboard-nav-btn ${activeSidebar === 'billing' ? 'active' : ''}`}
+            >
+              <Ticket size={18} /> Billing & Plans
             </button>
             )}
 
@@ -3215,6 +3225,13 @@ export default function HostDashboard({ onLogout }) {
               </Card>
 
             </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* SECTION: BILLING & PLANS                                                   */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'billing' && (
+            <BillingPanel hostEmail={currentUser?.email || 'alex@safalevent.com'} />
           )}
 
           {/* ========================================================================= */}

@@ -9,6 +9,7 @@ import { HERO_IMAGES, getAvatar, getEventCover, EVENT_COVERS } from '../utils/im
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import AdminEconomicsPanel from '../components/AdminEconomicsPanel';
 
 export default function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('overview'); // overview, hosts, events, applications, settings
@@ -287,6 +288,12 @@ export default function AdminDashboard({ onLogout }) {
               className={`dashboard-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
             >
               <Settings size={18} /> Branding &amp; Settings
+            </button>
+            <button 
+              onClick={() => setActiveTab('economics')}
+              className={`dashboard-nav-btn ${activeTab === 'economics' ? 'active' : ''}`}
+            >
+              <Ticket size={18} /> Economics & Plans
             </button>
           </nav>
 
@@ -979,6 +986,11 @@ export default function AdminDashboard({ onLogout }) {
                 </form>
               </Card>
             </div>
+          )}
+
+          {/* ECONOMICS & PLANS */}
+          {activeTab === 'economics' && (
+            <AdminEconomicsPanel />
           )}
 
         </main>

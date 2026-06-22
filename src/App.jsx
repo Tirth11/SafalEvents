@@ -11,6 +11,7 @@ import RsvpFlow from './pages/RsvpFlow'
 import FeedbackPage from './pages/FeedbackPage'
 import AdminDashboard from './pages/AdminDashboard'
 import HostProfile from './pages/HostProfile'
+import PricingPage from './pages/PricingPage'
 import { mockStore } from './utils/mockStore'
 import { Sparkles } from 'lucide-react'
 
@@ -107,6 +108,7 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/explore" element={<ExploreEvents />} />
+      <Route path="/pricing" element={<PricingPage />} />
       <Route path="/dashboard" element={<DashboardWrapper />} />
       <Route path="/create" element={<CreateEvent />} />
       <Route path="/e/:eventId" element={<EventPage />} />

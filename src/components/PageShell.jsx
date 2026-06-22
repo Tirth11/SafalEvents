@@ -50,6 +50,8 @@ export default function PageShell({ children }) {
 
           {/* Desktop Navigation */}
           <nav className="site-nav site-nav-desktop">
+            <Link to="/explore" className="site-nav-link">Explore</Link>
+            <Link to="/pricing" className="site-nav-link">Pricing</Link>
             {currentUser && currentUser.role && location.pathname !== '/' ? (
               <>
                 {currentUser.role === 'host' && (

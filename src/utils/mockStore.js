@@ -513,6 +513,407 @@ const defaultStaff = [
   }
 ];
 
+// --- Pricing Plans (UC-14) ---
+const defaultPlans = [
+  // Individual Plans
+  {
+    id: 'ind_free',
+    name: 'Free',
+    hostType: 'individual',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    commission: 0,
+    limits: {
+      activeEvents: 1,
+      attendeesPerEvent: 50,
+      maxGuestsPerRsvp: 1,
+      staffMembers: 0,
+      photos: 10,
+      customQuestions: 2
+    },
+    paidTickets: false,
+    polls: false,
+    guestMessaging: false,
+    duplicateEvents: false,
+    customDomain: false,
+    removeBranding: false,
+    csvExport: false,
+    qrCheckin: false
+  },
+  {
+    id: 'ind_basic',
+    name: 'Basic',
+    hostType: 'individual',
+    monthlyPrice: 3.99,
+    annualPrice: 39.99,
+    commission: 5,
+    limits: {
+      activeEvents: 3,
+      attendeesPerEvent: 200,
+      maxGuestsPerRsvp: 2,
+      staffMembers: 2,
+      photos: 50,
+      customQuestions: 5
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: false,
+    duplicateEvents: false,
+    customDomain: false,
+    removeBranding: false,
+    csvExport: true,
+    qrCheckin: false
+  },
+  {
+    id: 'ind_advanced',
+    name: 'Advanced',
+    hostType: 'individual',
+    monthlyPrice: 9.99,
+    annualPrice: 99.99,
+    commission: 3,
+    limits: {
+      activeEvents: 10,
+      attendeesPerEvent: 500,
+      maxGuestsPerRsvp: 4,
+      staffMembers: 5,
+      photos: 200,
+      customQuestions: 10
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: true,
+    duplicateEvents: true,
+    customDomain: false,
+    removeBranding: false,
+    csvExport: true,
+    qrCheckin: true
+  },
+  {
+    id: 'ind_premium',
+    name: 'Premium',
+    hostType: 'individual',
+    monthlyPrice: 24.99,
+    annualPrice: 249.99,
+    commission: 2,
+    limits: {
+      activeEvents: -1,
+      attendeesPerEvent: 1500,
+      maxGuestsPerRsvp: 6,
+      staffMembers: 15,
+      photos: 1000,
+      customQuestions: 25
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: true,
+    duplicateEvents: true,
+    customDomain: true,
+    removeBranding: true,
+    csvExport: true,
+    qrCheckin: true
+  },
+  {
+    id: 'ind_premium_plus',
+    name: 'Premium Plus',
+    hostType: 'individual',
+    monthlyPrice: 49.99,
+    annualPrice: 499.99,
+    commission: 1,
+    limits: {
+      activeEvents: -1,
+      attendeesPerEvent: 5000,
+      maxGuestsPerRsvp: 10,
+      staffMembers: -1,
+      photos: -1,
+      customQuestions: -1
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: true,
+    duplicateEvents: true,
+    customDomain: true,
+    removeBranding: true,
+    csvExport: true,
+    qrCheckin: true
+  },
+  // Organization Plans
+  {
+    id: 'org_free',
+    name: 'Free',
+    hostType: 'organization',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    commission: 0,
+    limits: {
+      activeEvents: 2,
+      attendeesPerEvent: 100,
+      maxGuestsPerRsvp: 1,
+      staffMembers: 1,
+      photos: 20,
+      customQuestions: 3
+    },
+    paidTickets: false,
+    polls: false,
+    guestMessaging: false,
+    duplicateEvents: false,
+    customDomain: false,
+    removeBranding: false,
+    csvExport: false,
+    qrCheckin: false
+  },
+  {
+    id: 'org_basic',
+    name: 'Basic',
+    hostType: 'organization',
+    monthlyPrice: 19.99,
+    annualPrice: 199.99,
+    commission: 4,
+    limits: {
+      activeEvents: 5,
+      attendeesPerEvent: 500,
+      maxGuestsPerRsvp: 3,
+      staffMembers: 5,
+      photos: 100,
+      customQuestions: 10
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: false,
+    duplicateEvents: true,
+    customDomain: false,
+    removeBranding: false,
+    csvExport: true,
+    qrCheckin: true
+  },
+  {
+    id: 'org_advanced',
+    name: 'Advanced',
+    hostType: 'organization',
+    monthlyPrice: 49.99,
+    annualPrice: 499.99,
+    commission: 2.5,
+    limits: {
+      activeEvents: 30,
+      attendeesPerEvent: 2000,
+      maxGuestsPerRsvp: 5,
+      staffMembers: 15,
+      photos: 500,
+      customQuestions: 20
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: true,
+    duplicateEvents: true,
+    customDomain: true,
+    removeBranding: false,
+    csvExport: true,
+    qrCheckin: true
+  },
+  {
+    id: 'org_premium',
+    name: 'Premium',
+    hostType: 'organization',
+    monthlyPrice: 99.99,
+    annualPrice: 999.99,
+    commission: 1,
+    limits: {
+      activeEvents: -1,
+      attendeesPerEvent: 5000,
+      maxGuestsPerRsvp: 10,
+      staffMembers: 50,
+      photos: 5000,
+      customQuestions: -1
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: true,
+    duplicateEvents: true,
+    customDomain: true,
+    removeBranding: true,
+    csvExport: true,
+    qrCheckin: true
+  },
+  {
+    id: 'org_premium_plus',
+    name: 'Premium Plus',
+    hostType: 'organization',
+    monthlyPrice: -1,
+    annualPrice: -1,
+    commission: 0,
+    limits: {
+      activeEvents: -1,
+      attendeesPerEvent: -1,
+      maxGuestsPerRsvp: -1,
+      staffMembers: -1,
+      photos: -1,
+      customQuestions: -1
+    },
+    paidTickets: true,
+    polls: true,
+    guestMessaging: true,
+    duplicateEvents: true,
+    customDomain: true,
+    removeBranding: true,
+    csvExport: true,
+    qrCheckin: true
+  }
+];
+
+// --- Top-Up Packs (UC-14) ---
+const defaultTopUps = [
+  // Individual Top-Ups
+  {
+    id: 'topup_ind_events_3',
+    name: '+3 Active Events',
+    hostType: 'individual',
+    category: 'events',
+    value: 3,
+    price: 4.99,
+    description: 'Add 3 more active events to your current plan.'
+  },
+  {
+    id: 'topup_ind_events_10',
+    name: '+10 Active Events',
+    hostType: 'individual',
+    category: 'events',
+    value: 10,
+    price: 12.99,
+    description: 'Add 10 more active events to your current plan.'
+  },
+  {
+    id: 'topup_ind_attendees_100',
+    name: '+100 Attendees',
+    hostType: 'individual',
+    category: 'attendees',
+    value: 100,
+    price: 2.99,
+    description: 'Add 100 attendee slots to a specific event.'
+  },
+  {
+    id: 'topup_ind_attendees_500',
+    name: '+500 Attendees',
+    hostType: 'individual',
+    category: 'attendees',
+    value: 500,
+    price: 9.99,
+    description: 'Add 500 attendee slots to a specific event.'
+  },
+  {
+    id: 'topup_ind_photos_50',
+    name: '+50 Photos',
+    hostType: 'individual',
+    category: 'photos',
+    value: 50,
+    price: 1.99,
+    description: 'Add 50 more photo uploads across your events.'
+  },
+  {
+    id: 'topup_ind_staff_3',
+    name: '+3 Staff Members',
+    hostType: 'individual',
+    category: 'staff',
+    value: 3,
+    price: 3.99,
+    description: 'Add 3 more staff member slots.'
+  },
+  // Organization Top-Ups
+  {
+    id: 'topup_org_events_10',
+    name: '+10 Active Events',
+    hostType: 'organization',
+    category: 'events',
+    value: 10,
+    price: 14.99,
+    description: 'Add 10 more active events to your organization plan.'
+  },
+  {
+    id: 'topup_org_events_50',
+    name: '+50 Active Events',
+    hostType: 'organization',
+    category: 'events',
+    value: 50,
+    price: 59.99,
+    description: 'Add 50 more active events to your organization plan.'
+  },
+  {
+    id: 'topup_org_attendees_500',
+    name: '+500 Attendees',
+    hostType: 'organization',
+    category: 'attendees',
+    value: 500,
+    price: 9.99,
+    description: 'Add 500 attendee slots to a specific event.'
+  },
+  {
+    id: 'topup_org_attendees_2000',
+    name: '+2000 Attendees',
+    hostType: 'organization',
+    category: 'attendees',
+    value: 2000,
+    price: 29.99,
+    description: 'Add 2000 attendee slots to a specific event.'
+  },
+  {
+    id: 'topup_org_photos_200',
+    name: '+200 Photos',
+    hostType: 'organization',
+    category: 'photos',
+    value: 200,
+    price: 4.99,
+    description: 'Add 200 more photo uploads across your events.'
+  },
+  {
+    id: 'topup_org_staff_10',
+    name: '+10 Staff Members',
+    hostType: 'organization',
+    category: 'staff',
+    value: 10,
+    price: 9.99,
+    description: 'Add 10 more staff member slots.'
+  }
+];
+
+// --- Default Subscriptions (UC-14) ---
+const defaultSubscriptions = [
+  {
+    id: 'sub_1',
+    hostEmail: 'alex@safalevent.com',
+    planId: 'ind_advanced',
+    billingCycle: 'monthly',
+    status: 'active',
+    startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString(),
+    currentPeriodStart: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
+    currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24 * 15).toISOString(),
+    scheduledChange: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString()
+  }
+];
+
+// --- Default Transactions (UC-14) ---
+const defaultTransactions = [
+  {
+    id: 'txn_1',
+    hostEmail: 'alex@safalevent.com',
+    type: 'subscription',
+    description: 'Advanced Plan - Monthly',
+    amount: 9.99,
+    status: 'completed',
+    planId: 'ind_advanced',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString()
+  },
+  {
+    id: 'txn_2',
+    hostEmail: 'alex@safalevent.com',
+    type: 'subscription',
+    description: 'Advanced Plan - Monthly',
+    amount: 9.99,
+    status: 'completed',
+    planId: 'ind_advanced',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString()
+  }
+];
+
 // Initialize DB if not present
 const getDB = () => {
   const data = localStorage.getItem(STORE_KEY);
@@ -593,6 +994,22 @@ const getDB = () => {
   }
   if (!db.photos) {
     db.photos = defaultPhotos;
+  }
+  // Pricing & Billing (UC-14)
+  if (!db.plans) {
+    db.plans = defaultPlans;
+  }
+  if (!db.topUps) {
+    db.topUps = defaultTopUps;
+  }
+  if (!db.subscriptions) {
+    db.subscriptions = defaultSubscriptions;
+  }
+  if (!db.topUpBalances) {
+    db.topUpBalances = [];
+  }
+  if (!db.transactions) {
+    db.transactions = defaultTransactions;
   }
   // Backfill the demo staff user for databases seeded before it existed
   if (db.users && !db.users.some(u => u.email === 'sam@safalevent.com')) {
@@ -2494,5 +2911,449 @@ export const mockStore = {
     db.platformSettings = { ...db.platformSettings, ...settings };
     saveDB(db);
     return db.platformSettings;
+  },
+
+  // --- Pricing Plans (UC-14) ---
+  getPlans: (hostType) => {
+    const db = getDB();
+    if (!hostType) return db.plans;
+    return db.plans.filter(p => p.hostType === hostType);
+  },
+
+  getPlanById: (planId) => {
+    const db = getDB();
+    return db.plans.find(p => p.id === planId) || null;
+  },
+
+  getTopUps: (hostType) => {
+    const db = getDB();
+    if (!hostType) return db.topUps;
+    return db.topUps.filter(t => t.hostType === hostType);
+  },
+
+  // --- Subscriptions (UC-14) ---
+  getSubscription: (hostEmail) => {
+    const db = getDB();
+    return db.subscriptions.find(s => s.hostEmail === hostEmail) || null;
+  },
+
+  autoAssignFreePlan: (hostEmail, hostType) => {
+    const db = getDB();
+    const existing = db.subscriptions.find(s => s.hostEmail === hostEmail);
+    if (existing) return existing;
+    const freePlanId = hostType === 'organization' ? 'org_free' : 'ind_free';
+    const now = new Date().toISOString();
+    const sub = {
+      id: 'sub_' + Date.now(),
+      hostEmail,
+      planId: freePlanId,
+      billingCycle: 'none',
+      status: 'active',
+      startDate: now,
+      currentPeriodStart: now,
+      currentPeriodEnd: null,
+      scheduledChange: null,
+      createdAt: now,
+      updatedAt: now
+    };
+    db.subscriptions.push(sub);
+    saveDB(db);
+    return sub;
+  },
+
+  upgradeSubscription: (hostEmail, newPlanId, billingCycle) => {
+    const db = getDB();
+    const sub = db.subscriptions.find(s => s.hostEmail === hostEmail);
+    if (!sub) return { success: false, message: 'No subscription found.' };
+    const newPlan = db.plans.find(p => p.id === newPlanId);
+    if (!newPlan) return { success: false, message: 'Invalid plan.' };
+    const oldPlan = db.plans.find(p => p.id === sub.planId);
+
+    // Calculate prorated credit from remaining time on current plan
+    let proratedCredit = 0;
+    if (oldPlan && oldPlan.monthlyPrice > 0 && sub.currentPeriodEnd) {
+      const now = Date.now();
+      const periodEnd = new Date(sub.currentPeriodEnd).getTime();
+      const periodStart = new Date(sub.currentPeriodStart).getTime();
+      const totalDuration = periodEnd - periodStart;
+      const remaining = Math.max(0, periodEnd - now);
+      if (totalDuration > 0) {
+        const currentPrice = sub.billingCycle === 'annual' ? oldPlan.annualPrice : oldPlan.monthlyPrice;
+        proratedCredit = parseFloat(((remaining / totalDuration) * currentPrice).toFixed(2));
+      }
+    }
+
+    const now = new Date();
+    const periodMonths = billingCycle === 'annual' ? 12 : 1;
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + periodMonths);
+    const price = billingCycle === 'annual' ? newPlan.annualPrice : newPlan.monthlyPrice;
+    const chargedAmount = parseFloat(Math.max(0, price - proratedCredit).toFixed(2));
+
+    sub.planId = newPlanId;
+    sub.billingCycle = billingCycle;
+    sub.status = 'active';
+    sub.currentPeriodStart = now.toISOString();
+    sub.currentPeriodEnd = periodEnd.toISOString();
+    sub.scheduledChange = null;
+    sub.updatedAt = now.toISOString();
+
+    const txn = {
+      id: 'txn_' + Date.now(),
+      hostEmail,
+      type: 'subscription',
+      description: `${newPlan.name} Plan - ${billingCycle === 'annual' ? 'Annual' : 'Monthly'} (upgrade)`,
+      amount: chargedAmount,
+      proratedCredit,
+      status: 'completed',
+      planId: newPlanId,
+      createdAt: now.toISOString()
+    };
+    db.transactions.push(txn);
+    saveDB(db);
+    return { success: true, subscription: sub, transaction: txn, proratedCredit };
+  },
+
+  downgradeSubscription: (hostEmail, newPlanId) => {
+    const db = getDB();
+    const sub = db.subscriptions.find(s => s.hostEmail === hostEmail);
+    if (!sub) return { success: false, message: 'No subscription found.' };
+    const newPlan = db.plans.find(p => p.id === newPlanId);
+    if (!newPlan) return { success: false, message: 'Invalid plan.' };
+    sub.scheduledChange = {
+      type: 'downgrade',
+      newPlanId,
+      effectiveDate: sub.currentPeriodEnd,
+      scheduledAt: new Date().toISOString()
+    };
+    sub.updatedAt = new Date().toISOString();
+    saveDB(db);
+    return { success: true, subscription: sub };
+  },
+
+  // --- Top-Ups (UC-14) ---
+  purchaseTopUp: (hostEmail, topUpId, eventId) => {
+    const db = getDB();
+    const topUp = db.topUps.find(t => t.id === topUpId);
+    if (!topUp) return { success: false, message: 'Invalid top-up.' };
+    const now = new Date().toISOString();
+    const balance = {
+      id: 'bal_' + Date.now(),
+      hostEmail,
+      topUpId,
+      category: topUp.category,
+      remaining: topUp.value,
+      total: topUp.value,
+      eventId: eventId || null,
+      purchasedAt: now
+    };
+    db.topUpBalances.push(balance);
+    const txn = {
+      id: 'txn_' + Date.now(),
+      hostEmail,
+      type: 'topup',
+      description: topUp.name,
+      amount: topUp.price,
+      status: 'completed',
+      topUpId,
+      eventId: eventId || null,
+      createdAt: now
+    };
+    db.transactions.push(txn);
+    saveDB(db);
+    return { success: true, balance, transaction: txn };
+  },
+
+  getTopUpBalances: (hostEmail) => {
+    const db = getDB();
+    return (db.topUpBalances || []).filter(b => b.hostEmail === hostEmail && b.remaining > 0);
+  },
+
+  // --- Transactions (UC-14) ---
+  getTransactions: (hostEmail) => {
+    const db = getDB();
+    if (!hostEmail) return db.transactions;
+    return db.transactions.filter(t => t.hostEmail === hostEmail);
+  },
+
+  // --- Usage & Limits (UC-14) ---
+  getHostUsage: (hostEmail) => {
+    const db = getDB();
+    const sub = db.subscriptions.find(s => s.hostEmail === hostEmail);
+    if (!sub) return null;
+    const plan = db.plans.find(p => p.id === sub.planId);
+    if (!plan) return null;
+    const hostEvents = db.events.filter(e => e.hostEmail === hostEmail && e.status !== 'Cancelled');
+    const activeEventCount = hostEvents.length;
+    const totalAttendees = hostEvents.reduce((sum, ev) => {
+      const evRsvps = db.rsvps.filter(r => r.eventId === ev.id && r.status !== 'not_going');
+      return sum + evRsvps.length;
+    }, 0);
+    const staffCount = (db.staff || []).filter(s =>
+      hostEvents.some(ev => ev.id === s.eventId) && s.status === 'ACTIVE'
+    ).length;
+    const photoCount = (db.photos || []).filter(p =>
+      hostEvents.some(ev => ev.id === p.eventId)
+    ).length;
+
+    // Sum top-up bonuses for this host
+    const topUpBonuses = (db.topUpBalances || []).filter(b => b.hostEmail === hostEmail && b.remaining > 0);
+    const eventBonus = topUpBonuses.filter(b => b.category === 'events').reduce((s, b) => s + b.remaining, 0);
+    const staffBonus = topUpBonuses.filter(b => b.category === 'staff').reduce((s, b) => s + b.remaining, 0);
+    const photoBonus = topUpBonuses.filter(b => b.category === 'photos').reduce((s, b) => s + b.remaining, 0);
+
+    return {
+      planId: sub.planId,
+      planName: plan.name,
+      hostType: plan.hostType,
+      usage: {
+        activeEvents: { current: activeEventCount, max: plan.limits.activeEvents === -1 ? -1 : plan.limits.activeEvents + eventBonus },
+        totalAttendees: { current: totalAttendees, max: plan.limits.attendeesPerEvent },
+        staffMembers: { current: staffCount, max: plan.limits.staffMembers === -1 ? -1 : plan.limits.staffMembers + staffBonus },
+        photos: { current: photoCount, max: plan.limits.photos === -1 ? -1 : plan.limits.photos + photoBonus }
+      },
+      subscription: sub
+    };
+  },
+
+  checkLimit: (hostEmail, limitKey, eventId) => {
+    const db = getDB();
+    const sub = db.subscriptions.find(s => s.hostEmail === hostEmail);
+    if (!sub) return { allowed: false, current: 0, max: 0, message: 'No active subscription.' };
+    const plan = db.plans.find(p => p.id === sub.planId);
+    if (!plan) return { allowed: false, current: 0, max: 0, message: 'Plan not found.' };
+
+    const hostEvents = db.events.filter(e => e.hostEmail === hostEmail && e.status !== 'Cancelled');
+    const topUpBonuses = (db.topUpBalances || []).filter(b => b.hostEmail === hostEmail && b.remaining > 0);
+
+    let current = 0;
+    let max = 0;
+    let label = limitKey;
+
+    switch (limitKey) {
+      case 'activeEvents': {
+        current = hostEvents.length;
+        const bonus = topUpBonuses.filter(b => b.category === 'events').reduce((s, b) => s + b.remaining, 0);
+        max = plan.limits.activeEvents === -1 ? -1 : plan.limits.activeEvents + bonus;
+        label = 'active events';
+        break;
+      }
+      case 'attendeesPerEvent': {
+        const ev = eventId ? db.events.find(e => e.id === eventId) : null;
+        const evRsvps = ev ? db.rsvps.filter(r => r.eventId === ev.id && r.status !== 'not_going') : [];
+        current = evRsvps.length;
+        const bonus = topUpBonuses.filter(b => b.category === 'attendees' && (b.eventId === eventId || !b.eventId)).reduce((s, b) => s + b.remaining, 0);
+        max = plan.limits.attendeesPerEvent === -1 ? -1 : plan.limits.attendeesPerEvent + bonus;
+        label = 'attendees for this event';
+        break;
+      }
+      case 'staffMembers': {
+        current = (db.staff || []).filter(s =>
+          hostEvents.some(ev => ev.id === s.eventId) && s.status === 'ACTIVE'
+        ).length;
+        const bonus = topUpBonuses.filter(b => b.category === 'staff').reduce((s, b) => s + b.remaining, 0);
+        max = plan.limits.staffMembers === -1 ? -1 : plan.limits.staffMembers + bonus;
+        label = 'staff members';
+        break;
+      }
+      case 'photos': {
+        current = (db.photos || []).filter(p =>
+          hostEvents.some(ev => ev.id === p.eventId)
+        ).length;
+        const bonus = topUpBonuses.filter(b => b.category === 'photos').reduce((s, b) => s + b.remaining, 0);
+        max = plan.limits.photos === -1 ? -1 : plan.limits.photos + bonus;
+        label = 'photos';
+        break;
+      }
+      case 'customQuestions': {
+        const ev = eventId ? db.events.find(e => e.id === eventId) : null;
+        current = ev ? (ev.questions || []).length : 0;
+        max = plan.limits.customQuestions;
+        label = 'custom questions';
+        break;
+      }
+      case 'maxGuestsPerRsvp': {
+        current = 0;
+        max = plan.limits.maxGuestsPerRsvp;
+        label = 'guests per RSVP';
+        break;
+      }
+      default:
+        return { allowed: false, current: 0, max: 0, message: `Unknown limit key: ${limitKey}` };
+    }
+
+    if (max === -1) return { allowed: true, current, max: -1, message: 'Unlimited.' };
+    const allowed = current < max;
+    return {
+      allowed,
+      current,
+      max,
+      message: allowed ? `${current}/${max} ${label} used.` : `Limit reached: ${current}/${max} ${label}. Upgrade your plan or purchase a top-up.`
+    };
+  },
+
+  // --- Admin Plan & Top-Up Management (UC-14) ---
+  updatePlan: (planId, updates) => {
+    const db = getDB();
+    const idx = db.plans.findIndex(p => p.id === planId);
+    if (idx === -1) return null;
+    db.plans[idx] = { ...db.plans[idx], ...updates, id: planId };
+    saveDB(db);
+    return db.plans[idx];
+  },
+
+  updateTopUp: (topUpId, updates) => {
+    const db = getDB();
+    const idx = db.topUps.findIndex(t => t.id === topUpId);
+    if (idx === -1) return null;
+    db.topUps[idx] = { ...db.topUps[idx], ...updates, id: topUpId };
+    saveDB(db);
+    return db.topUps[idx];
+  },
+
+  overrideSubscription: (hostEmail, newPlanId, reason, adminName) => {
+    const db = getDB();
+    let sub = db.subscriptions.find(s => s.hostEmail === hostEmail);
+    const newPlan = db.plans.find(p => p.id === newPlanId);
+    if (!newPlan) return { success: false, message: 'Invalid plan.' };
+    const now = new Date().toISOString();
+    if (!sub) {
+      sub = {
+        id: 'sub_' + Date.now(),
+        hostEmail,
+        planId: newPlanId,
+        billingCycle: 'none',
+        status: 'active',
+        startDate: now,
+        currentPeriodStart: now,
+        currentPeriodEnd: null,
+        scheduledChange: null,
+        createdAt: now,
+        updatedAt: now
+      };
+      db.subscriptions.push(sub);
+    } else {
+      sub.planId = newPlanId;
+      sub.status = 'active';
+      sub.scheduledChange = null;
+      sub.updatedAt = now;
+    }
+    const txn = {
+      id: 'txn_' + Date.now(),
+      hostEmail,
+      type: 'admin_override',
+      description: `Admin override to ${newPlan.name} plan by ${adminName}: ${reason}`,
+      amount: 0,
+      status: 'completed',
+      planId: newPlanId,
+      adminName,
+      createdAt: now
+    };
+    db.transactions.push(txn);
+    // Audit trail entry
+    if (db.immutableAuditTrail) {
+      db.immutableAuditTrail.push({
+        id: 'a_' + Date.now(),
+        timestamp: now,
+        actor: `${adminName} (Admin)`,
+        action: `Override subscription for ${hostEmail} to ${newPlan.name}: ${reason}`,
+        eventId: null
+      });
+    }
+    saveDB(db);
+    return { success: true, subscription: sub, transaction: txn };
+  },
+
+  issueRefund: (transactionId, reason, adminName) => {
+    const db = getDB();
+    const txn = db.transactions.find(t => t.id === transactionId);
+    if (!txn) return { success: false, message: 'Transaction not found.' };
+    if (txn.status === 'refunded') return { success: false, message: 'Already refunded.' };
+    txn.status = 'refunded';
+    txn.refundedAt = new Date().toISOString();
+    txn.refundReason = reason;
+    txn.refundedBy = adminName;
+    const refundTxn = {
+      id: 'txn_' + Date.now(),
+      hostEmail: txn.hostEmail,
+      type: 'refund',
+      description: `Refund for ${txn.description} by ${adminName}: ${reason}`,
+      amount: -txn.amount,
+      status: 'completed',
+      originalTransactionId: transactionId,
+      adminName,
+      createdAt: new Date().toISOString()
+    };
+    db.transactions.push(refundTxn);
+    // Audit trail entry
+    if (db.immutableAuditTrail) {
+      db.immutableAuditTrail.push({
+        id: 'a_' + Date.now(),
+        timestamp: new Date().toISOString(),
+        actor: `${adminName} (Admin)`,
+        action: `Refund $${txn.amount} for ${txn.hostEmail}: ${reason}`,
+        eventId: null
+      });
+    }
+    saveDB(db);
+    return { success: true, refundTransaction: refundTxn };
+  },
+
+  // --- Revenue Metrics (UC-14) ---
+  getRevenueMetrics: () => {
+    const db = getDB();
+    const txns = db.transactions || [];
+    const completedTxns = txns.filter(t => t.status === 'completed');
+    const totalRevenue = completedTxns.reduce((s, t) => s + t.amount, 0);
+    const subscriptionRevenue = completedTxns.filter(t => t.type === 'subscription').reduce((s, t) => s + t.amount, 0);
+    const topUpRevenue = completedTxns.filter(t => t.type === 'topup').reduce((s, t) => s + t.amount, 0);
+    const refundTotal = txns.filter(t => t.type === 'refund').reduce((s, t) => s + Math.abs(t.amount), 0);
+
+    // Monthly breakdown (last 6 months)
+    const monthlyBreakdown = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const month = d.toISOString().slice(0, 7);
+      const monthTxns = completedTxns.filter(t => t.createdAt && t.createdAt.startsWith(month));
+      monthlyBreakdown.push({
+        month,
+        revenue: parseFloat(monthTxns.reduce((s, t) => s + t.amount, 0).toFixed(2)),
+        count: monthTxns.length
+      });
+    }
+
+    // Plan distribution
+    const subs = db.subscriptions || [];
+    const planDistribution = {};
+    subs.forEach(s => {
+      planDistribution[s.planId] = (planDistribution[s.planId] || 0) + 1;
+    });
+
+    return {
+      totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+      subscriptionRevenue: parseFloat(subscriptionRevenue.toFixed(2)),
+      topUpRevenue: parseFloat(topUpRevenue.toFixed(2)),
+      refundTotal: parseFloat(refundTotal.toFixed(2)),
+      netRevenue: parseFloat((totalRevenue - refundTotal).toFixed(2)),
+      totalTransactions: txns.length,
+      activeSubscriptions: subs.filter(s => s.status === 'active').length,
+      monthlyBreakdown,
+      planDistribution
+    };
+  },
+
+  getAllSubscriptions: () => {
+    const db = getDB();
+    return (db.subscriptions || []).map(sub => {
+      const plan = db.plans.find(p => p.id === sub.planId);
+      const user = (db.users || []).find(u => u.email === sub.hostEmail);
+      return {
+        ...sub,
+        planName: plan ? plan.name : 'Unknown',
+        hostType: plan ? plan.hostType : 'unknown',
+        hostName: user ? user.name : sub.hostEmail
+      };
+    });
   }
 };

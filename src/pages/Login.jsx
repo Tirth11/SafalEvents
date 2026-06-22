@@ -179,6 +179,10 @@ export default function Login() {
       return;
     }
 
+    if (signupSession.hostType) {
+      mockStore.autoAssignFreePlan(signupSession.formData.email, signupSession.hostType);
+    }
+
     setSignupSuccess(true);
   };
 
