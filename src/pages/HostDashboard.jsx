@@ -34,7 +34,9 @@ export default function HostDashboard({ onLogout }) {
   // Org document upload state (seeded from the persisted user record)
   const [orgDocsUploaded, setOrgDocsUploaded] = useState(docsAlreadyVerified);
   const [uploadedDocuments, setUploadedDocuments] = useState(userRecord?.orgProfile?.docs || []);
-  const [showOrgDocModal, setShowOrgDocModal] = useState(isOrgHost && !docsAlreadyVerified);
+  // Popup auto-appears for not-yet-verified org hosts after login, but is dismissible
+  // ("Later") so they can browse the dashboard; any gated action re-opens it.
+  const [showOrgDocModal, setShowOrgDocModal] = useState(isOrgHost && !(userRecord?.status === 'ACTIVE' && docsAlreadyVerified));
 
   // Org hosts are locked out of ALL host activity until they upload documents AND a
   // Safal Events admin approves them (status ACTIVE). Until then the dashboard shows
@@ -1099,7 +1101,7 @@ export default function HostDashboard({ onLogout }) {
                       </div>
                     </div>
                     <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                      <Link to="/create">
+                      <Link to="/create" onClick={(e) => { if (orgHostLocked) { e.preventDefault(); setShowOrgDocModal(true); } }}>
                         <Button variant="primary" className="flex items-center gap-xs">
                           <Plus size={18} /> Create New Event
                         </Button>
@@ -1420,7 +1422,7 @@ export default function HostDashboard({ onLogout }) {
                   <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>{isStaffViewer ? 'Events you help run. Your access is limited by your assigned role.' : 'Deep dive into your invitation templates, guest check-ins, and outbox logs.'}</p>
                 </div>
                 {!isStaffViewer && (
-                  <Link to="/create">
+                  <Link to="/create" onClick={(e) => { if (orgHostLocked) { e.preventDefault(); setShowOrgDocModal(true); } }}>
                     <Button variant="primary" className="flex items-center gap-xs">
                       <Plus size={18} /> Create New Event
                     </Button>
@@ -1703,7 +1705,7 @@ export default function HostDashboard({ onLogout }) {
                     <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '380px' }}>
                       No events in this bucket right now. Spin up your next unforgettable gathering and watch the RSVPs roll in.
                     </p>
-                    <Link to="/create">
+                    <Link to="/create" onClick={(e) => { if (orgHostLocked) { e.preventDefault(); setShowOrgDocModal(true); } }}>
                       <Button variant="primary" className="flex items-center gap-xs">
                         <Plus size={16} /> Create New Event
                       </Button>
@@ -3465,7 +3467,7 @@ export default function HostDashboard({ onLogout }) {
                     <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '380px' }}>
                       Once guests RSVP to your events, their contact details and attendance history will appear in this directory.
                     </p>
-                    <Link to="/create">
+                    <Link to="/create" onClick={(e) => { if (orgHostLocked) { e.preventDefault(); setShowOrgDocModal(true); } }}>
                       <Button variant="primary" className="flex items-center gap-xs">
                         <Plus size={16} /> Host Your First Event
                       </Button>
@@ -3527,77 +3529,82 @@ export default function HostDashboard({ onLogout }) {
                     <div>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Organization Documents</h4>
                       <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
-                        {orgDocsUploaded ? '✓ Verified and uploaded' : 'Required for account activation'}
+                        {userRecord?.status === 'ACTIVE' && orgDocsUploaded ? '✓ Verified by Safal Events' : orgDocsUploaded ? 'Submitted — pending approval' : 'Required for verification'}
                       </p>
                     </div>
-                    {orgDocsUploaded && (
+                    {userRecord?.status === 'ACTIVE' && orgDocsUploaded && (
                       <div style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)' }}>
                         <Check size={16} /> Verified
                       </div>
                     )}
                   </div>
 
-                  {!orgDocsUploaded && (
-                    <>
-                      <div style={{
-                        background: 'var(--color-surface-hover)', border: '2px dashed var(--color-border)',
-                        borderRadius: 'var(--radius-md)', padding: '24px 16px', textAlign: 'center',
-                        marginBottom: '16px', cursor: 'pointer'
-                      }}>
-                        <input
-                          type="file"
-                          multiple
-                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                          onChange={handleOrgDocUpload}
-                          style={{ display: 'none' }}
-                          id="settings-org-doc-upload"
-                        />
-                        <label htmlFor="settings-org-doc-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                          <div style={{
-                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            width: '40px', height: '40px', borderRadius: '10px',
-                            background: 'rgba(242, 84, 27, 0.12)', color: 'var(--color-primary)'
-                          }}>
-                            <FileText size={20} />
-                          </div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                            Click to upload documents
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            EIN letter, certificate, or legal document
-                          </div>
-                        </label>
-                      </div>
-
-                      {uploadedDocuments.length > 0 && (
-                        <div style={{ background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: '12px' }}>
-                          {uploadedDocuments.map((doc, idx) => (
-                            <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Check size={13} color='var(--color-accent)' /> {doc}
-                            </div>
-                          ))}
+                  {uploadedDocuments.length > 0 && (
+                    <div style={{ background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: '14px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '6px' }}>Your documents</div>
+                      {uploadedDocuments.map((doc, idx) => (
+                        <div key={idx} style={{ fontSize: '0.82rem', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 0' }}>
+                          <Check size={13} color='var(--color-accent)' />
+                          <span style={{ flex: 1 }}>{doc}</span>
+                          <button
+                            type="button"
+                            onClick={() => setUploadedDocuments(uploadedDocuments.filter((_, i) => i !== idx))}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1 }}
+                            title="Remove"
+                          >
+                            ✕
+                          </button>
                         </div>
-                      )}
-
-                      <Button
-                        variant="primary"
-                        onClick={handleOrgDocSubmit}
-                        disabled={uploadedDocuments.length === 0}
-                        style={{ width: '100%', padding: '11px', fontSize: '0.9rem', marginTop: '8px' }}
-                      >
-                        {uploadedDocuments.length === 0 ? 'Upload Documents' : `Upload & Verify (${uploadedDocuments.length})`}
-                      </Button>
-                    </>
-                  )}
-
-                  {orgDocsUploaded && (
-                    <div style={{
-                      background: 'rgba(0, 200, 83, 0.08)', border: '1px solid rgba(0, 200, 83, 0.3)',
-                      borderRadius: 'var(--radius-md)', padding: '12px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text)'
-                    }}>
-                      ✓ Your organization is verified and fully activated. You can now create unlimited events.
+                      ))}
                     </div>
                   )}
+
+                  <div style={{
+                    background: 'var(--color-surface-hover)', border: '2px dashed var(--color-border)',
+                    borderRadius: 'var(--radius-md)', padding: '20px 16px', textAlign: 'center',
+                    marginBottom: '14px', cursor: 'pointer'
+                  }}>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      onChange={handleOrgDocUpload}
+                      style={{ display: 'none' }}
+                      id="settings-org-doc-upload"
+                    />
+                    <label htmlFor="settings-org-doc-upload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: '40px', height: '40px', borderRadius: '10px',
+                        background: 'rgba(242, 84, 27, 0.12)', color: 'var(--color-primary)'
+                      }}>
+                        <FileText size={20} />
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                        {uploadedDocuments.length > 0 ? 'Upload another / replace documents' : 'Click to upload documents'}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        EIN letter, certificate, or legal document
+                      </div>
+                    </label>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    onClick={handleOrgDocSubmit}
+                    disabled={uploadedDocuments.length === 0}
+                    style={{ width: '100%', padding: '11px', fontSize: '0.9rem' }}
+                  >
+                    {orgDocsUploaded ? 'Update & Re-submit for Review' : 'Submit for Review'}
+                  </Button>
+
+                  <p className="text-muted" style={{ fontSize: '0.75rem', textAlign: 'center', margin: '12px 0 0 0' }}>
+                    {userRecord?.status === 'ACTIVE' && orgDocsUploaded
+                      ? 'Your organization is approved. You can update documents anytime.'
+                      : orgDocsUploaded
+                        ? 'Documents submitted — pending Safal Events admin approval.'
+                        : 'A Safal Events admin reviews your documents before your organization can host events.'}
+                  </p>
                 </Card>
               )}
             </div>
@@ -3937,8 +3944,8 @@ export default function HostDashboard({ onLogout }) {
           </div>
         )}
 
-        {/* ORG VERIFICATION LOCK — upload documents (shown until documents are uploaded) */}
-        {orgHostLocked && !orgDocsUploaded && (
+        {/* ORG VERIFICATION POPUP — upload documents (dismissible; re-opens on gated actions) */}
+        {showOrgDocModal && orgHostLocked && !orgDocsUploaded && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)',
@@ -4013,6 +4020,13 @@ export default function HostDashboard({ onLogout }) {
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                 <Button
+                  variant="ghost"
+                  onClick={() => setShowOrgDocModal(false)}
+                  style={{ padding: '12px 16px', fontWeight: 700 }}
+                >
+                  Later
+                </Button>
+                <Button
                   variant="primary"
                   onClick={handleOrgDocSubmit}
                   disabled={uploadedDocuments.length === 0}
@@ -4031,8 +4045,8 @@ export default function HostDashboard({ onLogout }) {
           </div>
         )}
 
-        {/* ORG VERIFICATION LOCK — documents submitted, awaiting Safal Events approval */}
-        {orgHostLocked && orgDocsUploaded && (
+        {/* ORG VERIFICATION POPUP — documents submitted, awaiting Safal Events approval (dismissible) */}
+        {showOrgDocModal && orgHostLocked && orgDocsUploaded && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)',
@@ -4068,6 +4082,16 @@ export default function HostDashboard({ onLogout }) {
                   Your application was rejected{userRecord?.rejectReason ? `: ${userRecord.rejectReason}` : ''}.
                 </p>
               )}
+              <Button
+                variant="primary"
+                onClick={() => setShowOrgDocModal(false)}
+                style={{ marginTop: '20px', padding: '11px 24px', fontWeight: 700 }}
+              >
+                Got it
+              </Button>
+              <p className="text-muted" style={{ fontSize: '0.72rem', margin: '10px 0 0 0' }}>
+                You can review or re-upload your documents anytime under Settings → Organization Documents.
+              </p>
             </div>
           </div>
         )}
