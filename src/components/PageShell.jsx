@@ -50,7 +50,7 @@ export default function PageShell({ children }) {
 
           {/* Desktop Navigation */}
           <nav className="site-nav site-nav-desktop">
-            {currentUser && currentUser.role ? (
+            {currentUser && currentUser.role && location.pathname !== '/' ? (
               <>
                 {currentUser.role === 'host' && (
                   <div style={{ position: 'relative' }}>
@@ -198,11 +198,11 @@ export default function PageShell({ children }) {
               </>
             ) : (
               <>
-                <Link to="/login" className="site-nav-link" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <LogIn size={15} /> Sign In
+                <Link to="/login?host=true" className="site-nav-link" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={15} /> Become a Host
                 </Link>
                 <Link to="/login?signup=true" className="site-nav-cta">
-                  <Sparkles size={14} /> Join Safal Events <ArrowRight size={14} />
+                  <UserPlus size={14} /> Sign Up <ArrowRight size={14} />
                 </Link>
               </>
             )}
@@ -235,24 +235,14 @@ export default function PageShell({ children }) {
           <div style={{
             position: 'absolute',
             top: '100%',
-            left: 0,
-            right: 0,
-            background: 'rgba(255, 255, 255, 0.98)',
-            backdropFilter: 'blur(20px)',
-            borderBottom: '1px solid var(--color-border)',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            zIndex: 999,
-            boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
-            animation: 'fadeIn 0.2s ease-in-out'
-          }}>
-            {currentUser && currentUser.role ? (
+          <div className="mobile-only" style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--color-bg)', padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 999 }}>
+            {currentUser && location.pathname !== '/' ? (
               <>
-                <Link to="/dashboard" className="dashboard-pill" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', width: 'fit-content' }}>
-                  <LayoutDashboard size={16} /> My Dashboard
-                </Link>
+                {currentUser.role === 'host' && (
+                  <Link to="/dashboard" className="dashboard-pill" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', width: 'fit-content' }}>
+                    <LayoutDashboard size={16} /> My Dashboard
+                  </Link>
+                )}
                 <button
                   onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
                   type="button"
@@ -275,11 +265,11 @@ export default function PageShell({ children }) {
               </>
             ) : (
               <>
-                <Link to="/login" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '1rem', color: 'var(--color-text)', fontWeight: 600 }}>
-                  <LogIn size={18} style={{ color: 'var(--color-primary)' }} /> Sign In
+                <Link to="/login?host=true" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '1rem', color: 'var(--color-text)', fontWeight: 600 }}>
+                  <Sparkles size={18} style={{ color: 'var(--color-primary)' }} /> Become a Host
                 </Link>
                 <Link to="/login?signup=true" className="site-nav-cta" onClick={() => setMobileMenuOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: '100%', justifyContent: 'center' }}>
-                  <Sparkles size={16} /> Join Safal Events <ArrowRight size={16} />
+                  <UserPlus size={16} /> Sign Up <ArrowRight size={16} />
                 </Link>
               </>
             )}

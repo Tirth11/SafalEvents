@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
 import FormField, { FormInput } from '../components/FormField';
+import PhotosTab from '../components/PhotosTab';
 
 export default function EventPage() {
   const { eventId } = useParams();
@@ -18,6 +19,7 @@ export default function EventPage() {
   const [polls, setPolls] = useState([]);
   const [comments, setComments] = useState([]);
   const [views, setViews] = useState(0);
+  const [activeTab, setActiveTab] = useState('about');
 
   // RSVP Drawer states
   const [showDrawer, setShowDrawer] = useState(false);
@@ -385,7 +387,40 @@ export default function EventPage() {
           {/* LEFT SIDE: Info, Polls, Comments */}
           <div className="flex flex-col gap-md">
             
-            {/* Event Description Card */}
+            {/* Tabs Navigation */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px' }}>
+              <button
+                onClick={() => setActiveTab('about')}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '8px 16px', fontSize: '1rem', fontWeight: 700,
+                  color: activeTab === 'about' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  borderBottom: activeTab === 'about' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                  transition: 'all 0.2s'
+                }}
+              >
+                About
+              </button>
+              
+              {event.enablePhotoAlbum && (event.privacy === 'Public' || existingRsvp || (currentUser && currentUser.email === event.hostEmail)) && (
+                <button
+                  onClick={() => setActiveTab('photos')}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '8px 16px', fontSize: '1rem', fontWeight: 700,
+                    color: activeTab === 'photos' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    borderBottom: activeTab === 'photos' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Photos
+                </button>
+              )}
+            </div>
+
+            {activeTab === 'photos' ? (
+              <PhotosTab event={event} currentUser={currentUser} existingRsvp={existingRsvp} />
+            ) : (
+              <>
+                {/* Event Description Card */}
             <Card style={{ padding: 'var(--spacing-md)' }} className="glass-surface">
               <h3 style={sectionTitleStyle}>
                 <span className="stat-icon-tile stat-icon-orange" style={{ width: '36px', height: '36px' }}><Sparkles size={18} /></span>
@@ -460,6 +495,8 @@ export default function EventPage() {
                 </Link>
               </div>
             </Card>
+            </>
+            )}
 
           </div>
 

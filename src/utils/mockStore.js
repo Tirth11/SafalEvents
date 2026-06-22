@@ -28,7 +28,9 @@ const defaultEvents = [
     cancellationCutoff: 24,
     requireCancellationReason: true,
     allowComments: true,
-    allowPhotoUploads: false,
+    enablePhotoAlbum: false,
+    photoUploadPermission: 'host_only',
+    requirePhotoApproval: false,
     guestConfirmation: true,
     reminderSchedule: '24h',
     hostAlerts: true,
@@ -66,7 +68,9 @@ const defaultEvents = [
     cancellationCutoff: 12,
     requireCancellationReason: false,
     allowComments: true,
-    allowPhotoUploads: true,
+    enablePhotoAlbum: true,
+    photoUploadPermission: 'guests',
+    requirePhotoApproval: true,
     guestConfirmation: true,
     reminderSchedule: '3h',
     hostAlerts: true,
@@ -104,7 +108,9 @@ const defaultEvents = [
     cancellationCutoff: 24,
     requireCancellationReason: false,
     allowComments: true,
-    allowPhotoUploads: false,
+    enablePhotoAlbum: false,
+    photoUploadPermission: 'host_only',
+    requirePhotoApproval: false,
     guestConfirmation: false,
     reminderSchedule: 'none',
     hostAlerts: false,
@@ -141,7 +147,9 @@ const defaultEvents = [
     cancellationCutoff: 0,
     requireCancellationReason: false,
     allowComments: true,
-    allowPhotoUploads: true,
+    enablePhotoAlbum: true,
+    photoUploadPermission: 'guests',
+    requirePhotoApproval: false,
     guestConfirmation: false,
     reminderSchedule: 'none',
     hostAlerts: false,
@@ -252,6 +260,11 @@ const defaultComments = [
   { id: 'c1', eventId: '1', name: 'Alice Vance', text: 'Can\'t wait for this! The lineup looks incredible.', timestamp: '2026-06-06T12:00:00.000Z', reactions: { '🎉': 4, '❤️': 3 } },
   { id: 'c2', eventId: '1', name: 'Bob Smith', text: 'Are there parking spots available near the rooftop venue?', timestamp: '2026-06-07T14:32:00.000Z', reactions: { '👍': 2 } },
   { id: 'c3', eventId: '1', name: 'Host (You)', text: 'Yes Bob! There is a public parking garage right next to the entrance.', timestamp: '2026-06-07T15:10:00.000Z', reactions: { '❤️': 1 } }
+];
+
+const defaultPhotos = [
+  { id: 'p1', eventId: '2', url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=400&q=80', uploaderName: 'Jordan Chen', uploaderEmail: 'jordan@startup.com', uploaderRole: 'host', status: 'APPROVED', timestamp: '2026-08-20T10:00:00.000Z', caption: 'Venue getting ready!' },
+  { id: 'p2', eventId: '2', url: 'https://images.unsplash.com/photo-1556761175-5973dc0f32b7?auto=format&fit=crop&w=400&q=80', uploaderName: 'Alice Vance', uploaderEmail: 'alice@example.com', uploaderRole: 'guest', status: 'PENDING', timestamp: '2026-09-02T19:00:00.000Z', caption: 'Great crowd today.' }
 ];
 
 const defaultUser = null;
@@ -520,7 +533,8 @@ const getDB = () => {
       verificationLogs: [],
       conversations: defaultConversations,
       roles: defaultRoles,
-      staff: defaultStaff
+      staff: defaultStaff,
+      photos: defaultPhotos
     };
   } else {
     try {
@@ -538,7 +552,8 @@ const getDB = () => {
         users: defaultUsers,
         signupSessions: [],
         rsvpSessions: [],
-        verificationLogs: []
+        verificationLogs: [],
+        photos: defaultPhotos
       };
     }
   }
@@ -575,6 +590,9 @@ const getDB = () => {
   }
   if (!db.staff) {
     db.staff = defaultStaff;
+  }
+  if (!db.photos) {
+    db.photos = defaultPhotos;
   }
   // Backfill the demo staff user for databases seeded before it existed
   if (db.users && !db.users.some(u => u.email === 'sam@safalevent.com')) {
@@ -693,7 +711,10 @@ const getDB = () => {
       feedbackDelay: 3,
       // Per-event guest <-> host messaging (UC-09). Existing events default to
       // enabled to preserve current behavior; new events choose during creation.
-      messagingEnabled: true
+      messagingEnabled: true,
+      enablePhotoAlbum: false,
+      photoUploadPermission: 'host_only',
+      requirePhotoApproval: false
     };
 
     Object.keys(defaults).forEach(key => {
@@ -782,6 +803,11 @@ export const mockStore = {
       feedbackDelay: 3,
       templates: { ...defaultTemplates },
       
+      // Photo settings
+      enablePhotoAlbum: false,
+      photoUploadPermission: 'host_only',
+      requirePhotoApproval: false,
+
       ...eventData
     };
     db.events.unshift(newEvent); // Add to beginning
@@ -834,6 +860,50 @@ export const mockStore = {
     db.rsvps = db.rsvps.filter(r => r.eventId !== eventId);
     db.polls = db.polls.filter(p => p.eventId !== eventId);
     db.comments = db.comments.filter(c => c.eventId !== eventId);
+    db.photos = db.photos.filter(p => p.eventId !== eventId);
+    saveDB(db);
+  },
+
+  // --- REVIEWS & FEEDBACK ---
+  getEventFeedback: (eventId) => {
+    const db = getDB();
+    return db.rsvps.filter(r => r.eventId === eventId);
+  },
+
+  // --- Photos ---
+  getEventPhotos: (eventId) => {
+    const db = getDB();
+    return (db.photos || []).filter(p => p.eventId === eventId);
+  },
+  
+  uploadPhoto: (eventId, photoData) => {
+    const db = getDB();
+    const newPhoto = {
+      id: 'p_' + Math.random().toString(36).substr(2, 9),
+      eventId,
+      timestamp: new Date().toISOString(),
+      status: 'PENDING',
+      ...photoData
+    };
+    db.photos.push(newPhoto);
+    saveDB(db);
+    return newPhoto;
+  },
+
+  updatePhotoStatus: (photoId, status) => {
+    const db = getDB();
+    const photo = db.photos.find(p => p.id === photoId);
+    if (photo) {
+      photo.status = status;
+      saveDB(db);
+      return photo;
+    }
+    return null;
+  },
+
+  deletePhoto: (photoId) => {
+    const db = getDB();
+    db.photos = db.photos.filter(p => p.id !== photoId);
     saveDB(db);
   },
 

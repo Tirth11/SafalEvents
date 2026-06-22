@@ -10,6 +10,7 @@ import {
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 
@@ -1801,6 +1802,7 @@ export default function HostDashboard({ onLogout }) {
                   { key: 'guests', label: `Guest List (${managedEventRsvps.length})`, perm: 'guests_view' },
                   { key: 'polls', label: `Polls (${managedEventPolls.length})`, perm: 'guests_view' },
                   { key: 'comments', label: `Comments (${managedEventComments.length})`, perm: 'messaging_view' },
+                  ...(managedEvent.enablePhotoAlbum ? [{ key: 'photos', label: 'Photos & Album', perm: 'guests_view' }] : []),
                   { key: 'edit', label: 'Details Editor', perm: 'settings_edit' },
                   { key: 'notifications', label: 'Notifications Schedule', perm: 'settings_view' },
                   { key: 'invitations', label: 'Manual Add', perm: 'guests_edit' },
@@ -2321,6 +2323,11 @@ export default function HostDashboard({ onLogout }) {
                     </form>
                   </Card>
                 </div>
+              )}
+
+              {/* SUB-TAB: PHOTOS */}
+              {selectedEventTab === 'photos' && managedEvent.enablePhotoAlbum && (
+                <HostPhotosAdmin eventId={selectedEventId} />
               )}
 
               {/* SUB-TAB: COMMENTS */}

@@ -49,6 +49,9 @@ export default function CreateEvent() {
     feedbackDelay: 3,
 
     allowComments: true,
+    enablePhotoAlbum: false,
+    photoUploadPermission: 'host_only',
+    requirePhotoApproval: false,
     enablePayments: false,
     ticketPrice: 0,
     bankAccountName: '',
@@ -608,6 +611,59 @@ export default function CreateEvent() {
                   onChange={(e) => setFormData({ ...formData, sendPostEventFeedbackEmail: e.target.checked })}
                   small
                 />
+              </div>
+
+              {/* Photo Album */}
+              <div className="settings-card flex flex-col gap-xs">
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Image size={14} className="text-primary" /> Event Photo Album
+                </h4>
+
+                <ToggleRow
+                  title="Enable Photo Album"
+                  desc="Create a shared space for event photos."
+                  checked={formData.enablePhotoAlbum}
+                  onChange={(e) => setFormData({ ...formData, enablePhotoAlbum: e.target.checked })}
+                  small
+                />
+
+                {formData.enablePhotoAlbum && (
+                  <div style={{ marginTop: '8px', padding: '12px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '8px' }}>Who can upload photos?</label>
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="photoUploadPermission"
+                          value="host_only"
+                          checked={formData.photoUploadPermission === 'host_only'}
+                          onChange={(e) => setFormData({ ...formData, photoUploadPermission: e.target.value })}
+                        />
+                        Host Only (default)
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="photoUploadPermission"
+                          value="guests"
+                          checked={formData.photoUploadPermission === 'guests'}
+                          onChange={(e) => setFormData({ ...formData, photoUploadPermission: e.target.value })}
+                        />
+                        RSVPed Guests Allowed
+                      </label>
+                    </div>
+
+                    {formData.photoUploadPermission === 'guests' && (
+                      <ToggleRow
+                        title="Require approval for guest uploads?"
+                        desc="Host must review photos before they appear in the album."
+                        checked={formData.requirePhotoApproval}
+                        onChange={(e) => setFormData({ ...formData, requirePhotoApproval: e.target.checked })}
+                        small
+                      />
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Comments & Payments */}
