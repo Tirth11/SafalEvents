@@ -8,6 +8,7 @@ import Button from '../components/Button';
 import PageShell from '../components/PageShell';
 import { AVATARS, EVENT_COVERS, getAvatar, getEventCover } from '../utils/images';
 import { mockStore } from '../utils/mockStore';
+import { PricingSection } from './PricingPage';
 
 export default function LandingPage() {
   const modules = [
@@ -736,6 +737,9 @@ Designed with intention
             </Link>
           </div>
         </section>
+
+        {/* ───────── PRICING ───────── */}
+        <PricingSection />
 
         {/* ───────── CLOSING CTA ───────── */}
         <section style={{ padding: '0 0 var(--spacing-xl)', background: 'var(--color-bg)' }}>

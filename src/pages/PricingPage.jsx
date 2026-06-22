@@ -5,172 +5,669 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
 
-const individualPlans = [
+﻿const individualPlans = [
   {
-    id: 'ind_free', name: 'Free', emoji: '🌱', monthlyPrice: 0, annualPrice: 0, commission: 0,
-    highlights: ['1 Active Event', '50 Attendees / Event', 'Public Events Only', 'Manual Check-in', 'Community Support'],
-    cta: 'Get Started Free', popular: false,
-    features: {
-      'Active Events': '1', 'Attendees / Event': '50', 'Max Guests per RSVP': '2', 'Draft Events': true, 'Duplicate Events': false,
-      'Event Privacy': 'Public', 'Guest List Controls': false, 'Waitlist & Approval': true, 'Paid Tickets': false, 'Commission': '—',
-      'Custom RSVP Questions': false, 'Manual Invitations': false, 'Staff Members': '0', 'Custom Roles': false, 'QR Check-in': 'Manual',
-      'Guest Messaging': false, 'Comments': true, 'Polls': false, 'Photo Gallery': false, 'Broadcast': false,
-      'Custom Templates': false, 'Delivery Logs': false, 'Activity Inbox': false, 'Custom Branding': false,
-      'Remove Branding': false, 'Custom Domain': false, 'Analytics': 'Event Summary', 'CSV Export': false, 'Support': 'Community'
+    "id": "ind_free",
+    "name": "Free",
+    "emoji": "≡ƒî▒",
+    "monthlyPrice": 0,
+    "annualPrice": 0,
+    "commission": 0,
+    "highlights": [
+      "1 Active Event",
+      "50 Attendees / Event",
+      "Public Events Only",
+      "Manual Check-in",
+      "Community Support"
+    ],
+    "cta": "Get Started Free",
+    "popular": false,
+    "features": {
+      "Active Events": "1",
+      "Attendees / Event": "50",
+      "Maximum Guests per RSVP": "2",
+      "Draft Events": true,
+      "Duplicate Events": false,
+      "Public / Private / Unlisted Events": "Public",
+      "Guest List Visibility Controls": false,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": false,
+      "Platform Commission": "ΓÇö",
+      "Custom RSVP Questions": false,
+      "RSVP Edit & Cancellation Rules": "Basic",
+      "Manual Guest Invitations": false,
+      "Staff Members": "0",
+      "Custom Roles & Permissions": false,
+      "QR Check-in & Scanner": "Manual",
+      "Guest Messaging": false,
+      "Comments & Discussion": true,
+      "Polls & Voting": false,
+      "Guest Photo Gallery": false,
+      "Broadcast Announcements": false,
+      "Custom Email & SMS Templates": false,
+      "Notification Delivery Logs": false,
+      "Host Activity Inbox": false,
+      "Branding": false,
+      "Remove SafalEvents Branding": false,
+      "Custom Domain": false,
+      "Public Profile": "Basic",
+      "Analytics": "Event Summary",
+      "Transaction History": false,
+      "Revenue Dashboard": false,
+      "CSV Export": false,
+      "Support": "Community"
     }
   },
   {
-    id: 'ind_basic', name: 'Basic', emoji: '⭐', monthlyPrice: 3.99, annualPrice: 3.19, commission: 5,
-    highlights: ['3 Active Events', '200 Attendees / Event', 'All Privacy Options', 'Paid Tickets (5%)', 'Email Support (48h)'],
-    cta: 'Upgrade to Basic', popular: false,
-    features: {
-      'Active Events': '3', 'Attendees / Event': '200', 'Max Guests per RSVP': '5', 'Draft Events': true, 'Duplicate Events': false,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '5%',
-      'Custom RSVP Questions': '5 / Event', 'Manual Invitations': false, 'Staff Members': '0', 'Custom Roles': false, 'QR Check-in': 'Manual',
-      'Guest Messaging': true, 'Comments': true, 'Polls': false, 'Photo Gallery': '20 Photos', 'Broadcast': true,
-      'Custom Templates': false, 'Delivery Logs': false, 'Activity Inbox': false, 'Custom Branding': false,
-      'Remove Branding': false, 'Custom Domain': false, 'Analytics': 'RSVP Funnel', 'CSV Export': false, 'Support': 'Email (48h)'
+    "id": "ind_basic",
+    "name": "Basic",
+    "emoji": "Γ¡É",
+    "monthlyPrice": 3.99,
+    "annualPrice": 3.19,
+    "commission": 5,
+    "highlights": [
+      "3 Active Events",
+      "200 Attendees / Event",
+      "All Privacy Options",
+      "Paid Tickets (5%)",
+      "Email Support (48h)"
+    ],
+    "cta": "Upgrade to Basic",
+    "popular": false,
+    "features": {
+      "Active Events": "3",
+      "Attendees / Event": "200",
+      "Maximum Guests per RSVP": "5",
+      "Draft Events": true,
+      "Duplicate Events": false,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "5%",
+      "Custom RSVP Questions": "5 / Event",
+      "RSVP Edit & Cancellation Rules": "Advanced",
+      "Manual Guest Invitations": false,
+      "Staff Members": "0",
+      "Custom Roles & Permissions": false,
+      "QR Check-in & Scanner": "Manual",
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": false,
+      "Guest Photo Gallery": "20 Photos",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": false,
+      "Notification Delivery Logs": false,
+      "Host Activity Inbox": false,
+      "Branding": false,
+      "Remove SafalEvents Branding": false,
+      "Custom Domain": false,
+      "Public Profile": "Enhanced",
+      "Analytics": "RSVP Funnel",
+      "Transaction History": "Basic",
+      "Revenue Dashboard": "Basic",
+      "CSV Export": false,
+      "Support": "Email (48 hrs)"
     }
   },
   {
-    id: 'ind_advanced', name: 'Advanced', emoji: '🚀', monthlyPrice: 9.99, annualPrice: 7.99, commission: 3,
-    highlights: ['10 Active Events', '500 Attendees / Event', 'Staff + QR Scanner', 'Custom Branding', 'Email Support (24h)'],
-    cta: 'Upgrade to Advanced', popular: true,
-    features: {
-      'Active Events': '10', 'Attendees / Event': '500', 'Max Guests per RSVP': '10', 'Draft Events': true, 'Duplicate Events': true,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '3%',
-      'Custom RSVP Questions': 'Unlimited', 'Manual Invitations': true, 'Staff Members': '1', 'Custom Roles': false, 'QR Check-in': 'QR Scanner',
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': '100 Photos', 'Broadcast': true,
-      'Custom Templates': true, 'Delivery Logs': false, 'Activity Inbox': true, 'Custom Branding': true,
-      'Remove Branding': false, 'Custom Domain': false, 'Analytics': 'Attendance + Feedback', 'CSV Export': false, 'Support': 'Email (24h)'
+    "id": "ind_advanced",
+    "name": "Advanced",
+    "emoji": "≡ƒÜÇ",
+    "monthlyPrice": 9.99,
+    "annualPrice": 7.99,
+    "commission": 3,
+    "highlights": [
+      "10 Active Events",
+      "500 Attendees / Event",
+      "Staff + QR Scanner",
+      "Custom Branding",
+      "Email Support (24h)"
+    ],
+    "cta": "Upgrade to Advanced",
+    "popular": true,
+    "features": {
+      "Active Events": "10",
+      "Attendees / Event": "500",
+      "Maximum Guests per RSVP": "10",
+      "Draft Events": true,
+      "Duplicate Events": true,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "3%",
+      "Custom RSVP Questions": "Unlimited",
+      "RSVP Edit & Cancellation Rules": "Advanced",
+      "Manual Guest Invitations": true,
+      "Staff Members": "1",
+      "Custom Roles & Permissions": false,
+      "QR Check-in & Scanner": "QR Scanner",
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "100 Photos",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": true,
+      "Notification Delivery Logs": false,
+      "Host Activity Inbox": true,
+      "Branding": "Custom Colors",
+      "Remove SafalEvents Branding": false,
+      "Custom Domain": false,
+      "Public Profile": "Enhanced",
+      "Analytics": "Attendance + Feedback",
+      "Transaction History": "Full",
+      "Revenue Dashboard": "Advanced",
+      "CSV Export": false,
+      "Support": "Email (24 hrs)"
     }
   },
   {
-    id: 'ind_premium', name: 'Premium', emoji: '💎', monthlyPrice: 24.99, annualPrice: 19.99, commission: 2,
-    highlights: ['Unlimited Events', '1,500 Attendees', 'Remove Branding', 'Priority Chat Support', 'CSV Export'],
-    cta: 'Upgrade to Premium', popular: false,
-    features: {
-      'Active Events': 'Unlimited', 'Attendees / Event': '1,500', 'Max Guests per RSVP': '25', 'Draft Events': true, 'Duplicate Events': true,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '2%',
-      'Custom RSVP Questions': 'Unlimited', 'Manual Invitations': true, 'Staff Members': '2', 'Custom Roles': false, 'QR Check-in': 'QR Scanner',
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': '500 Photos', 'Broadcast': true,
-      'Custom Templates': true, 'Delivery Logs': true, 'Activity Inbox': true, 'Custom Branding': true,
-      'Remove Branding': true, 'Custom Domain': false, 'Analytics': 'Revenue + Export', 'CSV Export': true, 'Support': 'Priority Chat'
+    "id": "ind_premium",
+    "name": "Premium",
+    "emoji": "≡ƒÆÄ",
+    "monthlyPrice": 24.99,
+    "annualPrice": 19.99,
+    "commission": 2,
+    "highlights": [
+      "Unlimited Events",
+      "1,500 Attendees",
+      "Remove Branding",
+      "Priority Chat Support",
+      "CSV Export"
+    ],
+    "cta": "Upgrade to Premium",
+    "popular": false,
+    "features": {
+      "Active Events": "Unlimited",
+      "Attendees / Event": "1,500",
+      "Maximum Guests per RSVP": "25",
+      "Draft Events": true,
+      "Duplicate Events": true,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "2%",
+      "Custom RSVP Questions": "Unlimited",
+      "RSVP Edit & Cancellation Rules": "Advanced",
+      "Manual Guest Invitations": true,
+      "Staff Members": "2",
+      "Custom Roles & Permissions": false,
+      "QR Check-in & Scanner": "QR Scanner",
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "500 Photos",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": true,
+      "Notification Delivery Logs": true,
+      "Host Activity Inbox": true,
+      "Branding": "Custom Colors",
+      "Remove SafalEvents Branding": true,
+      "Custom Domain": false,
+      "Public Profile": "Premium",
+      "Analytics": "Revenue + Export",
+      "Transaction History": "Full",
+      "Revenue Dashboard": "Advanced",
+      "CSV Export": true,
+      "Support": "Priority Chat"
     }
   },
   {
-    id: 'ind_premium_plus', name: 'Premium Plus', emoji: '👑', monthlyPrice: 49.99, annualPrice: 39.99, commission: 1,
-    highlights: ['Unlimited Everything', '5,000 Attendees', 'Custom Domain', 'Built-in Roles', 'Priority Chat'],
-    cta: 'Go Premium Plus', popular: false,
-    features: {
-      'Active Events': 'Unlimited', 'Attendees / Event': '5,000', 'Max Guests per RSVP': 'Unlimited', 'Draft Events': true, 'Duplicate Events': true,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '1%',
-      'Custom RSVP Questions': 'Unlimited', 'Manual Invitations': true, 'Staff Members': '5', 'Custom Roles': 'Built-in', 'QR Check-in': 'QR Scanner',
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': 'Unlimited', 'Broadcast': true,
-      'Custom Templates': true, 'Delivery Logs': true, 'Activity Inbox': true, 'Custom Branding': true,
-      'Remove Branding': true, 'Custom Domain': true, 'Analytics': 'Full + API', 'CSV Export': true, 'Support': 'Priority Chat'
+    "id": "ind_premium_plus",
+    "name": "Premium Plus",
+    "emoji": "≡ƒææ",
+    "monthlyPrice": 49.99,
+    "annualPrice": 39.99,
+    "commission": 1,
+    "highlights": [
+      "Unlimited Events",
+      "5,000 Attendees",
+      "Custom Domain",
+      "Custom Roles",
+      "Full Analytics + API"
+    ],
+    "cta": "Upgrade to Premium Plus",
+    "popular": false,
+    "features": {
+      "Active Events": "Unlimited",
+      "Attendees / Event": "5,000",
+      "Maximum Guests per RSVP": "Unlimited",
+      "Draft Events": true,
+      "Duplicate Events": true,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "1%",
+      "Custom RSVP Questions": "Unlimited",
+      "RSVP Edit & Cancellation Rules": "Advanced",
+      "Manual Guest Invitations": true,
+      "Staff Members": "5",
+      "Custom Roles & Permissions": "Built-in Roles",
+      "QR Check-in & Scanner": "QR Scanner",
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "Unlimited",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": true,
+      "Notification Delivery Logs": true,
+      "Host Activity Inbox": true,
+      "Branding": "Custom Colors",
+      "Remove SafalEvents Branding": true,
+      "Custom Domain": true,
+      "Public Profile": "Premium",
+      "Analytics": "Full Analytics + API",
+      "Transaction History": "Full",
+      "Revenue Dashboard": "Full",
+      "CSV Export": true,
+      "Support": "Priority Chat"
     }
   }
 ];
 
 const orgPlans = [
   {
-    id: 'org_free', name: 'Free Trial', emoji: '🌱', monthlyPrice: 0, annualPrice: 0, commission: 0,
-    highlights: ['2 Active Events', '100 Attendees / Event', '2 Staff Members', 'QR Check-in', 'Email Support'],
-    cta: 'Start Free Trial', popular: false,
-    features: {
-      'Active Events': '2', 'Attendees / Event': '100', 'Max Guests per RSVP': '2', 'Draft Events': true, 'Duplicate Events': false,
-      'Event Privacy': 'Public', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': false, 'Commission': '—',
-      'Custom RSVP Questions': '3 / Event', 'Manual Invitations': true, 'Staff Members': '2', 'Custom Roles': false, 'QR Check-in': true,
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': '50 Photos', 'Broadcast': true,
-      'Custom Templates': false, 'Delivery Logs': false, 'Activity Inbox': 'Basic', 'Custom Branding': false,
-      'Remove Branding': false, 'Custom Domain': false, 'Analytics': 'Basic', 'CSV Export': false, 'Support': 'Email',
-      'Payout Speed': 'Standard (7 Days)'
+    "id": "org_free",
+    "name": "Free Trial",
+    "emoji": "≡ƒî▒",
+    "monthlyPrice": 0,
+    "annualPrice": 0,
+    "commission": 0,
+    "highlights": [
+      "2 Active Events",
+      "100 Attendees / Event",
+      "Multi Event Dashboard",
+      "All Privacy Options",
+      "2 Staff Members"
+    ],
+    "cta": "Start Free Trial",
+    "popular": false,
+    "features": {
+      "Active Events": "2",
+      "Attendees / Event": "100",
+      "Maximum Guests per RSVP": "2",
+      "Draft Events": true,
+      "Duplicate Events": false,
+      "Public / Private / Unlisted Events": "Public",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": false,
+      "Platform Commission": "ΓÇö",
+      "Custom RSVP Questions": "3 / Event",
+      "Manual Guest Invitations": true,
+      "Staff Members": "2",
+      "Custom Roles & Permissions": false,
+      "QR Check-in & Scanner": true,
+      "Multi Event Dashboard": true,
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "50 Photos",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": false,
+      "Notification Delivery Logs": false,
+      "Host Activity Inbox": "Basic",
+      "Branding": "Organization Profile",
+      "Remove SafalEvents Branding": false,
+      "Custom Domain": false,
+      "Custom Invoice Branding": false,
+      "Public Profile": "Basic",
+      "Analytics": "Basic",
+      "Transaction History": "Basic",
+      "Revenue Dashboard": false,
+      "Audit History": false,
+      "CSV Export": false,
+      "Support": "Email",
+      "Payout Speed": "Standard (7 Days)"
     }
   },
   {
-    id: 'org_basic', name: 'Basic', emoji: '⭐', monthlyPrice: 19.99, annualPrice: 15.99, commission: 4,
-    highlights: ['5 Active Events', '500 Attendees', '5 Staff Members', 'Built-in Roles', 'Email Support (24h)'],
-    cta: 'Upgrade to Basic', popular: false,
-    features: {
-      'Active Events': '5', 'Attendees / Event': '500', 'Max Guests per RSVP': '5', 'Draft Events': true, 'Duplicate Events': true,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '4%',
-      'Custom RSVP Questions': 'Unlimited', 'Manual Invitations': true, 'Staff Members': '5', 'Custom Roles': 'Built-in', 'QR Check-in': true,
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': '200 Photos', 'Broadcast': true,
-      'Custom Templates': true, 'Delivery Logs': 'Basic', 'Activity Inbox': true, 'Custom Branding': 'Enhanced',
-      'Remove Branding': false, 'Custom Domain': false, 'Analytics': 'Event Analytics', 'CSV Export': false, 'Support': 'Email (24h)',
-      'Payout Speed': 'Standard (7 Days)'
+    "id": "org_basic",
+    "name": "Basic",
+    "emoji": "Γ¡É",
+    "monthlyPrice": 19.99,
+    "annualPrice": 15.99,
+    "commission": 4,
+    "highlights": [
+      "5 Active Events",
+      "500 Attendees / Event",
+      "Paid Tickets (4%)",
+      "Custom Email & SMS",
+      "5 Staff Members"
+    ],
+    "cta": "Upgrade to Basic",
+    "popular": false,
+    "features": {
+      "Active Events": "5",
+      "Attendees / Event": "500",
+      "Maximum Guests per RSVP": "5",
+      "Draft Events": true,
+      "Duplicate Events": true,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "4%",
+      "Custom RSVP Questions": "Unlimited",
+      "Manual Guest Invitations": true,
+      "Staff Members": "5",
+      "Custom Roles & Permissions": "Built-in Roles",
+      "QR Check-in & Scanner": true,
+      "Multi Event Dashboard": true,
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "200 Photos",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": true,
+      "Notification Delivery Logs": "Basic",
+      "Host Activity Inbox": true,
+      "Branding": "Enhanced",
+      "Remove SafalEvents Branding": false,
+      "Custom Domain": false,
+      "Custom Invoice Branding": false,
+      "Public Profile": "Enhanced",
+      "Analytics": "Event Analytics",
+      "Transaction History": "Full",
+      "Revenue Dashboard": "Basic",
+      "Audit History": false,
+      "CSV Export": false,
+      "Support": "Email (24 hrs)",
+      "Payout Speed": "Standard (7 Days)"
     }
   },
   {
-    id: 'org_advanced', name: 'Advanced', emoji: '🚀', monthlyPrice: 49.99, annualPrice: 39.99, commission: 2.5,
-    highlights: ['30 Active Events', '2,000 Attendees', '15 Staff', 'Custom Domain', 'Priority Chat'],
-    cta: 'Upgrade to Advanced', popular: true,
-    features: {
-      'Active Events': '30', 'Attendees / Event': '2,000', 'Max Guests per RSVP': '15', 'Draft Events': true, 'Duplicate Events': true,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '2.5%',
-      'Custom RSVP Questions': 'Unlimited', 'Manual Invitations': true, 'Staff Members': '15', 'Custom Roles': 'Full Custom', 'QR Check-in': true,
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': '1,000 Photos', 'Broadcast': true,
-      'Custom Templates': true, 'Delivery Logs': true, 'Activity Inbox': true, 'Custom Branding': 'Full',
-      'Remove Branding': true, 'Custom Domain': true, 'Analytics': 'Advanced + Export', 'CSV Export': true, 'Support': 'Priority Chat',
-      'Payout Speed': 'Express (3 Days)'
+    "id": "org_advanced",
+    "name": "Advanced",
+    "emoji": "≡ƒÜÇ",
+    "monthlyPrice": 49.99,
+    "annualPrice": 39.99,
+    "commission": 2.5,
+    "highlights": [
+      "30 Active Events",
+      "2,000 Attendees",
+      "Full Branding",
+      "Express Payouts",
+      "15 Staff Members"
+    ],
+    "cta": "Upgrade to Advanced",
+    "popular": true,
+    "features": {
+      "Active Events": "30",
+      "Attendees / Event": "2,000",
+      "Maximum Guests per RSVP": "15",
+      "Draft Events": true,
+      "Duplicate Events": true,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "2.5%",
+      "Custom RSVP Questions": "Unlimited",
+      "Manual Guest Invitations": true,
+      "Staff Members": "15",
+      "Custom Roles & Permissions": "Full Custom",
+      "QR Check-in & Scanner": true,
+      "Multi Event Dashboard": true,
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "1,000 Photos",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": true,
+      "Notification Delivery Logs": true,
+      "Host Activity Inbox": true,
+      "Branding": "Full Branding",
+      "Remove SafalEvents Branding": true,
+      "Custom Domain": true,
+      "Custom Invoice Branding": true,
+      "Public Profile": "Enhanced",
+      "Analytics": "Advanced + Export",
+      "Transaction History": "Full",
+      "Revenue Dashboard": "Advanced",
+      "Audit History": true,
+      "CSV Export": true,
+      "Support": "Priority Chat",
+      "Payout Speed": "Express (3 Days)"
     }
   },
   {
-    id: 'org_premium', name: 'Premium', emoji: '💎', monthlyPrice: 99.99, annualPrice: 79.99, commission: 1,
-    highlights: ['Unlimited Events', '5,000 Attendees', 'Unlimited Staff', 'White-label', 'Dedicated Manager'],
-    cta: 'Upgrade to Premium', popular: false,
-    features: {
-      'Active Events': 'Unlimited', 'Attendees / Event': '5,000', 'Max Guests per RSVP': '50', 'Draft Events': true, 'Duplicate Events': true,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '1%',
-      'Custom RSVP Questions': 'Unlimited', 'Manual Invitations': true, 'Staff Members': 'Unlimited', 'Custom Roles': 'Full Custom', 'QR Check-in': true,
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': 'Unlimited', 'Broadcast': true,
-      'Custom Templates': true, 'Delivery Logs': true, 'Activity Inbox': true, 'Custom Branding': 'White-label',
-      'Remove Branding': true, 'Custom Domain': true, 'Analytics': 'Full + API', 'CSV Export': true, 'Support': 'Dedicated Manager',
-      'Payout Speed': 'Express (3 Days)'
+    "id": "org_premium",
+    "name": "Premium",
+    "emoji": "≡ƒÆÄ",
+    "monthlyPrice": 99.99,
+    "annualPrice": 79.99,
+    "commission": 1,
+    "highlights": [
+      "Unlimited Events",
+      "5,000 Attendees",
+      "White-label App",
+      "Unlimited Staff",
+      "Dedicated Success Manager"
+    ],
+    "cta": "Upgrade to Premium",
+    "popular": false,
+    "features": {
+      "Active Events": "Unlimited",
+      "Attendees / Event": "5,000",
+      "Maximum Guests per RSVP": "50",
+      "Draft Events": true,
+      "Duplicate Events": true,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "1%",
+      "Custom RSVP Questions": "Unlimited",
+      "Manual Guest Invitations": true,
+      "Staff Members": "Unlimited",
+      "Custom Roles & Permissions": "Full Custom",
+      "QR Check-in & Scanner": true,
+      "Multi Event Dashboard": true,
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "Unlimited",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": true,
+      "Notification Delivery Logs": true,
+      "Host Activity Inbox": true,
+      "Branding": "White-label",
+      "Remove SafalEvents Branding": true,
+      "Custom Domain": true,
+      "Custom Invoice Branding": true,
+      "Public Profile": "Premium",
+      "Analytics": "Full + API",
+      "Transaction History": "Full",
+      "Revenue Dashboard": "Full",
+      "Audit History": true,
+      "CSV Export": true,
+      "Support": "Dedicated Success Manager",
+      "Payout Speed": "Express (3 Days)"
     }
   },
   {
-    id: 'org_premium_plus', name: 'Premium Plus', emoji: '👑', monthlyPrice: null, annualPrice: null, commission: 0,
-    highlights: ['Everything Unlimited', 'Custom Pricing', '0% Commission', 'SSO + API', 'Dedicated + SLA'],
-    cta: 'Contact Sales', popular: false,
-    features: {
-      'Active Events': 'Unlimited', 'Attendees / Event': 'Unlimited', 'Max Guests per RSVP': 'Unlimited', 'Draft Events': true, 'Duplicate Events': true,
-      'Event Privacy': 'All', 'Guest List Controls': true, 'Waitlist & Approval': true, 'Paid Tickets': true, 'Commission': '0%',
-      'Custom RSVP Questions': 'Unlimited', 'Manual Invitations': true, 'Staff Members': 'Unlimited', 'Custom Roles': 'Full Custom', 'QR Check-in': true,
-      'Guest Messaging': true, 'Comments': true, 'Polls': true, 'Photo Gallery': 'Unlimited', 'Broadcast': true,
-      'Custom Templates': true, 'Delivery Logs': true, 'Activity Inbox': true, 'Custom Branding': 'White-label',
-      'Remove Branding': true, 'Custom Domain': true, 'Analytics': 'Full + API + SSO', 'CSV Export': true, 'Support': 'Dedicated + SLA',
-      'Payout Speed': 'Instant (1 Day)'
+    "id": "org_premium_plus",
+    "name": "Premium Plus",
+    "emoji": "≡ƒææ",
+    "monthlyPrice": null,
+    "annualPrice": null,
+    "commission": 0,
+    "highlights": [
+      "Unlimited Everything",
+      "Custom Integrations",
+      "Instant Payouts",
+      "0% Commission",
+      "SLA Support"
+    ],
+    "cta": "Contact Sales",
+    "popular": false,
+    "features": {
+      "Active Events": "Unlimited",
+      "Attendees / Event": "Unlimited",
+      "Maximum Guests per RSVP": "Unlimited",
+      "Draft Events": true,
+      "Duplicate Events": true,
+      "Public / Private / Unlisted Events": "All",
+      "Guest List Visibility Controls": true,
+      "Waitlist & Approval Workflow": true,
+      "Paid Tickets": true,
+      "Platform Commission": "0%",
+      "Custom RSVP Questions": "Unlimited",
+      "Manual Guest Invitations": true,
+      "Staff Members": "Unlimited",
+      "Custom Roles & Permissions": "Full Custom",
+      "QR Check-in & Scanner": true,
+      "Multi Event Dashboard": true,
+      "Guest Messaging": true,
+      "Comments & Discussion": true,
+      "Polls & Voting": true,
+      "Guest Photo Gallery": "Unlimited",
+      "Broadcast Announcements": true,
+      "Custom Email & SMS Templates": true,
+      "Notification Delivery Logs": true,
+      "Host Activity Inbox": true,
+      "Branding": "White-label",
+      "Remove SafalEvents Branding": true,
+      "Custom Domain": true,
+      "Custom Invoice Branding": true,
+      "Public Profile": "Premium",
+      "Analytics": "Full + API + SSO",
+      "Transaction History": "Full",
+      "Revenue Dashboard": "Full",
+      "Audit History": true,
+      "CSV Export": true,
+      "Support": "Dedicated Manager + SLA",
+      "Payout Speed": "Instant (1 Day)"
     }
   }
 ];
 
 const indTopUps = [
-  { name: 'Extra 250 Attendees', desc: 'Add 250 attendees to one event', price: 2.99, icon: '👥' },
-  { name: 'Extra Event Slot', desc: 'One additional active event for one month', price: 1.99, icon: '📅' },
-  { name: 'Assistant Pass', desc: 'One extra staff member for one event', price: 1.49, icon: '🎫' },
-  { name: 'Photo Pack', desc: 'Additional 50 guest photo uploads', price: 0.99, icon: '📸' },
-  { name: 'SMS Pack', desc: '500 SMS notifications', price: 3.99, icon: '💬' },
-  { name: 'Featured Event', desc: 'Featured in Explore for 7 days', price: 4.99, icon: '⭐' },
-  { name: 'Premium Event Pass', desc: 'Unlock Premium features for one event (7 days)', price: 6.99, icon: '👑' }
+  {
+    "name": "Extra 250 Attendees",
+    "desc": "Add 250 attendees to one event",
+    "price": 2.99,
+    "icon": "≡ƒæÑ"
+  },
+  {
+    "name": "Extra Event Slot",
+    "desc": "One additional active event for one month",
+    "price": 1.99,
+    "icon": "≡ƒôà"
+  },
+  {
+    "name": "Assistant Pass",
+    "desc": "One extra staff member for one event",
+    "price": 1.49,
+    "icon": "≡ƒÄ½"
+  },
+  {
+    "name": "Photo Pack",
+    "desc": "Additional 50 guest photo uploads",
+    "price": 0.99,
+    "icon": "≡ƒô╕"
+  },
+  {
+    "name": "SMS Pack",
+    "desc": "500 SMS notifications",
+    "price": 3.99,
+    "icon": "≡ƒÆ¼"
+  },
+  {
+    "name": "Featured Event",
+    "desc": "Featured in Explore for 7 days",
+    "price": 4.99,
+    "icon": "Γ¡É"
+  },
+  {
+    "name": "Premium Event Pass",
+    "desc": "Unlock Premium features for one event (7 days)",
+    "price": 6.99,
+    "icon": "≡ƒææ"
+  }
 ];
 
 const orgTopUps = [
-  { name: 'Extra 1,000 Attendees', desc: 'Increase capacity for one event', price: 8.99, icon: '👥' },
-  { name: 'Extra Event Slot', desc: 'One additional active event for one month', price: 4.99, icon: '📅' },
-  { name: 'Extra Staff Member', desc: 'One additional staff seat for one month', price: 2.99, icon: '🎫' },
-  { name: 'SMS Pack', desc: '1,000 SMS notifications', price: 5.99, icon: '💬' },
-  { name: 'Featured Event', desc: 'Featured in Explore for 7 days', price: 7.99, icon: '⭐' },
-  { name: 'Premium Event Pass', desc: 'Unlock Premium features for one event (7 days)', price: 19.99, icon: '👑' }
+  {
+    "name": "Extra 1,000 Attendees",
+    "desc": "Increase capacity for one event",
+    "price": 8.99,
+    "icon": "≡ƒæÑ"
+  },
+  {
+    "name": "Extra Event Slot",
+    "desc": "One additional active event for one month",
+    "price": 4.99,
+    "icon": "≡ƒôà"
+  },
+  {
+    "name": "Extra Staff Member",
+    "desc": "One additional staff seat for one month",
+    "price": 2.99,
+    "icon": "≡ƒÄ½"
+  },
+  {
+    "name": "SMS Pack",
+    "desc": "1,000 SMS notifications",
+    "price": 5.99,
+    "icon": "≡ƒÆ¼"
+  },
+  {
+    "name": "Featured Event",
+    "desc": "Featured in Explore for 7 days",
+    "price": 7.99,
+    "icon": "Γ¡É"
+  },
+  {
+    "name": "Premium Event Pass",
+    "desc": "Unlock Premium features for one event (7 days)",
+    "price": 19.99,
+    "icon": "≡ƒææ"
+  }
 ];
 
 const featureKeys = [
-  'Active Events', 'Attendees / Event', 'Max Guests per RSVP', 'Staff Members', 'Commission',
-  'Paid Tickets', 'Custom RSVP Questions', 'Manual Invitations', 'Custom Roles', 'QR Check-in',
-  'Guest Messaging', 'Polls', 'Photo Gallery', 'Broadcast', 'Custom Templates',
-  'Delivery Logs', 'Activity Inbox', 'Custom Branding', 'Remove Branding', 'Custom Domain',
-  'Analytics', 'CSV Export', 'Support'
+  "Active Events",
+  "Attendees / Event",
+  "Maximum Guests per RSVP",
+  "Draft Events",
+  "Duplicate Events",
+  "Public / Private / Unlisted Events",
+  "Guest List Visibility Controls",
+  "Waitlist & Approval Workflow",
+  "Paid Tickets",
+  "Platform Commission",
+  "Custom RSVP Questions",
+  "RSVP Edit & Cancellation Rules",
+  "Manual Guest Invitations",
+  "Staff Members",
+  "Custom Roles & Permissions",
+  "QR Check-in & Scanner",
+  "Guest Messaging",
+  "Comments & Discussion",
+  "Polls & Voting",
+  "Guest Photo Gallery",
+  "Broadcast Announcements",
+  "Custom Email & SMS Templates",
+  "Notification Delivery Logs",
+  "Host Activity Inbox",
+  "Branding",
+  "Remove SafalEvents Branding",
+  "Custom Domain",
+  "Public Profile",
+  "Analytics",
+  "Transaction History",
+  "Revenue Dashboard",
+  "CSV Export",
+  "Support",
+  "Multi Event Dashboard",
+  "Custom Invoice Branding",
+  "Audit History",
+  "Payout Speed"
 ];
 
 function renderFeatureValue(val) {
@@ -179,7 +676,8 @@ function renderFeatureValue(val) {
   return <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>{val}</span>;
 }
 
-export default function PricingPage() {
+export function PricingSection() {
+  // Using pricing section component
   const [hostType, setHostType] = useState('individual');
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [showComparison, setShowComparison] = useState(false);
@@ -200,7 +698,7 @@ export default function PricingPage() {
   };
 
   return (
-    <PageShell>
+    
       <div className="mesh-bg" style={{ minHeight: '100vh', paddingBottom: 'var(--spacing-xl)' }}>
         <div className="container animate-fade-in" style={{ maxWidth: '1200px', paddingTop: 'var(--spacing-xl)' }}>
 
@@ -488,6 +986,14 @@ export default function PricingPage() {
 
         </div>
       </div>
+    
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <PageShell>
+      <PricingSection />
     </PageShell>
   );
 }

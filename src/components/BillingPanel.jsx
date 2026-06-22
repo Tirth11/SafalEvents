@@ -76,10 +76,10 @@ export default function BillingPanel({ hostEmail }) {
     }, 800);
   };
 
-  const usageBars = usage ? [
-    { label: 'Active Events', current: usage.activeEvents, max: usage.limits.activeEvents === -1 ? '∞' : usage.limits.activeEvents, pct: usage.limits.activeEvents === -1 ? 15 : Math.round((usage.activeEvents / usage.limits.activeEvents) * 100), color: '#3b82f6' },
-    { label: 'Max Attendees', current: '-', max: usage.limits.attendeesPerEvent === -1 ? '∞' : usage.limits.attendeesPerEvent, pct: 0, color: '#8b5cf6', hideBar: true },
-    { label: 'Staff Members', current: usage.staffMembers, max: usage.limits.staffMembers === -1 ? '∞' : usage.limits.staffMembers, pct: usage.limits.staffMembers === -1 ? 10 : Math.round((usage.staffMembers / Math.max(usage.limits.staffMembers, 1)) * 100), color: '#f59e0b' }
+  const usageBars = usage?.usage ? [
+    { label: 'Active Events', current: usage.usage.activeEvents.current, max: usage.usage.activeEvents.max === -1 ? '∞' : usage.usage.activeEvents.max, pct: usage.usage.activeEvents.max === -1 ? 15 : Math.round((usage.usage.activeEvents.current / usage.usage.activeEvents.max) * 100), color: '#3b82f6' },
+    { label: 'Max Attendees', current: '-', max: usage.usage.totalAttendees.max === -1 ? '∞' : usage.usage.totalAttendees.max, pct: 0, color: '#8b5cf6', hideBar: true },
+    { label: 'Staff Members', current: usage.usage.staffMembers.current, max: usage.usage.staffMembers.max === -1 ? '∞' : usage.usage.staffMembers.max, pct: usage.usage.staffMembers.max === -1 ? 10 : Math.round((usage.usage.staffMembers.current / Math.max(usage.usage.staffMembers.max, 1)) * 100), color: '#f59e0b' }
   ] : [];
 
   const displayedTx = showAllTx ? transactions : transactions.slice(0, 5);

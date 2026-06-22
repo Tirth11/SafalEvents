@@ -200,11 +200,11 @@ export default function PageShell({ children }) {
               </>
             ) : (
               <>
-                <Link to="/login?host=true" className="site-nav-link" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Sparkles size={15} /> Become a Host
+                <Link to="/login" className="site-nav-link">
+                  Sign In
                 </Link>
                 <Link to="/login?signup=true" className="site-nav-cta">
-                  <UserPlus size={14} /> Sign Up <ArrowRight size={14} />
+                  Join SafalEvents <ArrowRight size={14} />
                 </Link>
               </>
             )}
@@ -264,11 +264,11 @@ export default function PageShell({ children }) {
               </>
             ) : (
               <>
-                <Link to="/login?host=true" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '1rem', color: 'var(--color-text)', fontWeight: 600 }}>
-                  <Sparkles size={18} style={{ color: 'var(--color-primary)' }} /> Become a Host
+                <Link to="/login" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '1rem', color: 'var(--color-text)', fontWeight: 600 }}>
+                  Sign In
                 </Link>
                 <Link to="/login?signup=true" className="site-nav-cta" onClick={() => setMobileMenuOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: '100%', justifyContent: 'center' }}>
-                  <UserPlus size={16} /> Sign Up <ArrowRight size={16} />
+                  Join SafalEvents <ArrowRight size={16} />
                 </Link>
               </>
             )}
