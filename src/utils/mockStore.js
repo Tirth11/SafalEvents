@@ -3305,7 +3305,6 @@ export const mockStore = {
     const txns = db.transactions || [];
     const completedTxns = txns.filter(t => t.status === 'completed');
     const totalRevenue = completedTxns.reduce((s, t) => s + t.amount, 0);
-    const subscriptionRevenue = completedTxns.filter(t => t.type === 'subscription').reduce((s, t) => s + t.amount, 0);
     const topUpRevenue = completedTxns.filter(t => t.type === 'topup').reduce((s, t) => s + t.amount, 0);
     const refundTotal = txns.filter(t => t.type === 'refund').reduce((s, t) => s + Math.abs(t.amount), 0);
 
@@ -3323,23 +3322,61 @@ export const mockStore = {
       });
     }
 
-    // Plan distribution
     const subs = db.subscriptions || [];
+    const plans = db.plans || [];
     const planDistribution = {};
+    let mrr = 0;
+    let arr = 0;
+    let paidHosts = 0;
+    let individualRevenue = 0;
+    let orgRevenue = 0;
+
     subs.forEach(s => {
-      planDistribution[s.planId] = (planDistribution[s.planId] || 0) + 1;
+      if ((s.status || '').toUpperCase() !== 'ACTIVE') return;
+      
+      const plan = plans.find(p => p.id === s.planId);
+      if (!plan) return;
+
+      planDistribution[plan.name] = (planDistribution[plan.name] || 0) + 1;
+      
+      if (plan.monthlyPrice > 0 || plan.annualPrice > 0) {
+        paidHosts++;
+        let monthlyValue = 0;
+        if (s.billingCycle === 'annual') {
+           monthlyValue = plan.annualPrice / 12;
+           arr += plan.annualPrice;
+        } else {
+           monthlyValue = plan.monthlyPrice;
+           arr += plan.monthlyPrice * 12;
+        }
+        mrr += monthlyValue;
+
+        if (plan.hostType === 'individual') {
+          individualRevenue += (s.billingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice);
+        } else {
+          orgRevenue += (s.billingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice);
+        }
+      }
     });
 
+    const totalHosts = Math.max((db.users || []).filter(u => u.role === 'host').length, subs.length, 1);
+    const conversionRate = Math.round((paidHosts / totalHosts) * 100);
+
     return {
-      totalRevenue: parseFloat(totalRevenue.toFixed(2)),
-      subscriptionRevenue: parseFloat(subscriptionRevenue.toFixed(2)),
+      mrr: parseFloat(mrr.toFixed(2)),
+      arr: parseFloat(arr.toFixed(2)),
       topUpRevenue: parseFloat(topUpRevenue.toFixed(2)),
-      refundTotal: parseFloat(refundTotal.toFixed(2)),
+      planDistribution,
+      conversionRate,
+      paidHosts,
+      totalHosts,
+      individualRevenue: parseFloat(individualRevenue.toFixed(2)),
+      orgRevenue: parseFloat(orgRevenue.toFixed(2)),
+      totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+      monthlyBreakdown,
       netRevenue: parseFloat((totalRevenue - refundTotal).toFixed(2)),
       totalTransactions: txns.length,
-      activeSubscriptions: subs.filter(s => s.status === 'active').length,
-      monthlyBreakdown,
-      planDistribution
+      activeSubscriptions: subs.filter(s => (s.status || '').toUpperCase() === 'ACTIVE').length
     };
   },
 
