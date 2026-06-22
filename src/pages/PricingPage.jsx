@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, X, Sparkles, Zap, Crown, Star, ArrowRight, ToggleLeft, ToggleRight } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import { mockStore } from '../utils/mockStore';
 
 ﻿const individualPlans = [
   {
@@ -677,6 +678,10 @@ function renderFeatureValue(val) {
 }
 
 export function PricingSection() {
+  const [currentUser, setCurrentUser] = useState(null);
+  useEffect(() => {
+    setCurrentUser(mockStore.getCurrentUser());
+  }, []);
   // Using pricing section component
   const [hostType, setHostType] = useState('individual');
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -837,7 +842,7 @@ export function PricingSection() {
                     variant={plan.popular ? 'primary' : 'outline'}
                     style={{ width: '100%', padding: '10px 0', fontSize: '0.85rem', fontWeight: 700 }}
                   >
-                    {plan.cta} {plan.popular && <ArrowRight size={14} />}
+                    {(!currentUser || !currentUser.role) ? 'Join SafalEvents' : plan.cta} {plan.popular && <ArrowRight size={14} />}
                   </Button>
                 </Link>
               </Card>
@@ -871,7 +876,7 @@ export function PricingSection() {
                         background: p.popular ? 'rgba(255,107,53,0.04)' : 'transparent',
                         minWidth: '120px'
                       }}>
-                        {p.emoji} {p.name}
+                        {p.name}
                       </th>
                     ))}
                   </tr>
@@ -902,7 +907,7 @@ export function PricingSection() {
                 fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 800, fontFamily: 'var(--font-heading)',
                 marginBottom: '8px'
               }}>
-                🛒 Need a little extra?
+                Need a little extra?
               </h2>
               <p className="text-muted" style={{ fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto' }}>
                 Top-ups let you stretch your current plan for a specific event without upgrading.
@@ -937,7 +942,7 @@ export function PricingSection() {
 
           {/* Transaction Fees Section */}
           <Card className="glass-surface" style={{ padding: '32px', textAlign: 'center', marginBottom: '48px' }}>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>💳 Transaction Fees on Paid Tickets</h3>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Transaction Fees on Paid Tickets</h3>
             <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '20px', maxWidth: '500px', margin: '0 auto 20px' }}>
               We only charge a commission on paid ticket sales. Free events are always free.
             </p>
