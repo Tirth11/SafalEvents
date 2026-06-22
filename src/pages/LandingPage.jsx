@@ -739,7 +739,9 @@ Designed with intention
         </section>
 
         {/* ───────── PRICING ───────── */}
-        <PricingSection />
+        <div id="pricing">
+          <PricingSection />
+        </div>
 
         {/* ───────── CLOSING CTA ───────── */}
         <section style={{ padding: '0 0 var(--spacing-xl)', background: 'var(--color-bg)' }}>
