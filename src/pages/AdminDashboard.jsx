@@ -1006,7 +1006,7 @@ export default function AdminDashboard({ onLogout }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
             }}>
               <div style={{
-                background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '600px',
+                background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '900px',
                 padding: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)',
                 textAlign: 'left'
               }}>
@@ -1030,40 +1030,109 @@ export default function AdminDashboard({ onLogout }) {
                   </div>
                 </div>
 
-                <div className="grid-2" style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '14px', fontSize: '0.85rem', marginBottom: '18px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div><strong>Contact Person:</strong> {selectedHost.name}</div>
-                    <div><strong>Verified Email:</strong> {selectedHost.email}</div>
-                    <div><strong>Verified Phone:</strong> {selectedHost.phone}</div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {selectedHost.hostType === 'organization' && (
-                      <>
-                        <div><strong>Org Type:</strong> {selectedHost.orgProfile?.orgType}</div>
-                        <div><strong>Website:</strong> <a href={selectedHost.orgProfile?.website} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>{selectedHost.orgProfile?.website || 'N/A'}</a></div>
-                        <div><strong>Location:</strong> {selectedHost.orgProfile?.city || 'N/A'}, {selectedHost.orgProfile?.state || 'USA'}</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '10px' }}>Events list ({hostEvents.length})</h4>
-                  {hostEvents.length > 0 ? (
-                    <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
-                      {hostEvents.map(evt => (
-                        <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
-                          <div>
-                            <strong>{evt.title}</strong>
-                            <div className="text-muted" style={{ fontSize: '0.72rem' }}>{evt.date} • {evt.location.split(',')[0]}</div>
-                          </div>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: evt.status === 'Published' ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.15)', color: evt.status === 'Published' ? '#16a34a' : 'var(--color-text-muted)' }}>{evt.status}</span>
-                        </div>
-                      ))}
+                <div className="grid-2" style={{ gap: '18px', alignItems: 'start' }}>
+                  {/* Left Column: Details & Events */}
+                  <div>
+                    <div className="grid-2" style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '14px', fontSize: '0.85rem', marginBottom: '18px', gap: '10px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div><strong>Contact Person:</strong> {selectedHost.name}</div>
+                        <div><strong>Verified Email:</strong> {selectedHost.email}</div>
+                        <div><strong>Verified Phone:</strong> {selectedHost.phone}</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {selectedHost.hostType === 'organization' && (
+                          <>
+                            <div><strong>Org Type:</strong> {selectedHost.orgProfile?.orgType}</div>
+                            <div><strong>Website:</strong> <a href={selectedHost.orgProfile?.website} target="_blank" rel="noreferrer" style={{ color: 'var(--color-primary)' }}>{selectedHost.orgProfile?.website || 'N/A'}</a></div>
+                            <div><strong>Location:</strong> {selectedHost.orgProfile?.city || 'N/A'}, {selectedHost.orgProfile?.state || 'USA'}</div>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-muted" style={{ fontSize: '0.82rem', margin: 0 }}>This host has not hosted any events yet.</p>
-                  )}
+
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Events List</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-hover)', padding: '2px 8px', borderRadius: '10px' }}>{hostEvents.length} total</span>
+                      </h4>
+                      {hostEvents.length > 0 ? (
+                        <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                          {hostEvents.map(evt => (
+                            <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
+                              <div>
+                                <strong style={{ display: 'block', marginBottom: '2px' }}>{evt.title}</strong>
+                                <div className="text-muted" style={{ fontSize: '0.72rem' }}>{evt.date} • {evt.location.split(',')[0]}</div>
+                              </div>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: evt.status === 'Published' ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.15)', color: evt.status === 'Published' ? '#16a34a' : 'var(--color-text-muted)' }}>{evt.status}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted" style={{ fontSize: '0.82rem', margin: 0, padding: '12px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px dashed var(--color-border)', textAlign: 'center' }}>This host has not hosted any events yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Billing & Subscriptions */}
+                  {(() => {
+                    const sub = mockStore.getSubscription(selectedHost.email) || mockStore.autoAssignFreePlan(selectedHost.email, selectedHost.hostType || 'individual');
+                    const plan = sub ? mockStore.getPlanById(sub.planId) : null;
+                    const transactions = mockStore.getTransactions(selectedHost.email) || [];
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '10px' }}>Subscription Plan</h4>
+                          {plan ? (
+                            <div style={{ padding: '12px 14px', background: 'linear-gradient(to right, rgba(37,99,235,0.05), rgba(139,92,246,0.05))', borderRadius: '12px', border: '1px solid rgba(37,99,235,0.15)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>{plan.emoji} {plan.name}</div>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 700, background: (sub.status || '').toUpperCase() === 'ACTIVE' ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)', color: (sub.status || '').toUpperCase() === 'ACTIVE' ? '#16a34a' : '#b45309', padding: '3px 8px', borderRadius: '4px' }}>
+                                  {(sub.status || '').toUpperCase()}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                <strong>Billing:</strong> <span style={{ textTransform: 'capitalize' }}>{sub.billingCycle}</span>
+                                {sub.currentPeriodEnd && ` • Renews ${new Date(sub.currentPeriodEnd).toLocaleDateString()}`}
+                              </div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                                <strong>Commission:</strong> {plan.commission}% per ticket
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-muted" style={{ fontSize: '0.82rem', padding: '12px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px dashed var(--color-border)', textAlign: 'center' }}>No active plan</div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Billing History</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-hover)', padding: '2px 8px', borderRadius: '10px' }}>{transactions.length} total</span>
+                          </h4>
+                          {transactions.length > 0 ? (
+                            <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
+                              {transactions.map(tx => (
+                                <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                                  <div>
+                                    <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'capitalize' }}>{tx.type}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>{new Date(tx.createdAt).toLocaleDateString()} • {tx.description}</div>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: tx.type === 'refund' ? '#dc2626' : 'var(--color-text)' }}>
+                                      {tx.type === 'refund' ? '-' : ''}${Math.abs(tx.amount).toFixed(2)}
+                                    </span>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: tx.status === 'completed' ? '#16a34a' : 'var(--color-text-muted)' }}>{tx.status}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-muted" style={{ fontSize: '0.82rem', padding: '12px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px dashed var(--color-border)', textAlign: 'center' }}>No transaction history found.</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', marginTop: '18px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
