@@ -210,11 +210,8 @@ export default function Login() {
         return;
       }
 
-      if (user.status === 'PENDING_ADMIN_APPROVAL') {
-        setErrorMsg('Your host application is currently pending admin review. You will receive an email once approved.');
-        return;
-      }
-
+      // Organization hosts in PENDING_ADMIN_APPROVAL may log in so they can upload
+      // verification documents inside; the dashboard stays locked until an admin approves.
       if (user.status === 'REJECTED') {
         setErrorMsg(`Your host registration was rejected. Reason: ${user.rejectReason || 'Details not provided'}`);
         return;

@@ -36,6 +36,11 @@ export default function HostDashboard({ onLogout }) {
   const [uploadedDocuments, setUploadedDocuments] = useState(userRecord?.orgProfile?.docs || []);
   const [showOrgDocModal, setShowOrgDocModal] = useState(isOrgHost && !docsAlreadyVerified);
 
+  // Org hosts are locked out of ALL host activity until they upload documents AND a
+  // Safal Events admin approves them (status ACTIVE). Until then the dashboard shows
+  // only the verification overlay below — every other section is inaccessible.
+  const orgHostLocked = isOrgHost && !(userRecord?.status === 'ACTIVE' && orgDocsUploaded);
+
   // Integrations state
   const [connectedIntegrations, setConnectedIntegrations] = useState([]);
   const [integrationForm, setIntegrationForm] = useState({ platform: 'jotform', apiKey: '' });
@@ -222,7 +227,7 @@ export default function HostDashboard({ onLogout }) {
       mockStore.saveOrgDocuments(currentUser?.email, uploadedDocuments);
       setOrgDocsUploaded(true);
       setShowOrgDocModal(false);
-      alert('Organization documents uploaded successfully! Your account is now fully activated.');
+      alert('Documents submitted! Your organization is now pending Safal Events admin approval — you will be notified once approved.');
     } else {
       alert('Please upload at least one document.');
     }
@@ -3932,8 +3937,8 @@ export default function HostDashboard({ onLogout }) {
           </div>
         )}
 
-        {/* ORG DOCUMENT UPLOAD MODAL */}
-        {showOrgDocModal && isOrgHost && !orgDocsUploaded && (
+        {/* ORG VERIFICATION LOCK — upload documents (shown until documents are uploaded) */}
+        {orgHostLocked && !orgDocsUploaded && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)',
@@ -3955,7 +3960,7 @@ export default function HostDashboard({ onLogout }) {
                   Complete Your Organization Verification
                 </h2>
                 <p className="text-muted" style={{ fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
-                  To fully activate your organization account and create events, please upload your organization documents (EIN letter, certificate, or any legal document).
+                  Safal Events requires your organization documents before you can host. Upload them below — a Safal Events admin will review and approve your account.
                 </p>
               </div>
 
@@ -4013,15 +4018,56 @@ export default function HostDashboard({ onLogout }) {
                   disabled={uploadedDocuments.length === 0}
                   style={{ flex: 1, padding: '12px', fontWeight: 700 }}
                 >
-                  Upload & Activate Account
+                  Submit Documents for Review
                 </Button>
               </div>
 
               <p style={{
                 fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '16px', margin: '16px 0 0 0'
               }}>
-                You can also upload documents later in Settings → Organization Documents
+                A Safal Events admin reviews your documents — you can’t host until your organization is approved.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ORG VERIFICATION LOCK — documents submitted, awaiting Safal Events approval */}
+        {orgHostLocked && orgDocsUploaded && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
+          }}>
+            <div className="animate-fade-in" style={{
+              background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '520px',
+              padding: '32px', textAlign: 'center', boxShadow: 'var(--shadow-lg)', border: '2px solid var(--color-border)', color: 'var(--color-text)'
+            }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: '56px', height: '56px', borderRadius: 'var(--radius-md)',
+                background: 'rgba(245, 158, 11, 0.12)', color: '#b45309', marginBottom: '16px'
+              }}>
+                <Check size={28} />
+              </div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px 0' }}>Verification in review</h2>
+              <p className="text-muted" style={{ fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
+                Your documents have been submitted. Your organization is pending Safal Events admin approval — you’ll be notified by email once you’re approved to host events.
+              </p>
+              {uploadedDocuments.length > 0 && (
+                <div style={{ background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', padding: '14px', marginTop: '18px', textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>Submitted documents</div>
+                  {uploadedDocuments.map((doc, idx) => (
+                    <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Check size={13} color='var(--color-accent)' /> {doc}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {userRecord?.status === 'REJECTED' && (
+                <p style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '14px' }}>
+                  Your application was rejected{userRecord?.rejectReason ? `: ${userRecord.rejectReason}` : ''}.
+                </p>
+              )}
             </div>
           </div>
         )}

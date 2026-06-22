@@ -71,7 +71,16 @@ export default function AdminDashboard({ onLogout }) {
 
   // --- Handlers ---
   const handleApprove = (userId, hostName) => {
-    mockStore.updateUserStatus(userId, 'ACTIVE');
+    const host = users.find(u => u.id === userId);
+    if (host && host.hostType === 'organization' && !(host.orgProfile?.docs?.length)) {
+      alert('Cannot approve — this organization has not uploaded verification documents yet.');
+      return;
+    }
+    const res = mockStore.updateUserStatus(userId, 'ACTIVE');
+    if (res && res.error) {
+      alert('Cannot approve — verification documents are required.');
+      return;
+    }
     mockStore.addAuditLog('Superadmin', `Approved host application for ${hostName}`, userId);
     loadData();
     alert('Host registration approved successfully!');
@@ -789,7 +798,8 @@ export default function AdminDashboard({ onLogout }) {
                               </div>
                             </div>
 
-                            {host.hostType === 'organization' && host.orgProfile?.docs && (
+                            {host.hostType === 'organization' && (
+                              host.orgProfile?.docs?.length ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', color: 'var(--color-text-muted)' }}>EIN / DOCS:</span>
                                 {host.orgProfile.docs.map((doc, idx) => (
@@ -802,6 +812,13 @@ export default function AdminDashboard({ onLogout }) {
                                   </button>
                                 ))}
                               </div>
+                              ) : (
+                              <div style={{ marginTop: '6px' }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', fontSize: '0.72rem', fontWeight: 800, borderRadius: 'var(--radius-full)', background: 'rgba(245, 158, 11, 0.12)', color: '#b45309' }}>
+                                  ⚠ Awaiting documents — cannot approve until uploaded
+                                </span>
+                              </div>
+                              )
                             )}
 
                           </div>
@@ -818,7 +835,8 @@ export default function AdminDashboard({ onLogout }) {
                           <Button
                             variant="primary"
                             onClick={() => handleApprove(host.id, host.name)}
-                            style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '9999px', fontWeight: 700 }}
+                            disabled={host.hostType === 'organization' && !host.orgProfile?.docs?.length}
+                            style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '9999px', fontWeight: 700, opacity: (host.hostType === 'organization' && !host.orgProfile?.docs?.length) ? 0.5 : 1, cursor: (host.hostType === 'organization' && !host.orgProfile?.docs?.length) ? 'not-allowed' : 'pointer' }}
                           >
                             <UserCheck size={16} /> Approve Host
                           </Button>

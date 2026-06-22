@@ -1592,6 +1592,11 @@ export const mockStore = {
 
   updateUserStatus: (userId, status, rejectReason = '') => {
     const db = getDB();
+    // Gate: an organization host cannot be activated until it has uploaded verification documents.
+    const _target = db.users.find(u => u.id === userId);
+    if (status === 'ACTIVE' && _target && _target.hostType === 'organization' && !(_target.orgProfile && _target.orgProfile.docs && _target.orgProfile.docs.length)) {
+      return { ..._target, error: 'Documents required' };
+    }
     db.users = db.users.map(u => u.id === userId ? { ...u, status, rejectReason } : u);
     saveDB(db);
     
@@ -1766,8 +1771,9 @@ export const mockStore = {
         country: session.formData.country,
         city: session.formData.city,
         state: session.formData.state,
-        docs: session.formData.docs || ['mock_org_ein_letter.pdf']
+        docs: []
       } : null,
+      orgDocsUploaded: false,
       status: userStatus,
       createdAt: new Date().toISOString()
     };

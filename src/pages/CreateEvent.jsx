@@ -59,6 +59,28 @@ export default function CreateEvent() {
     questions: ['Any dietary restrictions?']
   });
 
+  // Gate: an organization host must upload documents AND be admin-approved before creating events.
+  const _currentUser = mockStore.getCurrentUser();
+  const _userRecord = mockStore.getUsers().find(u => u.email === _currentUser?.email) || null;
+  const _orgLocked = (_currentUser?.hostType || _userRecord?.hostType) === 'organization'
+    && !(_userRecord?.status === 'ACTIVE' && _userRecord?.orgDocsUploaded);
+  if (_orgLocked) {
+    return (
+      <PageShell>
+        <div className="container" style={{ maxWidth: '560px', padding: '64px 0', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: 'var(--radius-md)', background: 'rgba(242, 84, 27, 0.1)', color: 'var(--color-primary)', marginBottom: '16px' }}>
+            <Lock size={26} />
+          </div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 8px 0' }}>Verification required</h1>
+          <p className="text-muted" style={{ margin: '0 0 20px 0' }}>
+            Your organization must upload verification documents and be approved by Safal Events before you can create events.
+          </p>
+          <Button variant="primary" onClick={() => navigate('/dashboard')}>Go to verification</Button>
+        </div>
+      </PageShell>
+    );
+  }
+
   const handleAddField = () => {
     setFormData({
       ...formData,
