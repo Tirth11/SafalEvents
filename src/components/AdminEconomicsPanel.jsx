@@ -358,9 +358,9 @@ export default function AdminEconomicsPanel() {
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <span style={{
                         padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700,
-                        background: s.status === 'ACTIVE' ? 'rgba(0,200,83,0.1)' : 'rgba(245,158,11,0.1)',
-                        color: s.status === 'ACTIVE' ? '#16a34a' : '#ca8a04'
-                      }}>{s.status}</span>
+                        background: (s.status || '').toUpperCase() === 'ACTIVE' ? 'rgba(0,200,83,0.1)' : 'rgba(245,158,11,0.1)',
+                        color: (s.status || '').toUpperCase() === 'ACTIVE' ? '#16a34a' : '#ca8a04'
+                      }}>{(s.status || '').toUpperCase()}</span>
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right', fontSize: '0.78rem' }}>
                       {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}

@@ -19,7 +19,14 @@ export default function BillingPanel({ hostEmail }) {
   const [showAllTx, setShowAllTx] = useState(false);
 
   const loadData = () => {
-    const sub = mockStore.getSubscription(hostEmail);
+    let sub = mockStore.getSubscription(hostEmail);
+    if (!sub) {
+      // Find hostType from user or default to individual
+      const users = mockStore.getUsers ? mockStore.getUsers() : [];
+      const user = users.find(u => u.email === hostEmail);
+      const hostType = user?.hostType || 'individual';
+      sub = mockStore.autoAssignFreePlan(hostEmail, hostType);
+    }
     setSubscription(sub);
     if (sub) {
       const p = mockStore.getPlanById(sub.planId);
@@ -100,11 +107,11 @@ export default function BillingPanel({ hostEmail }) {
               </h2>
             </div>
             <span style={{
-              background: subscription.status === 'ACTIVE' ? 'rgba(0,200,83,0.12)' : 'rgba(245,158,11,0.12)',
-              color: subscription.status === 'ACTIVE' ? '#16a34a' : '#ca8a04',
+              background: subscription.status.toUpperCase() === 'ACTIVE' ? 'rgba(0,200,83,0.12)' : 'rgba(245,158,11,0.12)',
+              color: subscription.status.toUpperCase() === 'ACTIVE' ? '#16a34a' : '#ca8a04',
               padding: '4px 12px', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 700
             }}>
-              {subscription.status}
+              {subscription.status.toUpperCase()}
             </span>
           </div>
 
