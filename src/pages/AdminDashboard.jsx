@@ -9,6 +9,7 @@ import { HERO_IMAGES, getAvatar, getEventCover, EVENT_COVERS } from '../utils/im
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import DashboardTopBar from '../components/DashboardTopBar';
 import AdminEconomicsPanel from '../components/AdminEconomicsPanel';
 
 export default function AdminDashboard({ onLogout }) {
@@ -322,6 +323,17 @@ export default function AdminDashboard({ onLogout }) {
 
         {/* ───────── Main Content Pane ───────── */}
         <main className="dashboard-main">
+
+          <DashboardTopBar
+            userName={mockStore.getCurrentUser()?.name || 'Super Admin'}
+            roleLabel="Platform Admin"
+            planLabel="Superadmin"
+            planTone="admin"
+            notifCount={0}
+            onBell={() => setActiveTab('overview')}
+            onProfile={() => setActiveTab('settings')}
+            onLogout={onLogout}
+          />
 
           {/* ─── Hero header ─── */}
           <div className="page-hero animate-fade-in" style={{ minHeight: '150px', marginBottom: '20px' }}>

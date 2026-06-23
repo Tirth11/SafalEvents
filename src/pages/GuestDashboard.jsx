@@ -7,6 +7,7 @@ import { calcAge, meetsAge } from '../utils/age';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
+import DashboardTopBar from '../components/DashboardTopBar';
 import FormField, { FormInput, FormSelect } from '../components/FormField';
 
 export default function GuestDashboard({ onLogout }) {
@@ -524,7 +525,17 @@ export default function GuestDashboard({ onLogout }) {
 
         {/* Main Content */}
         <main className="dashboard-main">
-          
+
+          <DashboardTopBar
+            userName={currentUser?.name}
+            roleLabel="Guest"
+            planLabel={null}
+            notifCount={typeof pendingReplyCount === 'number' ? pendingReplyCount : 0}
+            onBell={() => setActiveTab('timeline')}
+            onProfile={() => setActiveTab('profile')}
+            onLogout={onLogout}
+          />
+
           {/* Personal Photo Hero Strip */}
           <div className="page-hero animate-fade-in" style={{ marginBottom: '16px' }}>
             <img className="page-hero-img" src={HERO_IMAGES.toast} alt="Friends celebrating together" />

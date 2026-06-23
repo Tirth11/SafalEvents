@@ -12,6 +12,7 @@ import Card from '../components/Card';
 import PageShell from '../components/PageShell';
 import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
+import DashboardTopBar from '../components/DashboardTopBar';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
@@ -30,6 +31,14 @@ export default function HostDashboard({ onLogout }) {
   // scoped to only the events they have been added to.
   const isStaffViewer = currentUser?.role === 'staff';
   const staffEventIds = isStaffViewer ? mockStore.getStaffForEmail(currentUser?.email).map(s => s.eventId) : null;
+
+  // Top-bar subscription chip: current plan name (defaults to Free), or Staff.
+  const _topbarSub = (!isStaffViewer && currentUser?.email) ? mockStore.getSubscription(currentUser.email) : null;
+  const _topbarPlan = _topbarSub ? mockStore.getPlanById(_topbarSub.planId) : null;
+  const topbarPlanLabel = isStaffViewer ? 'Staff Access' : (_topbarPlan ? `${_topbarPlan.emoji || ''} ${_topbarPlan.name}`.trim() : '🌱 Free');
+  const topbarPlanTone = isStaffViewer ? 'free' : (_topbarPlan && _topbarPlan.monthlyPrice > 0 ? 'primary' : 'free');
+  let topbarNotif = 0;
+  try { topbarNotif = (mockStore.getHostNotifications() || []).filter(n => !n.read).length; } catch (e) { topbarNotif = 0; }
 
   // Navigation: dashboard, events, earnings, messages, audience, settings
   const [activeSidebar, setActiveSidebar] = useState(currentUser?.role === 'staff' ? 'events' : 'dashboard');
@@ -1077,7 +1086,18 @@ export default function HostDashboard({ onLogout }) {
 
         {/* Main Content Pane */}
         <main className="dashboard-main">
-          
+
+          <DashboardTopBar
+            userName={currentUser?.name}
+            roleLabel={isStaffViewer ? 'Staff' : (isOrgHost ? 'Organization Host' : 'Individual Host')}
+            planLabel={topbarPlanLabel}
+            planTone={topbarPlanTone}
+            notifCount={topbarNotif}
+            onBell={() => setActiveSidebar(isStaffViewer ? 'events' : 'messages')}
+            onProfile={() => setActiveSidebar(isStaffViewer ? 'events' : 'settings')}
+            onLogout={onLogout}
+          />
+
           {/* ========================================================================= */}
           {/* SECTION 1 - 3 & 6: DASHBOARD HOME PAGE                                    */}
           {/* ========================================================================= */}
