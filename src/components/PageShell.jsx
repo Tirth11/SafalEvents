@@ -53,9 +53,14 @@ export default function PageShell({ children }) {
       <header className="site-header">
         <div className="container site-header-inner">
           <Link to="/" className="site-logo">
-            <img src="/logo.png" alt="SafalEvents" style={{ height: '36px', width: '36px', objectFit: 'contain' }} />
-            <span>
-              Safal<span style={{ color: 'var(--color-primary)' }}>Events</span>
+            <img src="/logo-mark.png" alt="SafalEvents logo" style={{ height: '44px', width: '44px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
+            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
+              <span style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-heading)', letterSpacing: '-0.3px' }}>
+                <span style={{ color: '#C0871F' }}>Safal</span><span style={{ color: '#1F3A63' }}>Events</span>
+              </span>
+              <span style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Creating Successful Moments
+              </span>
             </span>
           </Link>
 

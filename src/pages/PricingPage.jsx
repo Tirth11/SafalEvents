@@ -10,7 +10,7 @@ import { mockStore } from '../utils/mockStore';
   {
     "id": "ind_free",
     "name": "Free",
-    "emoji": "≡ƒî▒",
+    "emoji": "🌱",
     "monthlyPrice": 0,
     "annualPrice": 0,
     "commission": 0,
@@ -33,7 +33,7 @@ import { mockStore } from '../utils/mockStore';
       "Guest List Visibility Controls": false,
       "Waitlist & Approval Workflow": true,
       "Paid Tickets": false,
-      "Platform Commission": "ΓÇö",
+      "Platform Commission": "—",
       "Custom RSVP Questions": false,
       "RSVP Edit & Cancellation Rules": "Basic",
       "Manual Guest Invitations": false,
@@ -62,7 +62,7 @@ import { mockStore } from '../utils/mockStore';
   {
     "id": "ind_basic",
     "name": "Basic",
-    "emoji": "Γ¡É",
+    "emoji": "⭐",
     "monthlyPrice": 3.99,
     "annualPrice": 3.19,
     "commission": 5,
@@ -114,7 +114,7 @@ import { mockStore } from '../utils/mockStore';
   {
     "id": "ind_advanced",
     "name": "Advanced",
-    "emoji": "≡ƒÜÇ",
+    "emoji": "🚀",
     "monthlyPrice": 9.99,
     "annualPrice": 7.99,
     "commission": 3,
@@ -166,7 +166,7 @@ import { mockStore } from '../utils/mockStore';
   {
     "id": "ind_premium",
     "name": "Premium",
-    "emoji": "≡ƒÆÄ",
+    "emoji": "💎",
     "monthlyPrice": 24.99,
     "annualPrice": 19.99,
     "commission": 2,
@@ -218,7 +218,7 @@ import { mockStore } from '../utils/mockStore';
   {
     "id": "ind_premium_plus",
     "name": "Premium Plus",
-    "emoji": "≡ƒææ",
+    "emoji": "👑",
     "monthlyPrice": 49.99,
     "annualPrice": 39.99,
     "commission": 1,
@@ -273,7 +273,7 @@ const orgPlans = [
   {
     "id": "org_free",
     "name": "Free Trial",
-    "emoji": "≡ƒî▒",
+    "emoji": "🌱",
     "monthlyPrice": 0,
     "annualPrice": 0,
     "commission": 0,
@@ -296,7 +296,7 @@ const orgPlans = [
       "Guest List Visibility Controls": true,
       "Waitlist & Approval Workflow": true,
       "Paid Tickets": false,
-      "Platform Commission": "ΓÇö",
+      "Platform Commission": "—",
       "Custom RSVP Questions": "3 / Event",
       "Manual Guest Invitations": true,
       "Staff Members": "2",
@@ -328,7 +328,7 @@ const orgPlans = [
   {
     "id": "org_basic",
     "name": "Basic",
-    "emoji": "Γ¡É",
+    "emoji": "⭐",
     "monthlyPrice": 19.99,
     "annualPrice": 15.99,
     "commission": 4,
@@ -383,7 +383,7 @@ const orgPlans = [
   {
     "id": "org_advanced",
     "name": "Advanced",
-    "emoji": "≡ƒÜÇ",
+    "emoji": "🚀",
     "monthlyPrice": 49.99,
     "annualPrice": 39.99,
     "commission": 2.5,
@@ -438,7 +438,7 @@ const orgPlans = [
   {
     "id": "org_premium",
     "name": "Premium",
-    "emoji": "≡ƒÆÄ",
+    "emoji": "💎",
     "monthlyPrice": 99.99,
     "annualPrice": 79.99,
     "commission": 1,
@@ -493,7 +493,7 @@ const orgPlans = [
   {
     "id": "org_premium_plus",
     "name": "Premium Plus",
-    "emoji": "≡ƒææ",
+    "emoji": "👑",
     "monthlyPrice": null,
     "annualPrice": null,
     "commission": 0,
@@ -552,43 +552,43 @@ const indTopUps = [
     "name": "Extra 250 Attendees",
     "desc": "Add 250 attendees to one event",
     "price": 2.99,
-    "icon": "≡ƒæÑ"
+    "icon": "👥"
   },
   {
     "name": "Extra Event Slot",
     "desc": "One additional active event for one month",
     "price": 1.99,
-    "icon": "≡ƒôà"
+    "icon": "📅"
   },
   {
     "name": "Assistant Pass",
     "desc": "One extra staff member for one event",
     "price": 1.49,
-    "icon": "≡ƒÄ½"
+    "icon": "🎫"
   },
   {
     "name": "Photo Pack",
     "desc": "Additional 50 guest photo uploads",
     "price": 0.99,
-    "icon": "≡ƒô╕"
+    "icon": "📸"
   },
   {
     "name": "SMS Pack",
     "desc": "500 SMS notifications",
     "price": 3.99,
-    "icon": "≡ƒÆ¼"
+    "icon": "💬"
   },
   {
     "name": "Featured Event",
     "desc": "Featured in Explore for 7 days",
     "price": 4.99,
-    "icon": "Γ¡É"
+    "icon": "⭐"
   },
   {
     "name": "Premium Event Pass",
     "desc": "Unlock Premium features for one event (7 days)",
     "price": 6.99,
-    "icon": "≡ƒææ"
+    "icon": "👑"
   }
 ];
 
@@ -597,37 +597,37 @@ const orgTopUps = [
     "name": "Extra 1,000 Attendees",
     "desc": "Increase capacity for one event",
     "price": 8.99,
-    "icon": "≡ƒæÑ"
+    "icon": "👥"
   },
   {
     "name": "Extra Event Slot",
     "desc": "One additional active event for one month",
     "price": 4.99,
-    "icon": "≡ƒôà"
+    "icon": "📅"
   },
   {
     "name": "Extra Staff Member",
     "desc": "One additional staff seat for one month",
     "price": 2.99,
-    "icon": "≡ƒÄ½"
+    "icon": "🎫"
   },
   {
     "name": "SMS Pack",
     "desc": "1,000 SMS notifications",
     "price": 5.99,
-    "icon": "≡ƒÆ¼"
+    "icon": "💬"
   },
   {
     "name": "Featured Event",
     "desc": "Featured in Explore for 7 days",
     "price": 7.99,
-    "icon": "Γ¡É"
+    "icon": "⭐"
   },
   {
     "name": "Premium Event Pass",
     "desc": "Unlock Premium features for one event (7 days)",
     "price": 19.99,
-    "icon": "≡ƒææ"
+    "icon": "👑"
   }
 ];
 
@@ -827,6 +827,21 @@ export function PricingSection() {
                       ${plan.monthlyPrice}/mo
                     </div>
                   )}
+                </div>
+
+                {/* Key plan stats at a glance (US-UI-001) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', textAlign: 'left', marginBottom: '16px', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', padding: '12px 0' }}>
+                  {[
+                    { label: 'Events', value: plan.features['Active Events'] },
+                    { label: 'Attendees', value: plan.features['Attendees / Event'] },
+                    { label: 'Commission', value: plan.features['Platform Commission'] },
+                    { label: 'Staff', value: plan.features['Staff Members'] }
+                  ].map(stat => (
+                    <div key={stat.label}>
+                      <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)' }}>{stat.label}</div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)' }}>{stat.value}</div>
+                    </div>
+                  ))}
                 </div>
 
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px 0', textAlign: 'left' }}>

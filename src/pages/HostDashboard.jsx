@@ -5,7 +5,7 @@ import {
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
   UserCheck, AlertCircle, Copy, Share2, ArrowRight, DollarSign, Ticket, TrendingUp,
-  MapPin, Eye, Webhook, Compass, Search
+  MapPin, Eye, Webhook, Compass, Search, Lock, Image
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -14,6 +14,7 @@ import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
+import { calcAge, formatDob, meetsAge } from '../utils/age';
 
 export default function HostDashboard({ onLogout }) {
   const navigate = useNavigate();
@@ -119,6 +120,8 @@ export default function HostDashboard({ onLogout }) {
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
   // Guest List search (within event management)
   const [guestSearch, setGuestSearch] = useState('');
+  // Age-restricted events: which guest row is expanded to show party members (US-EVENT-016)
+  const [expandedGuestId, setExpandedGuestId] = useState(null);
   
   // Conversations Inbox Simulator
   const [conversations, setConversations] = useState([
@@ -382,6 +385,8 @@ export default function HostDashboard({ onLogout }) {
         ticketPrice: evt.ticketPrice || 0,
         approvalRequired: evt.approvalRequired !== undefined ? evt.approvalRequired : false,
         messagingEnabled: evt.messagingEnabled !== undefined ? evt.messagingEnabled : true,
+        ageRestricted: evt.ageRestricted !== undefined ? evt.ageRestricted : false,
+        minimumAge: evt.minimumAge !== undefined ? evt.minimumAge : 18,
         questions: evt.questions || [],
         
         // Notification settings
@@ -1812,7 +1817,7 @@ export default function HostDashboard({ onLogout }) {
                   { key: 'guests', label: `Guest List (${managedEventRsvps.length})`, perm: 'guests_view' },
                   { key: 'polls', label: `Polls (${managedEventPolls.length})`, perm: 'guests_view' },
                   { key: 'comments', label: `Comments (${managedEventComments.length})`, perm: 'messaging_view' },
-                  ...(managedEvent.enablePhotoAlbum ? [{ key: 'photos', label: 'Photos & Album', perm: 'guests_view' }] : []),
+                  { key: 'photos', label: 'Photos & Album', perm: 'guests_view' },
                   { key: 'edit', label: 'Details Editor', perm: 'settings_edit' },
                   { key: 'notifications', label: 'Notifications Schedule', perm: 'settings_view' },
                   { key: 'invitations', label: 'Manual Add', perm: 'guests_edit' },
@@ -2138,6 +2143,7 @@ export default function HostDashboard({ onLogout }) {
                             <th>Contact Details</th>
                             <th>Status</th>
                             <th>Check-in Status</th>
+                            {managedEvent.ageRestricted && <th>Age Verified</th>}
                             <th>Custom Answers</th>
                             <th>Actions</th>
                           </tr>
@@ -2152,8 +2158,13 @@ export default function HostDashboard({ onLogout }) {
                             return (r.name && r.name.toLowerCase().includes(q)) ||
                                    (r.email && r.email.toLowerCase().includes(q)) ||
                                    (r.phone && r.phone.toLowerCase().includes(q));
-                          }).map(rsvp => (
-                            <tr key={rsvp.id}>
+                          }).map(rsvp => {
+                            const partyCount = rsvp.additionalGuests?.length || 0;
+                            const isExpanded = expandedGuestId === rsvp.id;
+                            const guestColSpan = managedEvent.ageRestricted ? 8 : 7;
+                            return (
+                            <React.Fragment key={rsvp.id}>
+                            <tr>
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
@@ -2176,6 +2187,16 @@ export default function HostDashboard({ onLogout }) {
                                       <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#b91c1c', padding: '1px 5px', borderRadius: '3px', marginLeft: '6px', fontWeight: 700 }} title={rsvp.answers['Any food allergies?']}>
                                         ⚠️ DIET
                                       </span>
+                                    )}
+                                    {partyCount > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedGuestId(isExpanded ? null : rsvp.id)}
+                                        style={{ fontSize: '0.65rem', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '1px 7px', borderRadius: '999px', marginLeft: '6px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                                        title="Show party members"
+                                      >
+                                        +{partyCount} {isExpanded ? '▲' : '▼'}
+                                      </button>
                                     )}
                                   </span>
                                 </div>
@@ -2207,6 +2228,19 @@ export default function HostDashboard({ onLogout }) {
                                   </span>
                                 </div>
                               </td>
+                              {managedEvent.ageRestricted && (
+                                <td>
+                                  {rsvp.dob ? (
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: meetsAge(rsvp.dob, managedEvent.minimumAge) ? 'rgba(0,200,83,0.12)' : 'rgba(239,68,68,0.12)', color: meetsAge(rsvp.dob, managedEvent.minimumAge) ? '#00963f' : '#dc2626' }} title={formatDob(rsvp.dob)}>
+                                      {meetsAge(rsvp.dob, managedEvent.minimumAge) ? '✅' : '❌'} {calcAge(rsvp.dob)} yrs
+                                    </span>
+                                  ) : rsvp.ageVerified ? (
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: 'rgba(0,200,83,0.12)', color: '#00963f' }}>✅ Verified</span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: 'rgba(245,158,11,0.14)', color: '#ca8a04' }} title="No date of birth on file — check ID at the door">⚠️ Check ID</span>
+                                  )}
+                                </td>
+                              )}
                               <td>
                                 {Object.keys(rsvp.answers || {}).length > 0 ? (
                                   <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -2232,7 +2266,36 @@ export default function HostDashboard({ onLogout }) {
                                 )}
                               </td>
                             </tr>
-                          ))}
+                            {isExpanded && partyCount > 0 && (
+                              <tr>
+                                <td colSpan={guestColSpan} style={{ background: 'var(--color-surface-hover)', padding: '12px 16px' }}>
+                                  <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                                    Party members ({partyCount}) — added by {rsvp.name}
+                                  </div>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {rsvp.additionalGuests.map((g, gi) => {
+                                      const gAge = calcAge(g.dob);
+                                      const gOk = g.dob ? meetsAge(g.dob, managedEvent.minimumAge) : null;
+                                      return (
+                                        <div key={gi} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.78rem' }}>
+                                          <span style={{ fontWeight: 600 }}>{g.firstName} {g.lastName}</span>
+                                          {managedEvent.ageRestricted && (
+                                            g.dob ? (
+                                              <span style={{ fontWeight: 700, color: gOk ? '#16a34a' : '#dc2626' }}>{gOk ? '✅' : '❌'} {gAge} yrs</span>
+                                            ) : (
+                                              <span style={{ fontWeight: 700, color: '#ca8a04' }}>⚠️ No DOB</span>
+                                            )
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            </React.Fragment>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -2336,8 +2399,23 @@ export default function HostDashboard({ onLogout }) {
               )}
 
               {/* SUB-TAB: PHOTOS */}
-              {selectedEventTab === 'photos' && managedEvent.enablePhotoAlbum && (
-                <HostPhotosAdmin eventId={selectedEventId} />
+              {selectedEventTab === 'photos' && (
+                managedEvent.enablePhotoAlbum ? (
+                  <HostPhotosAdmin eventId={selectedEventId} />
+                ) : (
+                  <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
+                    <div className="stat-icon-tile stat-icon-orange" style={{ margin: '0 auto 12px' }}><Image size={20} /></div>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>Photo album is turned off</h4>
+                    <p className="text-muted" style={{ fontSize: '0.85rem', maxWidth: '420px', margin: '0 auto 16px' }}>
+                      Turn on the photo album to create a shared gallery where {managedEvent.photoUploadPermission === 'guests' ? 'RSVPed guests and you' : 'you'} can post event photos. You control who can upload and whether uploads need approval.
+                    </p>
+                    {can('settings_edit') && (
+                      <Button variant="primary" onClick={() => { mockStore.updateEvent(managedEvent.id, { enablePhotoAlbum: true }); loadDashboardData(); }}>
+                        <Image size={15} /> Enable Photo Album
+                      </Button>
+                    )}
+                  </Card>
+                )
               )}
 
               {/* SUB-TAB: COMMENTS */}
@@ -2533,6 +2611,44 @@ export default function HostDashboard({ onLogout }) {
                           <input type="checkbox" checked={editEventForm.messagingEnabled} onChange={(e) => setEditEventForm({ ...editEventForm, messagingEnabled: e.target.checked })} />
                           <span className="slider"></span>
                         </label>
+                      </div>
+
+                      {/* Age restriction — editable post-creation (US-EVENT-013) */}
+                      <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 14px' }}>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <strong style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><Lock size={14} className="text-primary" /> Age restriction</strong>
+                            <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.75rem' }}>Collect a date of birth at RSVP and block guests under the minimum age.</p>
+                          </div>
+                          <label className="switch" style={{ flexShrink: 0 }}>
+                            <input type="checkbox" checked={editEventForm.ageRestricted} onChange={(e) => setEditEventForm({ ...editEventForm, ageRestricted: e.target.checked })} />
+                            <span className="slider"></span>
+                          </label>
+                        </div>
+                        {editEventForm.ageRestricted && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                            <label style={{ fontSize: '0.78rem', fontWeight: 600 }}>Minimum age</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={99}
+                              value={editEventForm.minimumAge}
+                              onChange={(e) => setEditEventForm({ ...editEventForm, minimumAge: Math.max(1, Number(e.target.value) || 0) })}
+                              style={{ width: '90px', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.85rem' }}
+                            />
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              {[13, 16, 18, 21].map(a => (
+                                <button key={a} type="button" onClick={() => setEditEventForm({ ...editEventForm, minimumAge: a })}
+                                  style={{ padding: '4px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer',
+                                    border: editEventForm.minimumAge === a ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                    background: editEventForm.minimumAge === a ? 'rgba(255,107,53,0.1)' : 'var(--color-surface)',
+                                    color: editEventForm.minimumAge === a ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                                  {a}+
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2786,6 +2902,15 @@ export default function HostDashboard({ onLogout }) {
                           <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                             <div>Guest: <strong>{checkinResult.rsvp.name}</strong></div>
                             <div>Email: {checkinResult.rsvp.email}</div>
+                            {managedEvent.ageRestricted && (
+                              checkinResult.rsvp.dob ? (
+                                <div style={{ marginTop: '4px', fontWeight: 700, color: meetsAge(checkinResult.rsvp.dob, managedEvent.minimumAge) ? '#15803d' : '#dc2626' }}>
+                                  🔒 Age Verified: {meetsAge(checkinResult.rsvp.dob, managedEvent.minimumAge) ? `${managedEvent.minimumAge}+ ✅ (${calcAge(checkinResult.rsvp.dob)} yrs)` : `❌ Under ${managedEvent.minimumAge}`}
+                                </div>
+                              ) : (
+                                <div style={{ marginTop: '4px', fontWeight: 700, color: '#b45309' }}>⚠️ Age Unverified — check physical ID</div>
+                              )
+                            )}
                           </div>
                         )}
                       </div>
@@ -2816,8 +2941,13 @@ export default function HostDashboard({ onLogout }) {
                           <span className="flex items-center gap-sm" style={{ fontWeight: 600, fontSize: '0.8rem' }}>
                             <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
                             {rsvp.name}
+                            {managedEvent.ageRestricted && (
+                              rsvp.dob
+                                ? <span title={formatDob(rsvp.dob)} style={{ fontSize: '0.7rem', fontWeight: 700, color: meetsAge(rsvp.dob, managedEvent.minimumAge) ? '#16a34a' : '#dc2626' }}>{meetsAge(rsvp.dob, managedEvent.minimumAge) ? '🔒✅' : '🔒❌'}</span>
+                                : <span title="Age unverified — check ID" style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ca8a04' }}>⚠️ID</span>
+                            )}
                           </span>
-                          <button 
+                          <button
                             onClick={() => {
                               mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }, activeScannerStaff);
                               loadDashboardData();

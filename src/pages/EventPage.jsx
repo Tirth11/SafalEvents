@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MapPin, Users, MessageSquare, ArrowRight, X, CheckCircle, ArrowLeft, Send, Check, Timer, Share2, Mail, Phone, Ticket, Lock, Sparkles } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { getEventCover, getAvatar } from '../utils/images';
+import { meetsAge } from '../utils/age';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
@@ -29,9 +30,13 @@ export default function EventPage() {
     otp: '',
     name: '',
     status: 'going',
-    answers: {}
+    answers: {},
+    guestCount: 1,
+    dob: '',                 // primary guest DOB (age-restricted events)
+    additionalGuests: []     // [{ firstName, lastName, dob }] — length = guestCount - 1
   });
   const [authError, setAuthError] = useState('');
+  const [rsvpError, setRsvpError] = useState('');
   const [verificationSuccess, setVerificationSuccess] = useState(false);
 
   // New Guest OTP States
@@ -241,9 +246,82 @@ export default function EventPage() {
     alert(`[SMS/Email Resent] OTP Code: ${newSession.otpCode}`);
   };
 
+  // Keep the additional-guest sub-forms in sync with the chosen party size.
+  const handleGuestCountChange = (n) => {
+    const count = Math.max(1, Number(n) || 1);
+    setRsvpForm(prev => {
+      const extraNeeded = count - 1;
+      const ag = [...(prev.additionalGuests || [])];
+      while (ag.length < extraNeeded) ag.push({ firstName: '', lastName: '', dob: '' });
+      ag.length = extraNeeded;
+      return { ...prev, guestCount: count, additionalGuests: ag };
+    });
+    setRsvpError('');
+  };
+
+  const updateAdditionalGuest = (idx, field, value) => {
+    setRsvpForm(prev => {
+      const ag = [...(prev.additionalGuests || [])];
+      ag[idx] = { ...ag[idx], [field]: value };
+      return { ...prev, additionalGuests: ag };
+    });
+    setRsvpError('');
+  };
+
+  // Builds the RSVP payload after running name + age validation (US-EVENT-014/015).
+  // Returns { ok: true, payload } or { ok: false, error }.
+  const buildValidatedRsvp = () => {
+    const guestCount = rsvpForm.guestCount || 1;
+    const extras = (rsvpForm.additionalGuests || []).slice(0, Math.max(0, guestCount - 1));
+
+    // Every additional guest needs a name regardless of age restriction.
+    for (let i = 0; i < extras.length; i++) {
+      const g = extras[i];
+      if (!g.firstName?.trim() || !g.lastName?.trim()) {
+        return { ok: false, error: `Please enter the first and last name for Guest ${i + 2}.` };
+      }
+    }
+
+    if (event.ageRestricted) {
+      if (!rsvpForm.dob) return { ok: false, error: 'Please enter your date of birth to verify your age.' };
+      if (!meetsAge(rsvpForm.dob, event.minimumAge)) {
+        return { ok: false, error: `Sorry, you must be at least ${event.minimumAge} years old to attend this event.` };
+      }
+      for (let i = 0; i < extras.length; i++) {
+        const g = extras[i];
+        if (!g.dob) return { ok: false, error: `Please enter the date of birth for Guest ${i + 2}.` };
+        if (!meetsAge(g.dob, event.minimumAge)) {
+          return { ok: false, error: `Guest ${i + 2} (${g.firstName || '—'}) doesn't meet the ${event.minimumAge}+ requirement. Correct the date of birth or reduce your guest count.` };
+        }
+      }
+    }
+
+    return {
+      ok: true,
+      payload: {
+        name: rsvpForm.name || 'Guest',
+        email,
+        phone,
+        status: rsvpForm.status,
+        guestCount,
+        answers: rsvpForm.answers,
+        dob: rsvpForm.dob || '',
+        additionalGuests: extras,
+        ageVerified: event.ageRestricted ? true : null
+      }
+    };
+  };
+
   const handleConfirmRsvpSubmit = (e) => {
     e.preventDefault();
-    
+    setRsvpError('');
+
+    const result = buildValidatedRsvp();
+    if (!result.ok) {
+      setRsvpError(result.error);
+      return;
+    }
+
     mockStore.setCurrentUser({
       role: 'guest',
       name: rsvpForm.name || 'Guest',
@@ -259,14 +337,7 @@ export default function EventPage() {
     if (event.enablePayments && finalStatus === 'going' && !event.approvalRequired) {
       setDrawerStep(3);
     } else {
-      mockStore.addRSVP(event.id, {
-        name: rsvpForm.name || 'Guest',
-        email: email,
-        phone: phone,
-        status: finalStatus,
-        guestCount: rsvpForm.guestCount || 1,
-        answers: rsvpForm.answers
-      });
+      mockStore.addRSVP(event.id, result.payload);
       setDrawerStep(4);
       loadEventData();
     }
@@ -281,15 +352,9 @@ export default function EventPage() {
     setProcessingPayment(true);
 
     setTimeout(() => {
-      // Complete mock checkout payment
-      mockStore.addRSVP(event.id, {
-        name: rsvpForm.name || 'Guest',
-        email: email,
-        phone: phone,
-        status: 'going',
-        guestCount: rsvpForm.guestCount || 1,
-        answers: rsvpForm.answers
-      });
+      // Complete mock checkout payment — reuse the validated RSVP payload
+      const result = buildValidatedRsvp();
+      mockStore.addRSVP(event.id, { ...(result.payload || {}), status: 'going' });
 
       setProcessingPayment(false);
       setDrawerStep(4);
@@ -370,6 +435,11 @@ export default function EventPage() {
               <span className="evt-chip">
                 <MapPin size={15} /> {event.location}
               </span>
+              {event.ageRestricted && (
+                <span className="evt-chip" style={{ background: 'rgba(239,68,68,0.28)', borderColor: 'rgba(255,255,255,0.45)' }}>
+                  <Lock size={14} /> {event.minimumAge}+ Event
+                </span>
+              )}
             </div>
             <h1 style={{ fontSize: 'clamp(1.9rem, 4.5vw, 2.8rem)', lineHeight: 1.1, textShadow: '0 2px 12px rgba(0,0,0,0.35)', marginBottom: '12px' }}>{event.title}</h1>
             <div className="flex items-center gap-xs">
@@ -611,6 +681,12 @@ export default function EventPage() {
                       : 'RSVP now to save your spot. Capacity is limited!'}
                   </p>
 
+                  {event.ageRestricted && (
+                    <div className="flex items-center gap-xs" style={{ fontSize: '0.82rem', color: '#b91c1c', fontWeight: 700, marginBottom: '14px', background: 'rgba(239,68,68,0.08)', padding: '8px 12px', borderRadius: '10px' }}>
+                      <Lock size={15} /> {event.minimumAge}+ only · age verified at RSVP
+                    </div>
+                  )}
+
                   {event.enablePayments && (
                     <div className="flex items-center gap-xs" style={{ fontSize: '0.85rem', color: 'var(--color-accent)', fontWeight: 700, marginBottom: '14px', background: 'rgba(0,200,83,0.08)', padding: '8px 12px', borderRadius: '10px' }}>
                       <Ticket size={16} /> Ticket Cost: ${event.ticketPrice} USD
@@ -762,16 +838,33 @@ export default function EventPage() {
             {/* Drawer Step 2: Attendance details */}
             {drawerStep === 2 && (
               <form onSubmit={handleConfirmRsvpSubmit} className="flex flex-col gap-md">
-                
+
+                {event.ageRestricted && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#b91c1c', padding: '10px 12px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600 }}>
+                    <Lock size={15} /> This is an {event.minimumAge}+ event. We need a date of birth for every attendee.
+                  </div>
+                )}
+
                 <FormField label="Your name">
                   <FormInput type="text" placeholder="Enter name" value={rsvpForm.name} onChange={(e) => setRsvpForm({ ...rsvpForm, name: e.target.value })} />
                 </FormField>
 
+                {event.ageRestricted && (
+                  <FormField label="Your date of birth" hint="Used only to verify you meet the age requirement. Never shown publicly.">
+                    <FormInput
+                      type="date"
+                      value={rsvpForm.dob}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => { setRsvpForm({ ...rsvpForm, dob: e.target.value }); setRsvpError(''); }}
+                      required
+                    />
+                  </FormField>
+                )}
 
                 <FormField label="Number of guests (including yourself)" hint={`Max ${event.maxGuestsPerRsvp} per RSVP`}>
                   <select
                     value={rsvpForm.guestCount || 1}
-                    onChange={(e) => setRsvpForm({ ...rsvpForm, guestCount: Number(e.target.value) })}
+                    onChange={(e) => handleGuestCountChange(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontFamily: 'inherit' }}
                   >
                     {Array.from({ length: Math.min(event.maxGuestsPerRsvp, Math.max(1, event.capacity - totalAttending)) }, (_, i) => i + 1).map(n => (
@@ -779,6 +872,41 @@ export default function EventPage() {
                     ))}
                   </select>
                 </FormField>
+
+                {/* Additional guest details (US-EVENT-015) */}
+                {(rsvpForm.additionalGuests || []).length > 0 && (
+                  <div style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '12px', background: 'var(--color-surface-hover)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                      Additional guests
+                    </div>
+                    <div className="flex flex-col gap-md">
+                      {rsvpForm.additionalGuests.map((g, i) => (
+                        <div key={i} style={{ borderTop: i > 0 ? '1px dashed var(--color-border)' : 'none', paddingTop: i > 0 ? '12px' : 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>Guest {i + 2} <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>(+{i + 1})</span></div>
+                          <div className="grid-2" style={{ gap: '8px' }}>
+                            <FormField label="First name">
+                              <FormInput type="text" placeholder="Jane" value={g.firstName} onChange={(e) => updateAdditionalGuest(i, 'firstName', e.target.value)} required />
+                            </FormField>
+                            <FormField label="Last name">
+                              <FormInput type="text" placeholder="Doe" value={g.lastName} onChange={(e) => updateAdditionalGuest(i, 'lastName', e.target.value)} required />
+                            </FormField>
+                          </div>
+                          {event.ageRestricted && (
+                            <FormField label="Date of birth">
+                              <FormInput
+                                type="date"
+                                value={g.dob}
+                                max={new Date().toISOString().split('T')[0]}
+                                onChange={(e) => updateAdditionalGuest(i, 'dob', e.target.value)}
+                                required
+                              />
+                            </FormField>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Render Host Custom Questions */}
                 {event.questions && event.questions.map(q => (
@@ -795,6 +923,12 @@ export default function EventPage() {
                     />
                   </FormField>
                 ))}
+
+                {rsvpError && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid #ef4444', color: '#ef4444', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+                    {rsvpError}
+                  </div>
+                )}
 
                 <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-md)' }}>
                   {event.approvalRequired ? 'Request to Join' : 'Register'}

@@ -79,8 +79,15 @@ export default function BillingPanel({ hostEmail }) {
   const usageBars = usage?.usage ? [
     { label: 'Active Events', current: usage.usage.activeEvents.current, max: usage.usage.activeEvents.max === -1 ? '∞' : usage.usage.activeEvents.max, pct: usage.usage.activeEvents.max === -1 ? 15 : Math.round((usage.usage.activeEvents.current / usage.usage.activeEvents.max) * 100), color: '#3b82f6' },
     { label: 'Max Attendees', current: '-', max: usage.usage.totalAttendees.max === -1 ? '∞' : usage.usage.totalAttendees.max, pct: 0, color: '#8b5cf6', hideBar: true },
-    { label: 'Staff Members', current: usage.usage.staffMembers.current, max: usage.usage.staffMembers.max === -1 ? '∞' : usage.usage.staffMembers.max, pct: usage.usage.staffMembers.max === -1 ? 10 : Math.round((usage.usage.staffMembers.current / Math.max(usage.usage.staffMembers.max, 1)) * 100), color: '#f59e0b' }
+    { label: 'Staff Members', current: usage.usage.staffMembers.current, max: usage.usage.staffMembers.max === -1 ? '∞' : usage.usage.staffMembers.max, pct: usage.usage.staffMembers.max === -1 ? 10 : Math.round((usage.usage.staffMembers.current / Math.max(usage.usage.staffMembers.max, 1)) * 100), color: '#f59e0b' },
+    { label: 'Guest Photos', current: usage.usage.photos.current, max: usage.usage.photos.max === -1 ? '∞' : usage.usage.photos.max, pct: usage.usage.photos.max === -1 ? 8 : Math.round((usage.usage.photos.current / Math.max(usage.usage.photos.max, 1)) * 100), color: '#ec4899' }
   ] : [];
+
+  // Photo-limit awareness: surface the Photo Pack top-up when the album is nearly full (US-UI-004)
+  const photoPct = usage?.usage?.photos && usage.usage.photos.max !== -1
+    ? Math.round((usage.usage.photos.current / Math.max(usage.usage.photos.max, 1)) * 100)
+    : 0;
+  const photoPack = allTopUps.find(t => t.category === 'photos');
 
   const displayedTx = showAllTx ? transactions : transactions.slice(0, 5);
 
@@ -181,6 +188,20 @@ export default function BillingPanel({ hostEmail }) {
               </div>
             ))}
           </div>
+
+          {/* Photo limit nudge → Photo Pack top-up (US-UI-004) */}
+          {photoPct >= 80 && photoPack && (
+            <div style={{ marginTop: '16px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.25)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.3rem' }}>📸</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>Photo album {photoPct}% full</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{photoPack.name} — {photoPack.description}</div>
+              </div>
+              <Button variant="outline" disabled={processing} onClick={() => handleBuyTopUp(photoPack.id)} style={{ fontSize: '0.78rem', padding: '6px 12px', whiteSpace: 'nowrap' }}>
+                ${photoPack.price}
+              </Button>
+            </div>
+          )}
 
           {/* Active Top-Ups */}
           {topUpBalances.length > 0 && (

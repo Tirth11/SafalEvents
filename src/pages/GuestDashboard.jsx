@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle, Clock, ArrowRight, Download, HelpCircle, Mail, Sparkles, Star, Trash2, CreditCard, MessageSquare, Send } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { HERO_IMAGES, AVATARS, getEventCover, getAvatar } from '../utils/images';
+import { calcAge, meetsAge } from '../utils/age';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageShell from '../components/PageShell';
@@ -1539,6 +1540,25 @@ export default function GuestDashboard({ onLogout }) {
                     PASS: #{selectedTicket.id.toUpperCase()}
                   </span>
                 </div>
+
+                {/* Age verification badge for age-restricted events (US-EVENT-017) */}
+                {selectedTicket.event.ageRestricted && (
+                  <div style={{ marginBottom: '16px' }}>
+                    {selectedTicket.dob && meetsAge(selectedTicket.dob, selectedTicket.event.minimumAge) ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,200,83,0.12)', color: '#15803d', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                        🔒 Age Verified: {selectedTicket.event.minimumAge}+
+                      </span>
+                    ) : selectedTicket.ageVerified ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,200,83,0.12)', color: '#15803d', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                        🔒 Age Verified: {selectedTicket.event.minimumAge}+
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.14)', color: '#b45309', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                        ⚠️ Age Unverified – Check ID
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div style={{ background: 'var(--color-bg)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', textAlign: 'left' }}>
                   <div className="flex justify-between" style={{ marginBottom: '6px' }}>

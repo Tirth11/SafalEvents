@@ -179,6 +179,7 @@ export default function AdminEconomicsPanel() {
                   <th style={{ padding: '12px', textAlign: 'right' }}>Events</th>
                   <th style={{ padding: '12px', textAlign: 'right' }}>Attendees</th>
                   <th style={{ padding: '12px', textAlign: 'right' }}>Staff</th>
+                  <th style={{ padding: '12px', textAlign: 'right' }}>Photos</th>
                   <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
@@ -192,6 +193,7 @@ export default function AdminEconomicsPanel() {
                     <td style={{ padding: '12px', textAlign: 'right' }}>{p.limits.activeEvents === -1 ? '∞' : p.limits.activeEvents}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>{p.limits.attendeesPerEvent === -1 ? '∞' : p.limits.attendeesPerEvent}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>{p.limits.staffMembers === -1 ? '∞' : p.limits.staffMembers}</td>
+                    <td style={{ padding: '12px', textAlign: 'right' }}>{p.limits.photos === -1 ? '∞' : p.limits.photos}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <button onClick={() => setEditingPlan({ ...p })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)' }}>
                         <Edit2 size={14} />
@@ -236,7 +238,34 @@ export default function AdminEconomicsPanel() {
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Staff Members</label>
                   <input type="number" value={editingPlan.limits.staffMembers} onChange={e => setEditingPlan({ ...editingPlan, limits: { ...editingPlan.limits, staffMembers: parseInt(e.target.value) || -1 } })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
                 </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Guest Photos</label>
+                  <input type="number" value={editingPlan.limits.photos} onChange={e => setEditingPlan({ ...editingPlan, limits: { ...editingPlan.limits, photos: parseInt(e.target.value) || -1 } })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>-1 = unlimited</span>
+                </div>
               </div>
+              {/* Feature toggles (US-UI-003) */}
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', marginBottom: '8px' }}>Feature toggles</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '8px' }}>
+                  {[
+                    ['paidTickets', 'Paid Tickets'],
+                    ['polls', 'Polls & Voting'],
+                    ['guestMessaging', 'Guest Messaging'],
+                    ['duplicateEvents', 'Duplicate Events'],
+                    ['qrCheckin', 'QR Check-in'],
+                    ['csvExport', 'CSV Export'],
+                    ['removeBranding', 'Remove Branding'],
+                    ['customDomain', 'Custom Domain'],
+                  ].map(([key, label]) => (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', fontWeight: 600, padding: '8px 10px', border: '1px solid var(--color-border)', borderRadius: '8px', cursor: 'pointer', background: editingPlan[key] ? 'rgba(0,200,83,0.06)' : 'var(--color-surface)' }}>
+                      <input type="checkbox" checked={!!editingPlan[key]} onChange={e => setEditingPlan({ ...editingPlan, [key]: e.target.checked })} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
                 <Button variant="primary" onClick={handleSavePlan}><Check size={14} /> Save Changes</Button>
                 <Button variant="outline" onClick={() => setEditingPlan(null)}>Cancel</Button>
@@ -339,7 +368,9 @@ export default function AdminEconomicsPanel() {
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
                   <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700 }}>Host</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Type</th>
                   <th style={{ padding: '12px', textAlign: 'left' }}>Plan</th>
+                  <th style={{ padding: '12px', textAlign: 'right' }}>MRR</th>
                   <th style={{ padding: '12px', textAlign: 'center' }}>Cycle</th>
                   <th style={{ padding: '12px', textAlign: 'center' }}>Status</th>
                   <th style={{ padding: '12px', textAlign: 'right' }}>Renews</th>
@@ -347,13 +378,21 @@ export default function AdminEconomicsPanel() {
                 </tr>
               </thead>
               <tbody>
-                {filteredSubs.map(s => (
+                {filteredSubs.map(s => {
+                  const plan = plans.find(p => p.id === s.planId);
+                  const isOrg = (s.planId || '').startsWith('org_');
+                  const mrr = plan ? (s.billingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice) : null;
+                  return (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '12px' }}>
                       <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{s.hostName || s.hostEmail}</div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{s.hostEmail}</div>
                     </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: isOrg ? 'rgba(139,92,246,0.1)' : 'rgba(59,130,246,0.1)', color: isOrg ? '#8b5cf6' : '#3b82f6' }}>{isOrg ? 'Org' : 'Ind'}</span>
+                    </td>
                     <td style={{ padding: '12px', fontWeight: 600 }}>{s.planName || s.planId}</td>
+                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{mrr === null ? 'Custom' : mrr === 0 ? '—' : `$${mrr}`}</td>
                     <td style={{ padding: '12px', textAlign: 'center', fontSize: '0.78rem' }}>{s.billingCycle}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
                       <span style={{
@@ -374,7 +413,8 @@ export default function AdminEconomicsPanel() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </Card>
@@ -382,7 +422,56 @@ export default function AdminEconomicsPanel() {
           {/* Override Modal */}
           {overrideTarget && (
             <Card className="glass-surface animate-fade-in" style={{ padding: '24px', textAlign: 'left' }}>
-              <h4 style={{ margin: '0 0 12px 0', fontWeight: 700 }}>Override Subscription: {overrideTarget.hostName || overrideTarget.hostEmail}</h4>
+              <h4 style={{ margin: '0 0 12px 0', fontWeight: 700 }}>Manage Host: {overrideTarget.hostName || overrideTarget.hostEmail}</h4>
+
+              {/* Live usage vs limits, active top-ups & recent transactions for this host */}
+              {(() => {
+                const ou = mockStore.getHostUsage ? mockStore.getHostUsage(overrideTarget.hostEmail) : null;
+                const obal = mockStore.getTopUpBalances ? mockStore.getTopUpBalances(overrideTarget.hostEmail) : [];
+                const otx = mockStore.getTransactions ? mockStore.getTransactions(overrideTarget.hostEmail) : [];
+                const fmt = (v) => v === -1 ? '∞' : v;
+                const rows = ou?.usage ? [
+                  { label: 'Active Events', u: ou.usage.activeEvents },
+                  { label: 'Attendees', u: ou.usage.totalAttendees },
+                  { label: 'Staff', u: ou.usage.staffMembers },
+                  { label: 'Photos', u: ou.usage.photos }
+                ] : [];
+                return (
+                  <div style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '12px' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', marginBottom: '8px' }}>Usage vs Limits</div>
+                      {rows.map(r => (
+                        <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '2px 0' }}>
+                          <span style={{ color: 'var(--color-text-muted)' }}>{r.label}</span>
+                          <span style={{ fontWeight: 700 }}>{r.u?.current ?? '—'} / {fmt(r.u?.max)}</span>
+                        </div>
+                      ))}
+                      {obal.length > 0 && (
+                        <div style={{ marginTop: '8px', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
+                          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '4px' }}>ACTIVE TOP-UPS</div>
+                          {obal.map(b => (
+                            <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                              <span>{b.topUpName}</span><span style={{ color: '#16a34a', fontWeight: 700 }}>{b.remaining} left</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '12px' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', marginBottom: '8px' }}>Recent Transactions</div>
+                      {otx.length === 0 ? (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>No transactions.</div>
+                      ) : otx.slice(0, 5).map(tx => (
+                        <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '2px 0' }}>
+                          <span style={{ color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>{tx.description}</span>
+                          <span style={{ fontWeight: 700, color: tx.type === 'refund' ? '#ef4444' : 'var(--color-text)' }}>{tx.type === 'refund' ? '-' : ''}${(tx.amount || 0).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>New Plan</label>

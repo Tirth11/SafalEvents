@@ -31,6 +31,9 @@ export default function CreateEvent() {
     maxGuestsPerRsvp: 2,
     rsvpDeadline: '',
 
+    ageRestricted: false,      // US-EVENT-013: gate RSVPs by minimum age
+    minimumAge: 18,
+
     allowSelfEdit: true,
     allowSelfCancellation: true,
     cancellationCutoff: 24, // hours
@@ -514,6 +517,53 @@ export default function CreateEvent() {
             <div className="flex flex-col gap-sm animate-fade-in" style={{ maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
               <h3 className="wizard-section-title"><Shield size={18} className="text-primary" /> Rules &amp; notifications</h3>
 
+              {/* Attendance rules — age restriction (US-EVENT-013) */}
+              <div className="settings-card flex flex-col gap-xs">
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Lock size={14} className="text-primary" /> Attendance Rules
+                </h4>
+
+                <ToggleRow
+                  title="Age restriction"
+                  desc="Require guests to confirm their date of birth at RSVP. Anyone below the minimum age is blocked from registering."
+                  checked={formData.ageRestricted}
+                  onChange={(e) => setFormData({ ...formData, ageRestricted: e.target.checked })}
+                  small
+                />
+
+                {formData.ageRestricted && (
+                  <div style={{ marginTop: '4px', padding: '12px', background: 'var(--color-bg)', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600 }}>Minimum age</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={formData.minimumAge}
+                      onChange={(e) => setFormData({ ...formData, minimumAge: Math.max(1, Number(e.target.value) || 0) })}
+                      style={{ width: '88px', padding: '8px', fontSize: '0.85rem', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}
+                    />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>years</span>
+                    <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
+                      {[13, 16, 18, 21].map(a => (
+                        <button
+                          key={a}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, minimumAge: a })}
+                          style={{
+                            padding: '4px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer',
+                            border: formData.minimumAge === a ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                            background: formData.minimumAge === a ? 'rgba(255,107,53,0.1)' : 'var(--color-surface)',
+                            color: formData.minimumAge === a ? 'var(--color-primary)' : 'var(--color-text-muted)'
+                          }}
+                        >
+                          {a}+
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Self service */}
               <div className="settings-card flex flex-col gap-xs">
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -613,15 +663,23 @@ export default function CreateEvent() {
                 />
               </div>
 
-              {/* Photo Album */}
+              {/* Engagement & Album (US-UI-004): comments + photo uploads grouped together */}
               <div className="settings-card flex flex-col gap-xs">
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Image size={14} className="text-primary" /> Event Photo Album
+                  <Image size={14} className="text-primary" /> Engagement &amp; Album
                 </h4>
 
                 <ToggleRow
-                  title="Enable Photo Album"
-                  desc="Create a shared space for event photos."
+                  title="Allow comments"
+                  desc="Let guests post and discuss on a public Q&A board on the event page."
+                  checked={formData.allowComments}
+                  onChange={(e) => setFormData({ ...formData, allowComments: e.target.checked })}
+                  small
+                />
+
+                <ToggleRow
+                  title="Guest photo uploads"
+                  desc="Create a shared album so guests and the host can add event photos."
                   checked={formData.enablePhotoAlbum}
                   onChange={(e) => setFormData({ ...formData, enablePhotoAlbum: e.target.checked })}
                   small
@@ -666,34 +724,23 @@ export default function CreateEvent() {
                 )}
               </div>
 
-              {/* Comments & Payments */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div className="settings-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <ToggleRow
-                    title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><MessageSquare size={13} className="text-primary" /> Allow Comments</span>}
-                    desc="Public Q&A on the event page."
-                    checked={formData.allowComments}
-                    onChange={(e) => setFormData({ ...formData, allowComments: e.target.checked })}
+              {/* Payments */}
+              <div className="settings-card">
+                <ToggleRow
+                  title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><CreditCard size={13} className="text-primary" /> Paid Ticket</span>}
+                  desc="Charge guests to attend."
+                  checked={formData.enablePayments}
+                  onChange={(e) => setFormData({ ...formData, enablePayments: e.target.checked })}
+                />
+                {formData.enablePayments && (
+                  <input
+                    type="number"
+                    placeholder="Price ($)"
+                    value={formData.ticketPrice}
+                    onChange={(e) => setFormData({ ...formData, ticketPrice: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '6px 8px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', marginTop: '4px' }}
                   />
-                </div>
-
-                <div className="settings-card">
-                  <ToggleRow
-                    title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><CreditCard size={13} className="text-primary" /> Paid Ticket</span>}
-                    desc="Charge guests to attend."
-                    checked={formData.enablePayments}
-                    onChange={(e) => setFormData({ ...formData, enablePayments: e.target.checked })}
-                  />
-                  {formData.enablePayments && (
-                    <input
-                      type="number"
-                      placeholder="Price ($)"
-                      value={formData.ticketPrice}
-                      onChange={(e) => setFormData({ ...formData, ticketPrice: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '6px 8px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', marginTop: '4px' }}
-                    />
-                  )}
-                </div>
+                )}
               </div>
 
               {formData.enablePayments && (
@@ -892,6 +939,12 @@ export default function CreateEvent() {
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formData.location || 'Venue TBD'}</span>
                 </span>
               </div>
+
+              {formData.ageRestricted && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start', background: 'rgba(239,68,68,0.1)', color: '#dc2626', fontSize: '0.72rem', fontWeight: 800, padding: '5px 12px', borderRadius: '999px' }}>
+                  <Lock size={12} /> {formData.minimumAge}+ Event · ID may be required
+                </div>
+              )}
 
               <div className="flex items-center gap-xs text-muted" style={{ fontSize: '0.78rem' }}>
                 <Users size={14} />

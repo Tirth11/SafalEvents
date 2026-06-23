@@ -63,11 +63,25 @@ export default function AdminDashboard({ onLogout }) {
     loadData();
   }, []);
 
-  // Dynamically apply primary color settings on the dashboard page
+  // Dynamically apply the platform primary color ONLY while the admin console is
+  // mounted. The cleanup removes the inline override so the brand color never
+  // leaks into other roles/pages after logout or navigation (restores the CSS
+  // default in index.css for guest/host/staff/login/landing).
   useEffect(() => {
+    const root = document.documentElement;
+    const hexToRgb = (hex) => {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec((hex || '').trim());
+      return m ? `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}` : null;
+    };
     if (platformSettings.primaryColor) {
-      document.documentElement.style.setProperty('--color-primary', platformSettings.primaryColor);
+      root.style.setProperty('--color-primary', platformSettings.primaryColor);
+      const rgb = hexToRgb(platformSettings.primaryColor);
+      if (rgb) root.style.setProperty('--color-primary-rgb', rgb);
     }
+    return () => {
+      root.style.removeProperty('--color-primary');
+      root.style.removeProperty('--color-primary-rgb');
+    };
   }, [platformSettings.primaryColor]);
 
   // --- Handlers ---
