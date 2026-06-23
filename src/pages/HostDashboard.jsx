@@ -13,6 +13,7 @@ import PageShell from '../components/PageShell';
 import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import DashboardTopBar from '../components/DashboardTopBar';
+import DashboardCharts from '../components/DashboardCharts';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
@@ -990,8 +991,25 @@ export default function HostDashboard({ onLogout }) {
     handleExportCSV(managedEvent, selectedRsvps);
   };
 
+  // Single top navbar account cluster — rendered on the right of the global header.
+  const dashboardTopBar = (
+    <DashboardTopBar
+      embedded
+      userName={currentUser?.name}
+      orgName={isOrgHost ? (userRecord?.orgProfile?.orgName || currentUser?.orgName || 'Organization') : null}
+      roleLabel={isStaffViewer ? 'Staff' : (isOrgHost ? 'Organization Host' : 'Individual Host')}
+      planLabel={topbarPlanLabel}
+      planTone={topbarPlanTone}
+      notifCount={topbarNotif}
+      onBell={() => setActiveSidebar(isStaffViewer ? 'events' : 'messages')}
+      onProfile={() => setActiveSidebar(isStaffViewer ? 'events' : 'settings')}
+      onPlan={() => setActiveSidebar(isStaffViewer ? 'events' : 'billing')}
+      onLogout={onLogout}
+    />
+  );
+
   return (
-    <PageShell>
+    <PageShell headerActions={dashboardTopBar}>
       <div className="dashboard-layout">
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
@@ -1087,17 +1105,6 @@ export default function HostDashboard({ onLogout }) {
         {/* Main Content Pane */}
         <main className="dashboard-main">
 
-          <DashboardTopBar
-            userName={currentUser?.name}
-            roleLabel={isStaffViewer ? 'Staff' : (isOrgHost ? 'Organization Host' : 'Individual Host')}
-            planLabel={topbarPlanLabel}
-            planTone={topbarPlanTone}
-            notifCount={topbarNotif}
-            onBell={() => setActiveSidebar(isStaffViewer ? 'events' : 'messages')}
-            onProfile={() => setActiveSidebar(isStaffViewer ? 'events' : 'settings')}
-            onLogout={onLogout}
-          />
-
           {/* ========================================================================= */}
           {/* SECTION 1 - 3 & 6: DASHBOARD HOME PAGE                                    */}
           {/* ========================================================================= */}
@@ -1112,11 +1119,11 @@ export default function HostDashboard({ onLogout }) {
                   <div className="flex justify-between items-end" style={{ flexWrap: 'wrap', gap: '20px', width: '100%' }}>
                     <div>
                       <div className="flex items-center gap-sm" style={{ marginBottom: '10px' }}>
-                        <img src={getAvatar('alex@safalevent.com')} alt="Alex Rivera" className="avatar-img" />
+                        <img src={getAvatar(currentUser?.email || currentUser?.name || 'Host')} alt={currentUser?.name || 'Host'} className="avatar-img" />
                         <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Host Portal</span>
                       </div>
-                      <h1 style={{ fontSize: '2.1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>
-                        {getGreeting()}, Alex! 👋
+                      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>
+                        {getGreeting()}, {(currentUser?.name || 'there').split(' ')[0]}! 👋
                       </h1>
                       <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', maxWidth: '560px' }}>
                         {getWeeklyEventsText()}
@@ -1252,6 +1259,9 @@ export default function HostDashboard({ onLogout }) {
 
                 </div>
               </div>
+
+              {/* SECTION 2.5: ANALYTICS / GRAPHS */}
+              <DashboardCharts events={events} getRsvps={(id) => mockStore.getRSVPs(id)} />
 
               {/* SECTION 3: THIS WEEK AT A GLANCE */}
               <div>
@@ -3788,85 +3798,286 @@ export default function HostDashboard({ onLogout }) {
           {/* INTEGRATIONS VIEW                                                        */}
           {/* ========================================================================= */}
           {activeSidebar === 'integrations' && (
-            <div>
-              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Integrations</h1>
-                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Connect third-party tools and platforms to enhance your event management.</p>
+            <div style={{ maxWidth: '100%' }}>
+
+              {/* ── Apple-style Hero Header ── */}
+              <div style={{
+                textAlign: 'center', marginBottom: '56px', padding: '48px 24px 40px',
+                background: 'linear-gradient(180deg, rgba(255,107,53,0.04) 0%, transparent 100%)',
+                borderRadius: '24px'
+              }}>
+                <div style={{
+                  width: '64px', height: '64px', borderRadius: '18px', margin: '0 auto 20px',
+                  background: 'linear-gradient(135deg, var(--color-primary), #ff3cac)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 8px 32px rgba(255,107,53,0.25)'
+                }}>
+                  <Webhook size={28} style={{ color: 'white' }} />
+                </div>
+                <h1 style={{
+                  fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 800, margin: '0 0 12px',
+                  fontFamily: 'var(--font-heading)', letterSpacing: '-0.03em',
+                  color: 'var(--color-text)', lineHeight: 1.1
+                }}>
+                  Integrations
+                </h1>
+                <p style={{
+                  fontSize: '1.05rem', color: 'var(--color-text-muted)', margin: '0 auto',
+                  maxWidth: '520px', lineHeight: 1.6
+                }}>
+                  Seamlessly connect the tools you already use. Automate your workflows, sync your data, and focus on what matters — hosting amazing events.
+                </p>
               </div>
 
-              {/* Connected Integrations */}
+              {/* ── Connected Integrations ── */}
               {connectedIntegrations.length > 0 && (
-                <div style={{ marginBottom: '32px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--color-text)' }}>Connected Integrations</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                <div style={{ marginBottom: '48px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                    <span style={{
+                      width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e',
+                      display: 'inline-block', boxShadow: '0 0 8px rgba(34,197,94,0.4)'
+                    }}></span>
+                    <h3 style={{
+                      fontSize: '1.1rem', fontWeight: 700, margin: 0,
+                      fontFamily: 'var(--font-heading)', color: 'var(--color-text)'
+                    }}>Active Connections</h3>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
                     {connectedIntegrations.map(int => (
-                      <Card key={int.id} style={{ padding: '18px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div>
-                            <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text)', textTransform: 'capitalize' }}>{int.platform}</h4>
-                            <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>Connected on {int.connectedAt}</p>
-                          </div>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', background: 'rgba(0, 200, 83, 0.1)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
-                            <Check size={13} /> Connected
-                          </span>
+                      <Card key={int.id} className="glass-surface" style={{
+                        padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px',
+                        borderLeft: '3px solid #22c55e', transition: 'all 0.25s ease'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text)', textTransform: 'capitalize' }}>{int.platform}</h4>
+                          <p className="text-muted" style={{ fontSize: '0.75rem', margin: '3px 0 0 0' }}>Connected {int.connectedAt}</p>
                         </div>
+                        <span style={{
+                          fontSize: '0.7rem', fontWeight: 700, color: '#22c55e',
+                          background: 'rgba(34,197,94,0.08)', padding: '4px 12px',
+                          borderRadius: 'var(--radius-full)', display: 'inline-flex',
+                          alignItems: 'center', gap: '4px'
+                        }}><Check size={12} /> Live</span>
                         <button
                           onClick={() => handleDisconnectIntegration(int.id)}
                           style={{
-                            background: 'transparent', border: '1px solid var(--color-border)', color: '#ef4444',
-                            padding: '8px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
+                            background: 'transparent', border: '1px solid rgba(239,68,68,0.2)',
+                            color: '#ef4444', padding: '6px 14px', borderRadius: '8px',
+                            cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600,
+                            transition: 'all 0.2s ease'
                           }}
-                        >
-                          Disconnect
-                        </button>
+                        >Disconnect</button>
                       </Card>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Available Integrations */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>Available Platforms</h3>
-                  <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
-                    <Webhook size={12} /> Connect via API
-                  </span>
+              {/* ── Platform Grid ── */}
+              {[
+                {
+                  category: 'Forms & Data Collection',
+                  subtitle: 'Capture, organize, and export your event data effortlessly.',
+                  platforms: [
+                    {
+                      name: 'Jotform',
+                      logo: 'J', logoColor: '#0099ff', logoBg: 'rgba(0,153,255,0.08)',
+                      desc: 'Build custom registration forms with drag-and-drop simplicity. Guest submissions sync automatically to your RSVP list in real time.',
+                      features: ['Custom registration fields', 'Auto-sync to RSVP list', 'Conditional logic support']
+                    },
+                    {
+                      name: 'Google Sheets',
+                      logo: 'G', logoColor: '#34a853', logoBg: 'rgba(52,168,83,0.08)',
+                      desc: 'Export guest lists, attendance records, and analytics directly into Google Sheets. Share live data with your entire team.',
+                      features: ['Real-time data export', 'Shared team access', 'Auto-updating attendance']
+                    },
+                  ]
+                },
+                {
+                  category: 'Communication',
+                  subtitle: 'Reach your guests on the channels they prefer.',
+                  platforms: [
+                    {
+                      name: 'WhatsApp',
+                      logo: 'W', logoColor: '#25d366', logoBg: 'rgba(37,211,102,0.08)',
+                      desc: 'Send RSVP confirmations, event reminders, and last-minute updates directly via WhatsApp. Higher open rates than email.',
+                      features: ['Automated RSVP confirmations', 'Event day reminders', 'Broadcast updates to all guests']
+                    },
+                    {
+                      name: 'Slack',
+                      logo: 'S', logoColor: '#e01e5a', logoBg: 'rgba(224,30,90,0.08)',
+                      desc: 'Get instant RSVP notifications, check-in alerts, and capacity updates posted to your team\'s Slack channels.',
+                      features: ['Real-time RSVP alerts', 'Check-in notifications', 'Capacity warnings']
+                    },
+                    {
+                      name: 'Mailchimp',
+                      logo: 'M', logoColor: '#ffe01b', logoBg: 'rgba(255,224,27,0.1)',
+                      desc: 'Automatically sync your guest list to Mailchimp audiences. Run post-event follow-ups and grow your subscriber base.',
+                      features: ['Auto-sync guest lists', 'Segment by event type', 'Post-event email campaigns']
+                    },
+                    {
+                      name: 'Twilio',
+                      logo: 'T', logoColor: '#f22f46', logoBg: 'rgba(242,47,70,0.08)',
+                      desc: 'Send SMS reminders, ticket confirmations, and real-time alerts globally. Reach guests even without internet.',
+                      features: ['Global SMS delivery', 'Ticket confirmations', 'Two-way messaging']
+                    },
+                  ]
+                },
+                {
+                  category: 'CRM & Automation',
+                  subtitle: 'Turn event attendees into lasting relationships.',
+                  platforms: [
+                    {
+                      name: 'HubSpot',
+                      logo: 'H', logoColor: '#ff5c35', logoBg: 'rgba(255,92,53,0.08)',
+                      desc: 'Sync event attendees and leads into your HubSpot CRM with automatic contact enrichment. Track the full journey from signup to conversion.',
+                      features: ['Contact auto-enrichment', 'Lead scoring from events', 'Pipeline integration']
+                    },
+                    {
+                      name: 'Zapier',
+                      logo: 'Z', logoColor: '#ff4a00', logoBg: 'rgba(255,74,0,0.08)',
+                      desc: 'Automate workflows across 5,000+ apps. Trigger actions when guests RSVP, check in, or cancel — no coding required.',
+                      features: ['5,000+ app connections', 'Custom trigger workflows', 'Zero-code automation']
+                    },
+                  ]
+                }
+              ].map(group => (
+                <div key={group.category} style={{ marginBottom: '48px' }}>
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '1.15rem', fontWeight: 800, margin: '0 0 4px',
+                      fontFamily: 'var(--font-heading)', color: 'var(--color-text)',
+                      letterSpacing: '-0.02em'
+                    }}>{group.category}</h3>
+                    <p style={{
+                      fontSize: '0.88rem', color: 'var(--color-text-muted)', margin: 0,
+                      lineHeight: 1.5
+                    }}>{group.subtitle}</p>
+                  </div>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                    gap: '20px'
+                  }}>
+                    {group.platforms.map(platform => {
+                      const isConnected = connectedIntegrations.some(
+                        ci => ci.platform.toLowerCase() === platform.name.toLowerCase()
+                      );
+                      return (
+                        <Card key={platform.name} className="glass-surface card-hover-lift" style={{
+                          padding: 0, overflow: 'hidden', transition: 'all 0.3s ease',
+                          border: '1px solid var(--color-border)', cursor: 'default'
+                        }}>
+                          {/* Card top: logo + name + desc */}
+                          <div style={{ padding: '28px 24px 20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+                              {/* Logo mark */}
+                              <div style={{
+                                width: '52px', height: '52px', borderRadius: '14px',
+                                background: platform.logoBg,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0, border: `1px solid ${platform.logoColor}20`
+                              }}>
+                                <span style={{
+                                  fontSize: '1.5rem', fontWeight: 900,
+                                  fontFamily: 'var(--font-heading)',
+                                  color: platform.logoColor, lineHeight: 1
+                                }}>{platform.logo}</span>
+                              </div>
+                              <div>
+                                <h4 style={{
+                                  fontSize: '1.1rem', fontWeight: 800, margin: 0,
+                                  fontFamily: 'var(--font-heading)', color: 'var(--color-text)',
+                                  letterSpacing: '-0.01em'
+                                }}>{platform.name}</h4>
+                                {isConnected && (
+                                  <span style={{
+                                    fontSize: '0.68rem', fontWeight: 700, color: '#22c55e',
+                                    display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '2px'
+                                  }}>
+                                    <Check size={11} /> Connected
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <p style={{
+                              fontSize: '0.85rem', color: 'var(--color-text-muted)',
+                              margin: '0 0 16px', lineHeight: 1.6
+                            }}>{platform.desc}</p>
+                            {/* Feature pills */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {platform.features.map((f, fi) => (
+                                <span key={fi} style={{
+                                  fontSize: '0.7rem', fontWeight: 600,
+                                  color: 'var(--color-text-muted)',
+                                  background: 'var(--color-surface)',
+                                  border: '1px solid var(--color-border)',
+                                  padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                                  display: 'inline-flex', alignItems: 'center', gap: '4px'
+                                }}>
+                                  <Check size={10} style={{ color: 'var(--color-primary)' }} /> {f}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Card footer: connect button */}
+                          <div style={{
+                            padding: '14px 24px',
+                            borderTop: '1px solid var(--color-border)',
+                            background: 'rgba(0,0,0,0.01)'
+                          }}>
+                            <Button
+                              variant={isConnected ? 'ghost' : 'primary'}
+                              onClick={() => !isConnected && setShowIntegrationModal(true)}
+                              style={{
+                                width: '100%', padding: '10px', fontSize: '0.85rem',
+                                fontWeight: 700, borderRadius: '10px'
+                              }}
+                              disabled={isConnected}
+                            >
+                              {isConnected
+                                ? <><Check size={14} /> Connected</>
+                                : <><Webhook size={14} /> Connect {platform.name}</>
+                              }
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-                  {[
-                    { name: 'Jotform', desc: 'Sync form submissions directly to your events', icon: '📋' },
-                    { name: 'WhatsApp', desc: 'Send RSVP reminders and updates via WhatsApp', icon: '💬' },
-                    { name: 'Google Sheets', desc: 'Export guest lists and attendance to Sheets', icon: '📊' },
-                    { name: 'Slack', desc: 'Get real-time RSVP notifications in your Slack workspace', icon: '🔔' },
-                    { name: 'Mailchimp', desc: 'Sync guests to your email campaigns', icon: '📧' },
-                    { name: 'Zapier', desc: 'Automate workflows with 1000+ apps', icon: '⚡' },
-                    { name: 'HubSpot', desc: 'Manage guests and leads in HubSpot CRM', icon: '🎯' },
-                    { name: 'Twilio', desc: 'Send SMS reminders and notifications', icon: '📱' }
-                  ].map(platform => {
-                    const isConnected = connectedIntegrations.some(i => i.platform.toLowerCase() === platform.name.toLowerCase());
-                    return (
-                      <Card key={platform.name} style={{ padding: '18px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div>
-                          <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>{platform.icon}</div>
-                          <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>{platform.name}</h4>
-                          <p className="text-muted" style={{ fontSize: '0.8rem', margin: '6px 0 0 0', lineHeight: 1.4 }}>{platform.desc}</p>
-                        </div>
-                        <Button
-                          variant={isConnected ? 'ghost' : 'primary'}
-                          onClick={() => !isConnected && setShowIntegrationModal(true)}
-                          style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
-                          disabled={isConnected}
-                        >
-                          {isConnected ? '✓ Connected' : 'Connect'}
-                        </Button>
-                      </Card>
-                    );
-                  })}
+              ))}
+
+              {/* ── Bottom info banner ── */}
+              <div style={{
+                padding: '32px', borderRadius: '20px',
+                background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap'
+              }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '14px',
+                  background: 'rgba(255,107,53,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, color: 'var(--color-primary)'
+                }}>
+                  <Shield size={22} />
+                </div>
+                <div style={{ flex: 1, minWidth: '240px' }}>
+                  <h4 style={{
+                    fontSize: '0.95rem', fontWeight: 700, margin: '0 0 4px',
+                    fontFamily: 'var(--font-heading)', color: 'var(--color-text)'
+                  }}>Secure by design</h4>
+                  <p style={{
+                    fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0,
+                    lineHeight: 1.5
+                  }}>
+                    All integrations use encrypted API connections. Your data and your guests' data are never shared with third parties without your explicit consent.
+                  </p>
                 </div>
               </div>
+
             </div>
-          )}
+          )}}
 
         </main>
 
