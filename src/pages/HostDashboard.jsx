@@ -14,6 +14,7 @@ import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import DashboardTopBar from '../components/DashboardTopBar';
 import { GuestGeographyChart, EarningsGrowthChart, EventsStackedBarChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart } from '../components/DashboardCharts';
+import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
 
@@ -1194,6 +1195,7 @@ export default function HostDashboard({ onLogout }) {
     ] },
     { label: 'Account', items: [
       { key: 'billing', icon: <Ticket size={18} />, label: 'Billing & Plans', staff: false },
+      { key: 'staff', icon: <Users size={18} />, label: 'Staff & Roles', staff: false },
       { key: 'settings', icon: <Settings size={18} />, label: 'Settings', staff: true },
     ] },
   ];
@@ -2169,8 +2171,7 @@ export default function HostDashboard({ onLogout }) {
                   { key: 'notifications', label: 'Notifications Schedule', perm: 'settings_view' },
                   { key: 'invitations', label: 'Manual Add', perm: 'guests_edit' },
                   { key: 'checkin', label: 'QR Scan Check-in', perm: 'checkin' },
-                  { key: 'payments', label: 'Payments', perm: 'settings_view' },
-                  { key: 'staff', label: 'Staff & Roles', perm: 'staff_manage' }
+                  { key: 'payments', label: 'Payments', perm: 'settings_view' }
                 ].filter(t => can(t.perm)).map(t => (
                   <button 
                     key={t.key}
@@ -3364,221 +3365,6 @@ export default function HostDashboard({ onLogout }) {
               )}
 
               {/* SUB-TAB: STAFF & ROLES (UC-06/07) */}
-              {selectedEventTab === 'staff' && (
-                <div className="flex flex-col gap-lg">
-                  <div className="grid-2" style={{ gap: '20px' }}>
-                    {/* Team members for this event */}
-                    <Card style={{ padding: '20px', textAlign: 'left' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '4px' }}>Team members</h4>
-                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>Invite people to help run this event. Each member only sees and does what their role permits.</p>
-                      <form onSubmit={handleInviteStaffSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '16px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Invite a team member</span>
-                        <div className="grid-2" style={{ gap: '6px' }}>
-                          <input required placeholder="Name" value={inviteStaffForm.name} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, name: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
-                          <input required type="email" placeholder="Email" value={inviteStaffForm.email} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, email: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
-                        </div>
-                        <div className="flex gap-sm">
-                          <select value={inviteStaffForm.roleId} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, roleId: e.target.value })} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
-                            {mockStore.getRoles().map(r => (
-                              <option key={r.id} value={r.id}>{r.name}</option>
-                            ))}
-                          </select>
-                          <Button type="submit" variant="primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>Send Invite</Button>
-                        </div>
-                      </form>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {/* Owner row (implicit full access) */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
-                          <div className="flex items-center gap-sm">
-                            <img src={getAvatar(managedEvent.hostEmail)} alt={managedEvent.hostName} className="avatar-img avatar-sm" />
-                            <div>
-                              <strong style={{ fontSize: '0.85rem' }}>{managedEvent.hostName} <span style={{ fontSize: '0.7rem' }}>👑</span></strong>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Host (owner) • Full access</div>
-                            </div>
-                          </div>
-                          <span className="admin-badge admin-badge-active">Owner</span>
-                        </div>
-
-                        {mockStore.getStaff(selectedEventId).map(s => {
-                          const role = mockStore.getRoleById(s.roleId);
-                          return (
-                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
-                              <div className="flex items-center gap-sm">
-                                <img src={getAvatar(s.email)} alt={s.name} className="avatar-img avatar-sm" />
-                                <div>
-                                  <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
-                                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{role ? role.name : 'No role'} • {s.email}</div>
-                                  {s.inviteId && (
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                                      Invite ID: <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{s.inviteId}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-sm">
-                                <span className={`admin-badge ${s.status === 'ACTIVE' ? 'admin-badge-active' : 'admin-badge-pending'}`}>
-                                  {s.status === 'ACTIVE' ? 'Active' : 'Invited'}
-                                </span>
-                                {s.status === 'INVITED' && (
-                                  <button onClick={() => handleAcceptStaff(s.id)} title="Mark invite as accepted" style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Accept</button>
-                                )}
-                                <button onClick={() => handleRemoveStaff(s.id)} title="Remove" style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16} /></button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {mockStore.getStaff(selectedEventId).length === 0 && (
-                          <p className="text-muted" style={{ fontSize: '0.78rem', margin: '4px 0 0 0' }}>No team members yet. Invite someone above.</p>
-                        )}
-                      </div>
-                    </Card>
-
-                    {/* Roles & permissions */}
-                    <Card style={{ padding: '20px', textAlign: 'left' }}>
-                      <div className="flex justify-between items-center" style={{ marginBottom: '4px' }}>
-                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Roles &amp; permissions</h4>
-                        <Button type="button" variant="outline" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={() => handleOpenRoleBuilder(null)}>
-                          <Plus size={13} style={{ verticalAlign: '-2px' }} /> New role
-                        </Button>
-                      </div>
-                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>A role is a named set of permissions. Default-deny: anything not granted is hidden and blocked.</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {mockStore.getRoles().map(role => {
-                          const grantedCount = Object.values(role.permissions || {}).filter(Boolean).length;
-                          return (
-                            <div key={role.id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px' }}>
-                              <div className="flex justify-between items-center">
-                                <div>
-                                  <strong style={{ fontSize: '0.88rem' }}>{role.name}{role.builtIn && <span style={{ fontSize: '0.65rem', marginLeft: '6px', color: 'var(--color-text-muted)' }}>built-in</span>}</strong>
-                                  <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>{role.description}</div>
-                                </div>
-                                <div className="flex items-center gap-sm">
-                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{grantedCount} perms</span>
-                                  <button onClick={() => handleOpenRoleBuilder(role)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Edit</button>
-                                  {!role.builtIn && (
-                                    <button onClick={() => handleDeleteRole(role.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Role builder (create / edit) */}
-                  {showRoleBuilder && (
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>{roleBuilder.id ? 'Edit role' : 'Create role'}</h4>
-                      <form onSubmit={handleSaveRole} className="flex flex-col gap-md">
-                        <div className="grid-2" style={{ gap: '12px' }}>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Role name *</label>
-                            <input required value={roleBuilder.name} onChange={(e) => setRoleBuilder({ ...roleBuilder, name: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
-                          </div>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Description</label>
-                            <input value={roleBuilder.description} onChange={(e) => setRoleBuilder({ ...roleBuilder, description: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
-                          </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
-                          {[
-                            { key: 'guests_view', label: 'View guest list' },
-                            { key: 'guests_approve', label: 'Approve / reject RSVPs' },
-                            { key: 'guests_edit', label: 'Edit guests & manual add' },
-                            { key: 'guests_export', label: 'Export guest list' },
-                            { key: 'checkin', label: 'Gate check-in (QR scan)' },
-                            { key: 'messaging_view', label: 'View messages' },
-                            { key: 'messaging_reply', label: 'Reply to guests' },
-                            { key: 'history_view', label: 'View history' },
-                            { key: 'settings_view', label: 'View settings' },
-                            { key: 'settings_edit', label: 'Edit settings' },
-                            { key: 'staff_manage', label: 'Manage staff & roles' }
-                          ].map(p => (
-                            <label key={p.key} className="flex items-center gap-xs" style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
-                                checked={!!roleBuilder.permissions[p.key]}
-                                onChange={(e) => setRoleBuilder({ ...roleBuilder, permissions: { ...roleBuilder.permissions, [p.key]: e.target.checked } })}
-                              />
-                              {p.label}
-                            </label>
-                          ))}
-                        </div>
-                        <div className="flex gap-sm">
-                          <Button type="submit" variant="primary">{roleBuilder.id ? 'Save role' : 'Create role'}</Button>
-                          <Button type="button" variant="ghost" onClick={() => { setShowRoleBuilder(false); setRoleBuilder(emptyRoleBuilder); }}>Cancel</Button>
-                        </div>
-                      </form>
-                    </Card>
-                  )}
-
-                  <div>
-                    <Card style={{ padding: '20px', textAlign: 'left' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Auto-Reply Notification Rules</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                        {autoReplyRules.map(r => (
-                          <div key={r.id} style={{ padding: '10px 12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <strong style={{ fontSize: '0.85rem' }}>Trigger: {r.trigger}</strong>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Condition: {r.condition} &rarr; Action: {r.action}</div>
-                            </div>
-                            <button onClick={() => handleDeleteRule(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <form onSubmit={handleAddRule} className="flex flex-col gap-sm" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Create auto-rule trigger</span>
-                        <div className="grid-3" style={{ gap: '6px' }}>
-                          <select value={newRule.trigger} onChange={(e) => setNewRule({ ...newRule, trigger: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
-                            <option value="On Guest RSVP">On Guest RSVP</option>
-                            <option value="On QR Check-in">On QR Check-in</option>
-                          </select>
-                          <select value={newRule.condition} onChange={(e) => setNewRule({ ...newRule, condition: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
-                            <option value="If Status is Going">If Status is Going</option>
-                            <option value="If Status is Waitlist">If Status is Waitlist</option>
-                          </select>
-                          <select value={newRule.action} onChange={(e) => setNewRule({ ...newRule, action: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
-                            <option value="Send Confirmation email (rsvp)">Send Confirmation (Email)</option>
-                            <option value="Send Welcoming text alert">Send Alert (SMS)</option>
-                          </select>
-                        </div>
-                        <Button type="submit" variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem', alignSelf: 'end' }}>Add Auto-rule</Button>
-                      </form>
-                    </Card>
-                  </div>
-
-                  {/* Audit Logs security table */}
-                  <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Security Audit Trail Logs</h4>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="premium-table">
-                        <thead>
-                          <tr>
-                            <th>Timestamp</th>
-                            <th>Operator</th>
-                            <th>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mockStore.getAuditTrail().filter(l => l.eventId === selectedEventId).map(l => (
-                            <tr key={l.id}>
-                              <td style={{ fontSize: '0.8rem' }}>{new Date(l.timestamp).toLocaleString()}</td>
-                              <td style={{ fontWeight: 600 }}>{l.actor}</td>
-                              <td>{l.action}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </Card>
-                </div>
-              )}
 
             </div>
           )}
@@ -3993,6 +3779,237 @@ export default function HostDashboard({ onLogout }) {
                 )}
               </Card>
             </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* GLOBAL STAFF & ROLES VIEW                                               */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'staff' && (
+            <div>
+              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Staff, Roles & Event Security</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Manage team members, roles, auto-replies, and view audit logs.</p>
+              </div>
+              <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+                <label style={{ fontWeight: 600, fontSize: '0.85rem', marginRight: '10px' }}>Select Event Context:</label>
+                <select value={selectedEventId || ''} onChange={(e) => setSelectedEventId(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                  {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+                </select>
+              </div>
+                <div className="flex flex-col gap-lg">
+                  <div className="grid-2" style={{ gap: '20px' }}>
+                    {/* Team members for this event */}
+                    <Card style={{ padding: '20px', textAlign: 'left' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '4px' }}>Team members</h4>
+                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>Invite people to help run this event. Each member only sees and does what their role permits.</p>
+                      <form onSubmit={handleInviteStaffSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '16px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Invite a team member</span>
+                        <div className="grid-2" style={{ gap: '6px' }}>
+                          <input required placeholder="Name" value={inviteStaffForm.name} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, name: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
+                          <input required type="email" placeholder="Email" value={inviteStaffForm.email} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, email: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
+                        </div>
+                        <div className="flex gap-sm">
+                          <select value={inviteStaffForm.roleId} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, roleId: e.target.value })} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
+                            {mockStore.getRoles().map(r => (
+                              <option key={r.id} value={r.id}>{r.name}</option>
+                            ))}
+                          </select>
+                          <Button type="submit" variant="primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>Send Invite</Button>
+                        </div>
+                      </form>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {/* Owner row (implicit full access) */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
+                          <div className="flex items-center gap-sm">
+                            <img src={getAvatar(managedEvent.hostEmail)} alt={managedEvent.hostName} className="avatar-img avatar-sm" />
+                            <div>
+                              <strong style={{ fontSize: '0.85rem' }}>{managedEvent.hostName} <span style={{ fontSize: '0.7rem' }}>👑</span></strong>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Host (owner) • Full access</div>
+                            </div>
+                          </div>
+                          <span className="admin-badge admin-badge-active">Owner</span>
+                        </div>
+
+                        {mockStore.getStaff(selectedEventId).map(s => {
+                          const role = mockStore.getRoleById(s.roleId);
+                          return (
+                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
+                              <div className="flex items-center gap-sm">
+                                <img src={getAvatar(s.email)} alt={s.name} className="avatar-img avatar-sm" />
+                                <div>
+                                  <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{role ? role.name : 'No role'} • {s.email}</div>
+                                  {s.inviteId && (
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                      Invite ID: <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{s.inviteId}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-sm">
+                                <span className={`admin-badge ${s.status === 'ACTIVE' ? 'admin-badge-active' : 'admin-badge-pending'}`}>
+                                  {s.status === 'ACTIVE' ? 'Active' : 'Invited'}
+                                </span>
+                                {s.status === 'INVITED' && (
+                                  <button onClick={() => handleAcceptStaff(s.id)} title="Mark invite as accepted" style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Accept</button>
+                                )}
+                                <button onClick={() => handleRemoveStaff(s.id)} title="Remove" style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16} /></button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {mockStore.getStaff(selectedEventId).length === 0 && (
+                          <p className="text-muted" style={{ fontSize: '0.78rem', margin: '4px 0 0 0' }}>No team members yet. Invite someone above.</p>
+                        )}
+                      </div>
+                    </Card>
+
+                    {/* Roles & permissions */}
+                    <Card style={{ padding: '20px', textAlign: 'left' }}>
+                      <div className="flex justify-between items-center" style={{ marginBottom: '4px' }}>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Roles &amp; permissions</h4>
+                        <Button type="button" variant="outline" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={() => handleOpenRoleBuilder(null)}>
+                          <Plus size={13} style={{ verticalAlign: '-2px' }} /> New role
+                        </Button>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>A role is a named set of permissions. Default-deny: anything not granted is hidden and blocked.</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {mockStore.getRoles().map(role => {
+                          const grantedCount = Object.values(role.permissions || {}).filter(Boolean).length;
+                          return (
+                            <div key={role.id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px' }}>
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <strong style={{ fontSize: '0.88rem' }}>{role.name}{role.builtIn && <span style={{ fontSize: '0.65rem', marginLeft: '6px', color: 'var(--color-text-muted)' }}>built-in</span>}</strong>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>{role.description}</div>
+                                </div>
+                                <div className="flex items-center gap-sm">
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{grantedCount} perms</span>
+                                  <button onClick={() => handleOpenRoleBuilder(role)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Edit</button>
+                                  {!role.builtIn && (
+                                    <button onClick={() => handleDeleteRole(role.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Role builder (create / edit) */}
+                  {showRoleBuilder && (
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>{roleBuilder.id ? 'Edit role' : 'Create role'}</h4>
+                      <form onSubmit={handleSaveRole} className="flex flex-col gap-md">
+                        <div className="grid-2" style={{ gap: '12px' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Role name *</label>
+                            <input required value={roleBuilder.name} onChange={(e) => setRoleBuilder({ ...roleBuilder, name: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Description</label>
+                            <input value={roleBuilder.description} onChange={(e) => setRoleBuilder({ ...roleBuilder, description: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
+                          {[
+                            { key: 'guests_view', label: 'View guest list' },
+                            { key: 'guests_approve', label: 'Approve / reject RSVPs' },
+                            { key: 'guests_edit', label: 'Edit guests & manual add' },
+                            { key: 'guests_export', label: 'Export guest list' },
+                            { key: 'checkin', label: 'Gate check-in (QR scan)' },
+                            { key: 'messaging_view', label: 'View messages' },
+                            { key: 'messaging_reply', label: 'Reply to guests' },
+                            { key: 'history_view', label: 'View history' },
+                            { key: 'settings_view', label: 'View settings' },
+                            { key: 'settings_edit', label: 'Edit settings' },
+                            { key: 'staff_manage', label: 'Manage staff & roles' }
+                          ].map(p => (
+                            <label key={p.key} className="flex items-center gap-xs" style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!roleBuilder.permissions[p.key]}
+                                onChange={(e) => setRoleBuilder({ ...roleBuilder, permissions: { ...roleBuilder.permissions, [p.key]: e.target.checked } })}
+                              />
+                              {p.label}
+                            </label>
+                          ))}
+                        </div>
+                        <div className="flex gap-sm">
+                          <Button type="submit" variant="primary">{roleBuilder.id ? 'Save role' : 'Create role'}</Button>
+                          <Button type="button" variant="ghost" onClick={() => { setShowRoleBuilder(false); setRoleBuilder(emptyRoleBuilder); }}>Cancel</Button>
+                        </div>
+                      </form>
+                    </Card>
+                  )}
+
+                  <div>
+                    <Card style={{ padding: '20px', textAlign: 'left' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Auto-Reply Notification Rules</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                        {autoReplyRules.map(r => (
+                          <div key={r.id} style={{ padding: '10px 12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <strong style={{ fontSize: '0.85rem' }}>Trigger: {r.trigger}</strong>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Condition: {r.condition} &rarr; Action: {r.action}</div>
+                            </div>
+                            <button onClick={() => handleDeleteRule(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <form onSubmit={handleAddRule} className="flex flex-col gap-sm" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Create auto-rule trigger</span>
+                        <div className="grid-3" style={{ gap: '6px' }}>
+                          <select value={newRule.trigger} onChange={(e) => setNewRule({ ...newRule, trigger: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                            <option value="On Guest RSVP">On Guest RSVP</option>
+                            <option value="On QR Check-in">On QR Check-in</option>
+                          </select>
+                          <select value={newRule.condition} onChange={(e) => setNewRule({ ...newRule, condition: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                            <option value="If Status is Going">If Status is Going</option>
+                            <option value="If Status is Waitlist">If Status is Waitlist</option>
+                          </select>
+                          <select value={newRule.action} onChange={(e) => setNewRule({ ...newRule, action: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
+                            <option value="Send Confirmation email (rsvp)">Send Confirmation (Email)</option>
+                            <option value="Send Welcoming text alert">Send Alert (SMS)</option>
+                          </select>
+                        </div>
+                        <Button type="submit" variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem', alignSelf: 'end' }}>Add Auto-rule</Button>
+                      </form>
+                    </Card>
+                  </div>
+
+                  {/* Audit Logs security table */}
+                  <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Security Audit Trail Logs</h4>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="premium-table">
+                        <thead>
+                          <tr>
+                            <th>Timestamp</th>
+                            <th>Operator</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mockStore.getAuditTrail().filter(l => l.eventId === selectedEventId).map(l => (
+                            <tr key={l.id}>
+                              <td style={{ fontSize: '0.8rem' }}>{new Date(l.timestamp).toLocaleString()}</td>
+                              <td style={{ fontWeight: 600 }}>{l.actor}</td>
+                              <td>{l.action}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+                </div>
+              </div>
           )}
 
           {/* ========================================================================= */}
