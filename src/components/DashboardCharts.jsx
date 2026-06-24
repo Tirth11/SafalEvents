@@ -184,55 +184,66 @@ export function EarningsGrowthChart({ data = [] }) {
 // 3. Events Stacked Bar Chart
 export function EventsStackedBarChart({ data = [] }) {
   const [mounted, setMounted] = useState(false);
-  const [timeframe, setTimeframe] = useState('monthly');
   useEffect(() => { const t = setTimeout(() => setMounted(true), 100); return () => clearTimeout(t); }, []);
 
-  const sampleData = data.length ? data : timeframe === 'daily' ? [
-    { label: 'Today', going: 12, maybe: 4, declined: 2 }
-  ] : timeframe === 'weekly' ? [
-    { label: 'This Week', going: 150, maybe: 30, declined: 10 },
-    { label: 'Next Week', going: 80, maybe: 20, declined: 5 }
-  ] : [
-    { label: 'June', going: 320, maybe: 45, declined: 15 },
-    { label: 'July', going: 450, maybe: 60, declined: 20 },
-    { label: 'August', going: 210, maybe: 35, declined: 10 }
+  const sampleData = data.length ? data : [
+    { label: 'Summer Meetup', yes: 120, maybe: 35, no: 20 },
+    { label: 'Startup Night', yes: 85, maybe: 25, no: 15 },
+    { label: 'Product Launch', yes: 150, maybe: 30, no: 10 },
+    { label: 'Annual Conference', yes: 220, maybe: 40, no: 20 }
   ];
 
-  const maxTotal = Math.max(1, ...sampleData.map(d => d.going + d.maybe + d.declined));
+  const maxTotal = Math.max(1, ...sampleData.map(d => d.yes + d.maybe + d.no));
 
   return (
-    <Card className="glass-surface" style={{ padding: '24px', height: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-        <ChartTitle icon={PieChart} title="RSVP Overview" subtitle="Total RSVPs across events" />
-        <div style={{ display: 'flex', background: 'var(--color-surface-hover)', borderRadius: '8px', padding: '4px' }}>
-          <button onClick={() => setTimeframe('daily')} style={{ border: 'none', background: timeframe === 'daily' ? '#fff' : 'transparent', color: timeframe === 'daily' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'daily' ? 'var(--shadow-sm)' : 'none' }}>Daily</button>
-          <button onClick={() => setTimeframe('weekly')} style={{ border: 'none', background: timeframe === 'weekly' ? '#fff' : 'transparent', color: timeframe === 'weekly' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'weekly' ? 'var(--shadow-sm)' : 'none' }}>Weekly</button>
-          <button onClick={() => setTimeframe('monthly')} style={{ border: 'none', background: timeframe === 'monthly' ? '#fff' : 'transparent', color: timeframe === 'monthly' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'monthly' ? 'var(--shadow-sm)' : 'none' }}>Monthly</button>
+    <Card className="glass-surface" style={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+        <ChartTitle icon={PieChart} title="RSVP Response Overview" subtitle="Total RSVPs by event" />
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <select style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>
+            <option>Calendar (Date Range)</option>
+            <option>Last 7 Days</option>
+            <option>Last 30 Days</option>
+          </select>
+          <select style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>
+            <option>Event Type</option>
+            <option>Conference</option>
+            <option>Meetup</option>
+          </select>
+          <select style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>
+            <option>Organizer</option>
+            <option>Me</option>
+            <option>My Team</option>
+          </select>
         </div>
       </div>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
         {sampleData.map((d, i) => {
-          const total = d.going + d.maybe + d.declined;
+          const total = d.yes + d.maybe + d.no;
           return (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '80px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{d.label}</div>
-              <div style={{ flex: 1, height: '24px', background: 'var(--color-surface-hover)', borderRadius: '6px', overflow: 'hidden', display: 'flex' }}>
-                <div style={{ height: '100%', width: mounted ? `${(d.going / maxTotal) * 100}%` : '0%', background: GREEN, transition: 'width 1s ease' }} title={`Going: ${d.going}`} />
-                <div style={{ height: '100%', width: mounted ? `${(d.maybe / maxTotal) * 100}%` : '0%', background: YELLOW, transition: 'width 1s ease' }} title={`Maybe: ${d.maybe}`} />
-                <div style={{ height: '100%', width: mounted ? `${(d.declined / maxTotal) * 100}%` : '0%', background: RED, transition: 'width 1s ease' }} title={`Declined: ${d.declined}`} />
-              </div>
-              <div style={{ width: '40px', textAlign: 'right', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)' }}>
-                {total}
+              <div style={{ width: '130px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>{d.label}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ height: '24px', background: 'var(--color-surface-hover)', borderRadius: '6px', overflow: 'hidden', display: 'flex', marginBottom: '4px' }}>
+                  <div style={{ height: '100%', width: mounted ? `${(d.yes / maxTotal) * 100}%` : '0%', background: GREEN, transition: 'width 1s ease' }} title={`Yes: ${d.yes}`} />
+                  <div style={{ height: '100%', width: mounted ? `${(d.maybe / maxTotal) * 100}%` : '0%', background: YELLOW, transition: 'width 1s ease' }} title={`Maybe: ${d.maybe}`} />
+                  <div style={{ height: '100%', width: mounted ? `${(d.no / maxTotal) * 100}%` : '0%', background: RED, transition: 'width 1s ease' }} title={`No: ${d.no}`} />
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'flex', gap: '12px' }}>
+                  <span>Yes: {d.yes}</span>
+                  <span>Maybe: {d.maybe}</span>
+                  <span>No: {d.no}</span>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '24px', fontSize: '0.8rem', fontWeight: 600 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: GREEN, borderRadius: 2 }}/> Going</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: GREEN, borderRadius: 2 }}/> Yes</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: YELLOW, borderRadius: 2 }}/> Maybe</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: RED, borderRadius: 2 }}/> Declined</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: RED, borderRadius: 2 }}/> No</div>
       </div>
     </Card>
   );
