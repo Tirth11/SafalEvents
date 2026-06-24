@@ -29,7 +29,7 @@ function smoothPath(pts) {
   return d;
 }
 
-const ChartTitle = ({ icon: Icon, title, subtitle, color }) => (
+export const ChartTitle = ({ icon: Icon, title, subtitle, color }) => (
   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '24px' }}>
     <div style={{ 
       width: '40px', height: '40px', borderRadius: '10px', 

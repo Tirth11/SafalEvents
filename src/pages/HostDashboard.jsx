@@ -14,6 +14,7 @@ import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import DashboardTopBar from '../components/DashboardTopBar';
 import { GuestGeographyChart, EarningsGrowthChart, EventsStackedBarChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart, AttendanceGapLeaderboard } from '../components/DashboardCharts';
+import EventCalendarView from '../components/EventCalendarView';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
@@ -1466,10 +1467,11 @@ export default function HostDashboard({ onLogout }) {
                   <AttendanceGapLeaderboard />
                 </div>
 
-                <div style={{ textAlign: 'left', marginTop: '16px' }}>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Overall Insights</h2>
-                  <p className="text-muted" style={{ margin: '2px 0 16px 0', fontSize: '0.8rem' }}>Deep dive into revenue, geography, and performance trends.</p>
+                <div style={{ textAlign: 'left', marginTop: '32px', marginBottom: '24px' }}>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Insights</h2>
+                  <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>Deep dive into your event activity, revenue, and performance trends.</p>
                 </div>
+                <EventCalendarView />
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
                   <EarningsGrowthChart />
@@ -1478,184 +1480,6 @@ export default function HostDashboard({ onLogout }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
                   <DayOfWeekChart />
                 </div>
-              </div>
-
-              {/* SECTION 2: INSIGHTS (Daily / Weekly / Monthly events) */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                  <div style={{ textAlign: 'left' }}>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Insights</h2>
-                    <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
-                      {insightsView === 'daily'
-                        ? `Events scheduled for today, ${new Date().toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}`
-                        : insightsView === 'monthly'
-                        ? `Upcoming events in ${new Date().toLocaleDateString([], { month: 'long', year: 'numeric' })}`
-                        : `Monday, ${daysOfWeek[0].toLocaleDateString([], {month: 'short', day: 'numeric'})} — Sunday, ${daysOfWeek[6].toLocaleDateString([], {month: 'short', day: 'numeric'})}`}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', background: 'var(--color-surface)', borderRadius: '8px', padding: '4px', border: '1px solid var(--color-border)' }}>
-                    {['daily', 'weekly', 'monthly'].map((v) => (
-                      <button
-                        key={v}
-                        onClick={() => setInsightsView(v)}
-                        style={{ border: 'none', background: insightsView === v ? 'var(--color-primary)' : 'transparent', color: insightsView === v ? '#fff' : 'var(--color-text-muted)', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: insightsView === v ? 'var(--shadow-sm)' : 'none', textTransform: 'capitalize' }}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {insightsView === 'weekly' && (<>
-                <div className="grid-7" style={{ gap: '10px' }}>
-                  {daysOfWeek.map((day, idx) => {
-                    const isToday = day.toDateString() === new Date().toDateString();
-                    const dayEvents = getEventsForDate(day);
-                    const hasEvents = dayEvents.length > 0;
-                    const isSelected = selectedCalendarDate?.toDateString() === day.toDateString();
-                    
-                    return (
-                      <div 
-                        key={idx}
-                        onClick={() => setSelectedCalendarDate(isSelected ? null : day)}
-                        style={{
-                          background: isToday ? 'rgba(31, 58, 99,0.05)' : 'var(--color-surface)',
-                          border: isSelected 
-                            ? '2.5px solid var(--color-primary)' 
-                            : isToday 
-                            ? '1.5px solid var(--color-primary)' 
-                            : '1px solid var(--color-border)',
-                          borderRadius: '12px',
-                          padding: '12px 8px',
-                          cursor: 'pointer',
-                          textAlign: 'center',
-                          transition: 'all 0.2s ease',
-                          minHeight: '110px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          boxShadow: isSelected ? 'var(--shadow-soft)' : 'none'
-                        }}
-                        className="card-hover-lift"
-                      >
-                        <div>
-                          <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                            {day.toLocaleDateString([], { weekday: 'short' })}
-                          </div>
-                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isToday ? 'var(--color-primary)' : 'inherit' }}>
-                            {day.getDate()}
-                          </div>
-                        </div>
-
-                        <div>
-                          {hasEvents ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '1.1rem' }}>🎉</span>
-                              <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 6px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', borderRadius: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {dayEvents[0].title}
-                              </span>
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>No events</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Date click expand drawer */}
-                {selectedCalendarDate && (
-                  <div className="glass-surface" style={{ marginTop: '16px', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'left', animation: 'fadeIn 0.2s ease-in-out' }}>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Schedule for {selectedCalendarDate.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                      <button onClick={() => setSelectedCalendarDate(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={16} /></button>
-                    </h4>
-                    {(() => {
-                      const dayEvents = getEventsForDate(selectedCalendarDate);
-                      if (dayEvents.length === 0) return <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No events scheduled for this day.</p>;
-                      
-                      let dayRevenue = 0;
-                      let dayHeadcount = 0;
-                      dayEvents.forEach(e => {
-                        const rsvps = mockStore.getRSVPs(e.id);
-                        dayHeadcount += rsvps.filter(r => r.status === 'going').length;
-                        if (e.ticketType === 'Paid' && e.ticketPrice) {
-                           dayRevenue += e.ticketPrice * rsvps.filter(r => r.status === 'going').length;
-                        }
-                      });
-
-                      return (
-                        <>
-                          <div style={{ display: 'flex', gap: '24px', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                             <div>
-                               <span className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Total Expected Headcount</span>
-                               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{dayHeadcount} Guests</div>
-                             </div>
-                             <div>
-                               <span className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Total Daily Revenue</span>
-                               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{formatMoney(dayRevenue)}</div>
-                             </div>
-                          </div>
-                          <div className="flex flex-col gap-sm">
-                            {dayEvents.map(evt => {
-                               const rsvps = mockStore.getRSVPs(evt.id);
-                               const going = rsvps.filter(r => r.status === 'going').length;
-                               return (
-                                <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '10px' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <img src={getEventCover(evt)} alt={evt.title} className="thumb-img" />
-                                    <div>
-                                      <h5 style={{ margin: '0 0 2px 0', fontSize: '1rem', fontWeight: 700 }}>{evt.title}</h5>
-                                      <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
-                                        🕒 {evt.time} • 📍 {evt.location.split(',')[0]}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-xs">
-                                    <Button variant="primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { handleManageEvent(evt.id); setSelectedEventTab('guests'); }}>Manage Guests</Button>
-                                    <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => { setBroadcastTarget(evt.id); setShowBroadcastModal(true); }}><Mail size={14}/> Send Broadcast</Button>
-                                  </div>
-                                </div>
-                               );
-                            })}
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
-                </>)}
-
-                {/* DAILY view — events scheduled for today */}
-                {insightsView === 'daily' && (
-                  (() => {
-                    const list = getEventsToday();
-                    return list.length > 0
-                      ? <div className="flex flex-col gap-sm">{list.map(renderInsightEventRow)}</div>
-                      : (
-                        <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
-                          <Calendar size={36} style={{ opacity: 0.3, color: 'var(--color-text-muted)', margin: '0 auto 10px' }} />
-                          <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>No events scheduled for today.</p>
-                        </Card>
-                      );
-                  })()
-                )}
-
-                {/* MONTHLY view — upcoming events this month */}
-                {insightsView === 'monthly' && (
-                  (() => {
-                    const list = getEventsThisMonth();
-                    return list.length > 0
-                      ? <div className="flex flex-col gap-sm">{list.map(renderInsightEventRow)}</div>
-                      : (
-                        <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
-                          <Calendar size={36} style={{ opacity: 0.3, color: 'var(--color-text-muted)', margin: '0 auto 10px' }} />
-                          <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>No more events scheduled this month.</p>
-                        </Card>
-                      );
-                  })()
-                )}
               </div>
 
 
