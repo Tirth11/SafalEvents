@@ -248,10 +248,19 @@ export default function PageShell({ children, headerActions }) {
           )}
         </div>
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile Navigation Drawer — fixed panel + backdrop so it always sits
+            flush under the header regardless of scroll position or sticky/
+            backdrop-filter quirks on mobile browsers. */}
         {!isDashboard && mobileMenuOpen && (
-          <div className="mobile-only" style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--color-bg)', padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 999 }}>
-            
+          <div
+            className="mobile-only"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ position: 'fixed', top: 'var(--header-h)', left: 0, right: 0, bottom: 0, background: 'rgba(8,8,12,0.35)', zIndex: 998 }}
+          />
+        )}
+        {!isDashboard && mobileMenuOpen && (
+          <div className="mobile-only" style={{ position: 'fixed', top: 'var(--header-h)', left: 0, right: 0, background: 'var(--color-bg)', padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 999, boxSizing: 'border-box', maxHeight: 'calc(100vh - var(--header-h))', overflowY: 'auto' }}>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '12px', borderBottom: '1px solid var(--color-border)' }}>
               <Link to="/explore" className="site-nav-link" onClick={() => setMobileMenuOpen(false)} style={{ display: 'block', padding: '8px 0', fontSize: '1.05rem', fontWeight: 600 }}>Explore</Link>
               <Link to="/pricing" className="site-nav-link" onClick={handlePricingClick} style={{ display: 'block', padding: '8px 0', fontSize: '1.05rem', fontWeight: 600 }}>Pricing</Link>

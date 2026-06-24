@@ -171,7 +171,7 @@ const defaultEvents = [
     description: 'Get ready for a night of belly laughs with 5 national touring headliners. Craft beers and cocktails available. Strictly 21+.',
     status: 'Published',
     capacity: 80,
-    cover: 'https://images.unsplash.com/photo-1516280440614-37939bbacd6a?auto=format&fit=crop&w=800&q=80',
+    cover: 'https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=800&q=80',
     theme: 'mesh-gradient-sunset',
     approvalRequired: false,
     questions: [],

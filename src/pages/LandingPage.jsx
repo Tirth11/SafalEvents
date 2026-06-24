@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/Button';
 import PageShell from '../components/PageShell';
-import { AVATARS, EVENT_COVERS, HERO_IMAGES, getAvatar, getEventCover } from '../utils/images';
+import { AVATARS, EVENT_COVERS, HERO_IMAGES, FALLBACK_COVER, getAvatar, getEventCover } from '../utils/images';
 import { mockStore } from '../utils/mockStore';
 import { PricingSection } from './PricingPage';
 
@@ -362,6 +362,7 @@ export default function LandingPage() {
                           <img
                             src={getEventCover(evt)}
                             alt={evt.title}
+                            onError={(e) => { if (e.currentTarget.src !== FALLBACK_COVER) { e.currentTarget.onerror = null; e.currentTarget.src = FALLBACK_COVER; } }}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                           <span

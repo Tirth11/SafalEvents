@@ -67,6 +67,10 @@ export const EVENT_COVERS = {
 // Flat list when you just need "an event photo"
 export const ALL_COVERS = Object.values(EVENT_COVERS).flat();
 
+// Reliable fallback cover for when an event's own image fails to load (e.g. a
+// removed Unsplash URL). Use in an <img onError> handler.
+export const FALLBACK_COVER = u('photo-1470229722913-7c0e2dbbafd3');
+
 // Map an event's eventType / title to a fitting cover. Deterministic per id.
 export function getEventCover(event = {}) {
   if (event.cover) return event.cover;

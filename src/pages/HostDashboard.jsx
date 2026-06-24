@@ -4,8 +4,8 @@ import {
   Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X,
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
-  UserCheck, AlertCircle, Copy, Share2, ArrowRight, DollarSign, Ticket, TrendingUp,
-  MapPin, Eye, Webhook, Compass, Search, Lock, Image, Menu, Upload, Filter, Activity
+  UserCheck, AlertCircle, Copy, Share2, ArrowRight, Ticket, TrendingUp,
+  MapPin, Eye, Webhook, Compass, Search, Lock, Image, Menu, Upload, Filter, Activity, Wallet
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -53,9 +53,13 @@ export default function HostDashboard({ onLogout }) {
   // Collapsible (hamburger) sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Org document upload state (seeded from the persisted user record)
+  // Org document upload state (seeded from the persisted user record).
+  // Items are normalized to { name, url } — url is null for docs submitted at
+  // registration (the mock stores only their names), set for in-session uploads.
   const [orgDocsUploaded, setOrgDocsUploaded] = useState(docsAlreadyVerified);
-  const [uploadedDocuments, setUploadedDocuments] = useState(userRecord?.orgProfile?.docs || []);
+  const [uploadedDocuments, setUploadedDocuments] = useState(
+    (userRecord?.orgProfile?.docs || []).map(d => (typeof d === 'string' ? { name: d, url: null } : d))
+  );
   // Popup auto-appears for not-yet-verified org hosts after login, but is dismissible
   // ("Later") so they can browse the dashboard; any gated action re-opens it.
   const [showOrgDocModal, setShowOrgDocModal] = useState(isOrgHost && !(userRecord?.status === 'ACTIVE' && docsAlreadyVerified));
@@ -80,6 +84,7 @@ export default function HostDashboard({ onLogout }) {
   const [analyticsSearch, setAnalyticsSearch] = useState('');
   const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState('all'); // all | upcoming | past | draft
   const [analyticsSort, setAnalyticsSort] = useState('date'); // date | revenue | guests | fill
+  const [expandedReportId, setExpandedReportId] = useState(null); // which report row has its recent activity expanded
 
   // Messages → optional filter to a single event's conversations (set from an event's Overview)
   const [messageEventFilter, setMessageEventFilter] = useState(null); // event title | null
@@ -169,6 +174,10 @@ export default function HostDashboard({ onLogout }) {
 
   // Calendar Date selection for This Week at a Glance
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+  // Insights timeframe toggle: 'daily' | 'weekly' | 'monthly'
+  const [insightsView, setInsightsView] = useState('weekly');
+  // Host's display currency — earnings can be in any currency (USD, INR, EUR, …)
+  const [hostCurrency, setHostCurrency] = useState(currentUser?.currency || 'USD');
 
   // Guest List checkboxes
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
@@ -279,13 +288,34 @@ export default function HostDashboard({ onLogout }) {
   const handleOrgDocUpload = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
-      setUploadedDocuments([...uploadedDocuments, ...files.map(f => f.name)]);
+      // Read each file as a data URL so it can be viewed via the "See" button.
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setUploadedDocuments(prev => [...prev, { name: file.name, url: reader.result }]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  // Open an uploaded document in a new tab; gracefully handle registration docs
+  // that have no stored binary in this mock (name only).
+  const handleViewDocument = (doc) => {
+    if (doc && doc.url) {
+      const w = window.open();
+      if (w) {
+        w.document.write(`<title>${doc.name}</title><iframe src="${doc.url}" style="border:0;width:100%;height:100%;position:absolute;top:0;left:0"></iframe>`);
+      }
+    } else {
+      alert(`"${doc.name}" was submitted during registration and is on file with Safal Events. Re-upload it here if you need a viewable copy.`);
     }
   };
 
   const handleOrgDocSubmit = () => {
     if (uploadedDocuments.length > 0) {
-      mockStore.saveOrgDocuments(currentUser?.email, uploadedDocuments);
+      // Store only the names (keeps the admin review view + storage contract intact).
+      mockStore.saveOrgDocuments(currentUser?.email, uploadedDocuments.map(d => d.name));
       setOrgDocsUploaded(true);
       setShowOrgDocModal(false);
       alert('Documents submitted! Your organization is now pending Safal Events admin approval — you will be notified once approved.');
@@ -387,14 +417,6 @@ export default function HostDashboard({ onLogout }) {
   const totalRevenueAll = eventReportRows.reduce((s, r) => s + r.revenue, 0);
   const totalViewsAll = eventReportRows.reduce((s, r) => s + r.views, 0);
   const avgFill = eventReportRows.length ? Math.round(eventReportRows.reduce((s, r) => s + r.fill, 0) / eventReportRows.length) : 0;
-  // Chart inputs derived from real event data
-  const topEventsData = eventReportRows
-    .filter(r => r.going > 0 || r.revenue > 0)
-    .map(r => ({ label: r.title, revenue: r.revenue, guests: r.going }));
-  const rsvpIntentData = eventReportRows.reduce(
-    (acc, r) => ({ going: acc.going + r.going, maybe: acc.maybe + r.maybe, declined: acc.declined + r.declined }),
-    { going: 0, maybe: 0, declined: 0 }
-  );
   // Apply the report-history filters + sort
   const filteredReportRows = eventReportRows
     .filter(r => analyticsStatusFilter === 'all' || r.bucket === analyticsStatusFilter)
@@ -405,6 +427,47 @@ export default function HostDashboard({ onLogout }) {
       if (analyticsSort === 'fill') return b.fill - a.fill;
       return new Date(b.date) - new Date(a.date); // date desc
     });
+
+  // Currency-agnostic money formatter — adapts to the host's chosen currency
+  // (USD $, INR ₹, EUR €, …) instead of a hardcoded dollar sign.
+  const formatMoney = (amount) => {
+    const n = Number(amount) || 0;
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: hostCurrency, currencyDisplay: 'narrowSymbol', maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
+    } catch {
+      return n.toLocaleString();
+    }
+  };
+
+  // Relative "x ago" label from a timestamp
+  const timeAgo = (ts) => {
+    if (!ts) return '';
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.round(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
+    const days = Math.round(hrs / 24);
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  };
+
+  // Build a per-event recent-activity feed from that event's real RSVPs + comments
+  const getEventActivity = (eventId) => {
+    const items = [];
+    mockStore.getRSVPs(eventId).forEach(r => {
+      const verb = r.status === 'going' ? "RSVP'd" : r.status === 'maybe' ? 'replied Maybe' : r.status === 'declined' ? 'declined' : 'joined the waitlist';
+      items.push({ type: 'rsvp', icon: 'user', text: `${r.name} ${verb}`, ts: r.timestamp });
+      if (r.checkedIn) items.push({ type: 'checkin', icon: 'check', text: `${r.name} checked in`, ts: r.timestamp });
+    });
+    (mockStore.getComments ? mockStore.getComments(eventId) : []).forEach(c => {
+      items.push({ type: 'comment', icon: 'msg', text: `${c.name} commented: "${c.text}"`, ts: c.timestamp });
+    });
+    return items
+      .filter(i => i.ts)
+      .sort((a, b) => new Date(b.ts) - new Date(a.ts))
+      .slice(0, 5);
+  };
 
   // Unique audience list
   const getAudienceList = () => {
@@ -928,6 +991,45 @@ export default function HostDashboard({ onLogout }) {
     return events.filter(e => e.date === dateString);
   };
 
+  // Events taking place today (Daily insights view)
+  const getEventsToday = () => getEventsForDate(new Date());
+
+  // Events taking place in the rest of the current month, from today onward (Monthly insights view)
+  const getEventsThisMonth = () => {
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0];
+    return events
+      .filter(e => {
+        if (!e.date) return false;
+        const d = new Date(e.date);
+        return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear() && e.date >= todayString;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+
+  // Shared event row used by the Daily / Monthly insights views
+  const renderInsightEventRow = (evt) => {
+    const rsvps = mockStore.getRSVPs(evt.id);
+    const going = rsvps.filter(r => r.status === 'going').length;
+    return (
+      <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '10px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img src={getEventCover(evt)} alt={evt.title} className="thumb-img" />
+          <div>
+            <h5 style={{ margin: '0 0 2px 0', fontSize: '1rem', fontWeight: 700 }}>{evt.title}</h5>
+            <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
+              📅 {new Date(evt.date).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} • 🕒 {evt.time} • 📍 {evt.location ? evt.location.split(',')[0] : '—'} • 👥 {going} going
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-xs">
+          <Button variant="primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { handleManageEvent(evt.id); setSelectedEventTab('guests'); }}>Manage Guests</Button>
+          <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => { setBroadcastTarget(evt.id); setShowBroadcastModal(true); }}><Mail size={14}/> Send Broadcast</Button>
+        </div>
+      </div>
+    );
+  };
+
   // Filter events by deep dive tabs
   const getEventsForTab = (tab) => {
     const today = new Date();
@@ -1001,7 +1103,7 @@ export default function HostDashboard({ onLogout }) {
       setPayoutHistory([newPayout, ...payoutHistory]);
       setAvailableBalance(0);
       setTransferring(false);
-      alert(`🎉 Transfer initiated! $${availableBalance} is being sent to your bank account.`);
+      alert(`🎉 Transfer initiated! ${formatMoney(availableBalance)} is being sent to your bank account.`);
     }, 1500);
   };
 
@@ -1256,10 +1358,10 @@ export default function HostDashboard({ onLogout }) {
                   {/* Card 1: Total Earnings */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-green"><DollarSign size={22} /></div>
+                      <div className="stat-icon-tile stat-icon-green"><Wallet size={22} /></div>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Earnings</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>${availableBalance.toLocaleString()}</p>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{formatMoney(availableBalance)}</p>
                     <button 
                       onClick={() => setActiveSidebar('earnings')}
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
@@ -1311,11 +1413,26 @@ export default function HostDashboard({ onLogout }) {
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Pending Approvals</h3>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalPendingApprovals}</p>
-                    <button 
+                    <button
                       onClick={() => setActiveSidebar('events')}
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
                     >
                       Review guests &rarr;
+                    </button>
+                  </Card>
+
+                  {/* Card 5: Total Page Views */}
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <div className="stat-icon-tile stat-icon-purple"><Eye size={22} /></div>
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Page Views</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalViewsAll.toLocaleString()}</p>
+                    <button
+                      onClick={() => setActiveSidebar('analytics')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      View analytics &rarr;
                     </button>
                   </Card>
 
@@ -1334,22 +1451,33 @@ export default function HostDashboard({ onLogout }) {
                 </div>
               </div>
 
-              {/* SECTION 2: THIS WEEK AT A GLANCE (Calendar) */}
+              {/* SECTION 2: INSIGHTS (Daily / Weekly / Monthly events) */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ textAlign: 'left' }}>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--color-text)' }}>This Week at a Glance</h2>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Insights</h2>
                     <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
-                      Monday, {daysOfWeek[0].toLocaleDateString([], {month: 'short', day: 'numeric'})} &mdash; Sunday, {daysOfWeek[6].toLocaleDateString([], {month: 'short', day: 'numeric'})}
+                      {insightsView === 'daily'
+                        ? `Events scheduled for today, ${new Date().toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}`
+                        : insightsView === 'monthly'
+                        ? `Upcoming events in ${new Date().toLocaleDateString([], { month: 'long', year: 'numeric' })}`
+                        : `Monday, ${daysOfWeek[0].toLocaleDateString([], {month: 'short', day: 'numeric'})} — Sunday, ${daysOfWeek[6].toLocaleDateString([], {month: 'short', day: 'numeric'})}`}
                     </p>
                   </div>
                   <div style={{ display: 'flex', background: 'var(--color-surface)', borderRadius: '8px', padding: '4px', border: '1px solid var(--color-border)' }}>
-                    <button style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>Daily</button>
-                    <button style={{ border: 'none', background: 'var(--color-primary)', color: '#fff', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>Weekly</button>
-                    <button style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>Monthly</button>
+                    {['daily', 'weekly', 'monthly'].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setInsightsView(v)}
+                        style={{ border: 'none', background: insightsView === v ? 'var(--color-primary)' : 'transparent', color: insightsView === v ? '#fff' : 'var(--color-text-muted)', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: insightsView === v ? 'var(--shadow-sm)' : 'none', textTransform: 'capitalize' }}
+                      >
+                        {v}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
+                {insightsView === 'weekly' && (<>
                 <div className="grid-7" style={{ gap: '10px' }}>
                   {daysOfWeek.map((day, idx) => {
                     const isToday = day.toDateString() === new Date().toDateString();
@@ -1437,7 +1565,7 @@ export default function HostDashboard({ onLogout }) {
                              </div>
                              <div>
                                <span className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Total Daily Revenue</span>
-                               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>${dayRevenue.toLocaleString()}</div>
+                               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{formatMoney(dayRevenue)}</div>
                              </div>
                           </div>
                           <div className="flex flex-col gap-sm">
@@ -1468,6 +1596,37 @@ export default function HostDashboard({ onLogout }) {
                     })()}
                   </div>
                 )}
+                </>)}
+
+                {/* DAILY view — events scheduled for today */}
+                {insightsView === 'daily' && (
+                  (() => {
+                    const list = getEventsToday();
+                    return list.length > 0
+                      ? <div className="flex flex-col gap-sm">{list.map(renderInsightEventRow)}</div>
+                      : (
+                        <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
+                          <Calendar size={36} style={{ opacity: 0.3, color: 'var(--color-text-muted)', margin: '0 auto 10px' }} />
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>No events scheduled for today.</p>
+                        </Card>
+                      );
+                  })()
+                )}
+
+                {/* MONTHLY view — upcoming events this month */}
+                {insightsView === 'monthly' && (
+                  (() => {
+                    const list = getEventsThisMonth();
+                    return list.length > 0
+                      ? <div className="flex flex-col gap-sm">{list.map(renderInsightEventRow)}</div>
+                      : (
+                        <Card style={{ padding: '32px', textAlign: 'center' }} className="glass-surface">
+                          <Calendar size={36} style={{ opacity: 0.3, color: 'var(--color-text-muted)', margin: '0 auto 10px' }} />
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>No more events scheduled this month.</p>
+                        </Card>
+                      );
+                  })()
+                )}
               </div>
 
 
@@ -1483,39 +1642,6 @@ export default function HostDashboard({ onLogout }) {
               <div style={{ textAlign: 'left' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.035em' }}>Analytics</h1>
                 <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Everything happening across your events — performance, guests, and a full report history.</p>
-              </div>
-
-              {/* KPI summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-                {[
-                  { icon: <Calendar size={20} />, tile: 'stat-icon-orange', label: 'Events Organised', value: totalEvents },
-                  { icon: <Users size={20} />, tile: 'stat-icon-blue', label: 'Confirmed Guests', value: totalRsvps.toLocaleString() },
-                  { icon: <DollarSign size={20} />, tile: 'stat-icon-green', label: 'Total Revenue', value: `$${totalRevenueAll.toLocaleString()}` },
-                  { icon: <Eye size={20} />, tile: 'stat-icon-purple', label: 'Page Views', value: totalViewsAll.toLocaleString() },
-                  { icon: <TrendingUp size={20} />, tile: 'stat-icon-orange', label: 'Avg. Capacity Filled', value: `${avgFill}%` },
-                ].map((k, i) => (
-                  <Card key={i} style={{ padding: '18px' }} className="glass-surface">
-                    <div className={`stat-icon-tile ${k.tile}`} style={{ marginBottom: '12px' }}>{k.icon}</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1, color: 'var(--color-text)', letterSpacing: '-0.02em' }}>{k.value}</div>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</div>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Performance charts */}
-              <div className="flex flex-col" style={{ gap: '20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
-                  <EarningsGrowthChart />
-                  <RSVPIntentChart data={rsvpIntentData} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
-                  <TopPerformingEventsChart data={topEventsData} />
-                  <ConversionFunnelChart />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
-                  <DayOfWeekChart />
-                  <GuestGeographyChart />
-                </div>
               </div>
 
               {/* Report history — per event, with filters */}
@@ -1566,8 +1692,11 @@ export default function HostDashboard({ onLogout }) {
                       <tbody>
                         {filteredReportRows.map((r) => {
                           const s = { upcoming: { label: 'Upcoming', bg: 'rgba(31,58,99,0.1)', fg: 'var(--color-primary)' }, past: { label: 'Completed', bg: 'rgba(0,200,83,0.12)', fg: '#16a34a' }, draft: { label: 'Draft', bg: 'rgba(107,114,128,0.14)', fg: '#4b5563' } }[r.bucket];
+                          const isExpanded = expandedReportId === r.id;
+                          const activity = isExpanded ? getEventActivity(r.id) : [];
                           return (
-                            <tr key={r.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <React.Fragment key={r.id}>
+                            <tr style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--color-border)', background: isExpanded ? 'var(--color-surface-hover)' : 'transparent' }}>
                               <td style={{ padding: '12px 16px' }}>
                                 <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{r.title}</div>
                                 <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>{r.eventType || 'Event'} · {r.location ? r.location.split(',')[0] : '—'}</div>
@@ -1585,12 +1714,40 @@ export default function HostDashboard({ onLogout }) {
                                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', width: '34px', textAlign: 'right' }}>{r.fill}%</span>
                                 </div>
                               </td>
-                              <td style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>{r.revenue ? `$${r.revenue.toLocaleString()}` : 'Free'}</td>
+                              <td style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>{r.revenue ? formatMoney(r.revenue) : 'Free'}</td>
                               <td style={{ padding: '12px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>{r.rating ? `★ ${r.rating}` : '—'}</td>
-                              <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                              <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                <button onClick={() => setExpandedReportId(isExpanded ? null : r.id)} style={{ border: '1px solid var(--color-border)', background: isExpanded ? 'var(--color-primary)' : 'var(--color-surface)', color: isExpanded ? 'white' : 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.78rem', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap', marginRight: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <Activity size={13} /> {isExpanded ? 'Hide activity' : 'Activity'}
+                                </button>
                                 <button onClick={() => handleManageEvent(r.id)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.78rem', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>View report</button>
                               </td>
                             </tr>
+                            {isExpanded && (
+                              <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-hover)' }}>
+                                <td colSpan={8} style={{ padding: '4px 16px 18px 16px' }}>
+                                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '4px 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Activity size={13} /> Recent activity · {r.title}
+                                  </div>
+                                  {activity.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                      {activity.map((a, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 12px' }}>
+                                          <div className={`stat-icon-tile ${a.icon === 'check' ? 'stat-icon-green' : a.icon === 'msg' ? 'stat-icon-blue' : 'stat-icon-orange'}`} style={{ width: '32px', height: '32px', flexShrink: 0 }}>
+                                            {a.icon === 'check' ? <UserCheck size={16} /> : a.icon === 'msg' ? <MessageSquare size={16} /> : <Users size={16} />}
+                                          </div>
+                                          <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>{a.text}</div>
+                                          <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>{timeAgo(a.ts)}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', padding: '6px 0' }}>No activity recorded for this event yet.</div>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                            </React.Fragment>
                           );
                         })}
                       </tbody>
@@ -1603,67 +1760,6 @@ export default function HostDashboard({ onLogout }) {
                     <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '360px' }}>Try a different search term or status.</p>
                   </div>
                 )}
-              </div>
-
-              {/* Recent activity */}
-              <div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, marginBottom: '4px', textAlign: 'left', letterSpacing: '-0.03em', color: 'var(--color-text)' }}>Recent Activity</h2>
-                <p className="text-muted" style={{ margin: '0 0 16px 0', fontSize: '0.85rem' }}>The latest RSVPs, payments and alerts across all events.</p>
-                <Card style={{ padding: 0, overflow: 'hidden' }} className="glass-surface">
-                  <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                    
-                    {/* Activity Item 1 */}
-                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <img src={getAvatar('sarah@example.com')} alt="Sarah Johnson" className="avatar-img" />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Sarah Johnson RSVP'd for Summer Rooftop Mixer (+2)</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Just now</div>
-                      </div>
-                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => { handleManageEvent('1'); setSelectedEventTab('guests'); }}>View details</Button>
-                    </div>
-
-                    {/* Activity Item 2 */}
-                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <div className="stat-icon-tile stat-icon-blue" style={{ width: '40px', height: '40px' }}><Mail size={18} /></div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>You sent message: "Parking update & venue maps" to 45 guests of Summer Rooftop Mixer</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>5 minutes ago</div>
-                      </div>
-                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => { handleManageEvent('1'); setSelectedEventTab('notifications'); }}>Outbox Logs</Button>
-                    </div>
-
-                    {/* Activity Item 3 */}
-                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <img src={getAvatar('john.smith@example.com')} alt="John Smith" className="avatar-img" />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Ticket Payment received: $60.00 from John Smith</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>12 minutes ago</div>
-                      </div>
-                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => setActiveSidebar('earnings')}>View in earnings</Button>
-                    </div>
-
-                    {/* Activity Item 4 */}
-                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: '1px solid var(--color-border)', alignItems: 'center' }}>
-                      <div className="stat-icon-tile stat-icon-orange" style={{ width: '40px', height: '40px' }}><AlertCircle size={18} /></div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Capacity Alert: Stand-up Comedy Night is currently at 90% capacity</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>1 hour ago</div>
-                      </div>
-                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => handleManageEvent('5')}>Boost promotion</Button>
-                    </div>
-
-                    {/* Activity Item 5 */}
-                    <div style={{ display: 'flex', gap: '16px', padding: '16px 20px', alignItems: 'center' }}>
-                      <img src={getAvatar('priya@example.com')} alt="Priya M." className="avatar-img" />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>New review posted: "Amazing venue!" ⭐⭐⭐⭐⭐ from Priya M.</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>3 hours ago</div>
-                      </div>
-                      <Button variant="ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => { handleManageEvent('4'); setSelectedEventTab('overview'); }}>Read & respond</Button>
-                    </div>
-
-                  </div>
-                </Card>
               </div>
             </div>
           )}
@@ -1883,7 +1979,7 @@ export default function HostDashboard({ onLogout }) {
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--color-surface-hover)', borderRadius: '10px', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
                               {[
                                 { label: 'Going', node: <>{going}<span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}> / {event.capacity}</span></> },
-                                { label: 'Revenue', node: <>{event.ticketPrice ? `$${(going * event.ticketPrice).toLocaleString()}` : 'Free'}</> },
+                                { label: 'Revenue', node: <>{event.ticketPrice ? formatMoney(going * event.ticketPrice) : 'Free'}</> },
                                 { label: 'Rating', node: <>{event.rating ? `★ ${event.rating}` : '—'}</> },
                               ].map((s, i) => (
                                 <div key={s.label} style={{ padding: '12px 14px', borderLeft: i ? '1px solid var(--color-border)' : 'none' }}>
@@ -3484,7 +3580,7 @@ export default function HostDashboard({ onLogout }) {
                 {/* Available balance block */}
                 <Card style={{ padding: '24px', textAlign: 'left' }} className="glass-surface">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-                    <div className="stat-icon-tile stat-icon-green"><DollarSign size={22} /></div>
+                    <div className="stat-icon-tile stat-icon-green"><Wallet size={22} /></div>
                     <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '4px 10px', background: 'rgba(0,200,83,0.12)', color: '#00963f', borderRadius: '20px' }}>
                       Auto-transfers enabled
                     </span>
@@ -3493,7 +3589,7 @@ export default function HostDashboard({ onLogout }) {
                     Available Payout Balance
                   </h3>
                   <p style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 20px 0', lineHeight: 1 }}>
-                    ${availableBalance.toLocaleString()}
+                    {formatMoney(availableBalance)}
                   </p>
                   
                   <Button 
@@ -3502,7 +3598,7 @@ export default function HostDashboard({ onLogout }) {
                     disabled={transferring || availableBalance === 0}
                     style={{ width: '100%', padding: '12px 20px', fontSize: '0.95rem' }}
                   >
-                    {transferring ? 'Connecting to Bank API...' : availableBalance > 0 ? `Transfer $${availableBalance} to Chase Bank` : 'No balance to withdraw'}
+                    {transferring ? 'Connecting to Bank API...' : availableBalance > 0 ? `Transfer ${formatMoney(availableBalance)} to Chase Bank` : 'No balance to withdraw'}
                   </Button>
                 </Card>
 
@@ -3515,14 +3611,14 @@ export default function HostDashboard({ onLogout }) {
                         <strong style={{ fontSize: '0.85rem', display: 'block' }}>Summer Rooftop Mixer Payout</strong>
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Estimated payout date: June 15, 2026</span>
                       </div>
-                      <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>$1,500.00</strong>
+                      <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>{formatMoney(1500)}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                       <div>
                         <strong style={{ fontSize: '0.85rem', display: 'block' }}>Tech Startup Meetup Ticket Sales</strong>
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Estimated payout date: June 22, 2026</span>
                       </div>
-                      <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>$2,750.00</strong>
+                      <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>{formatMoney(2750)}</strong>
                     </div>
                   </div>
                 </Card>
@@ -3914,7 +4010,7 @@ export default function HostDashboard({ onLogout }) {
                     </div>
                   </div>
                 </div>
-                <form onSubmit={(e) => { e.preventDefault(); alert('Profile preferences updated!'); }} className="flex flex-col gap-md">
+                <form onSubmit={(e) => { e.preventDefault(); try { mockStore.setCurrentUser({ ...currentUser, currency: hostCurrency }); } catch (err) { /* no-op */ } alert('Profile preferences updated!'); }} className="flex flex-col gap-md">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Host Display Name</label>
                     <input type="text" defaultValue={currentUser?.name || ''} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
@@ -3927,13 +4023,27 @@ export default function HostDashboard({ onLogout }) {
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Contact Phone</label>
                     <input type="text" defaultValue={currentUser?.phone || ''} placeholder="+1 (555) 000-0000" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
                   </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Payout Currency</label>
+                    <select value={hostCurrency} onChange={(e) => setHostCurrency(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer' }}>
+                      <option value="USD">US Dollar ($)</option>
+                      <option value="INR">Indian Rupee (₹)</option>
+                      <option value="EUR">Euro (€)</option>
+                      <option value="GBP">British Pound (£)</option>
+                      <option value="AED">UAE Dirham (د.إ)</option>
+                      <option value="AUD">Australian Dollar (A$)</option>
+                      <option value="CAD">Canadian Dollar (C$)</option>
+                    </select>
+                    <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.75rem' }}>All earnings and revenue across your dashboard display in this currency. Currently showing {formatMoney(1234)}.</p>
+                  </div>
 
                   <Button variant="primary" type="submit" style={{ marginTop: '10px', alignSelf: 'start' }}>Save Changes</Button>
                 </form>
               </Card>
 
-              {/* ORG DOCUMENT UPLOAD SECTION (only for org hosts) */}
-              {isOrgHost && (
+              {/* ORG DOCUMENT UPLOAD SECTION — always available in Settings so any host
+                  can view documents submitted at registration, upload, or re-submit. */}
+              {!isStaffViewer && (
                 <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left', marginTop: '24px', border: orgDocsUploaded ? '1px solid var(--color-border)' : '2px solid var(--color-primary)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                     <div style={{
@@ -3947,7 +4057,7 @@ export default function HostDashboard({ onLogout }) {
                     <div>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Organization Documents</h4>
                       <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
-                        {userRecord?.status === 'ACTIVE' && orgDocsUploaded ? '✓ Verified by Safal Events' : orgDocsUploaded ? 'Submitted — pending approval' : 'Required for verification'}
+                        {userRecord?.status === 'ACTIVE' && orgDocsUploaded ? '✓ Verified by Safal Events' : orgDocsUploaded ? 'Submitted — pending approval' : isOrgHost ? 'Required for verification' : 'View or upload your organization documents'}
                       </p>
                     </div>
                     {userRecord?.status === 'ACTIVE' && orgDocsUploaded && (
@@ -3961,9 +4071,17 @@ export default function HostDashboard({ onLogout }) {
                     <div style={{ background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', padding: '12px', marginBottom: '14px' }}>
                       <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '6px' }}>Your documents</div>
                       {uploadedDocuments.map((doc, idx) => (
-                        <div key={idx} style={{ fontSize: '0.82rem', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 0' }}>
+                        <div key={idx} style={{ fontSize: '0.82rem', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
                           <Check size={13} color='var(--color-accent)' />
-                          <span style={{ flex: 1 }}>{doc}</span>
+                          <span style={{ flex: 1 }}>{doc.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleViewDocument(doc)}
+                            style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            title="View document"
+                          >
+                            <Eye size={13} /> See
+                          </button>
                           <button
                             type="button"
                             onClick={() => setUploadedDocuments(uploadedDocuments.filter((_, i) => i !== idx))}
@@ -4630,7 +4748,8 @@ export default function HostDashboard({ onLogout }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {uploadedDocuments.map((doc, idx) => (
                       <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Check size={14} color='var(--color-accent)' /> {doc}
+                        <Check size={14} color='var(--color-accent)' /> <span style={{ flex: 1 }}>{doc.name}</span>
+                        <button type="button" onClick={() => handleViewDocument(doc)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Eye size={12} /> See</button>
                       </div>
                     ))}
                   </div>
@@ -4691,7 +4810,8 @@ export default function HostDashboard({ onLogout }) {
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>Submitted documents</div>
                   {uploadedDocuments.map((doc, idx) => (
                     <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Check size={13} color='var(--color-accent)' /> {doc}
+                      <Check size={13} color='var(--color-accent)' /> <span style={{ flex: 1 }}>{doc.name}</span>
+                      <button type="button" onClick={() => handleViewDocument(doc)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Eye size={12} /> See</button>
                     </div>
                   ))}
                 </div>
