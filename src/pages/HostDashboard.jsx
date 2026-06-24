@@ -1289,6 +1289,48 @@ export default function HostDashboard({ onLogout }) {
         {/* Main Content Pane */}
         <main className="dashboard-main">
 
+          {/* PENDING-APPROVAL BANNER — shown on every dashboard page once documents
+              are submitted but Safal Events hasn't approved the organization yet. */}
+          {orgDocsUploaded && userRecord?.status !== 'ACTIVE' && (
+            <div
+              className="animate-fade-in"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
+                padding: '14px 18px', marginBottom: '20px', borderRadius: '12px',
+                border: `1px solid ${userRecord?.status === 'REJECTED' ? 'rgba(239,68,68,0.35)' : 'rgba(217,119,6,0.35)'}`,
+                background: userRecord?.status === 'REJECTED' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.1)',
+              }}
+            >
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                background: userRecord?.status === 'REJECTED' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.18)',
+                color: userRecord?.status === 'REJECTED' ? '#dc2626' : '#b45309',
+              }}>
+                {userRecord?.status === 'REJECTED' ? <AlertCircle size={20} /> : <Clock size={20} />}
+              </div>
+              <div style={{ flex: 1, minWidth: '220px', textAlign: 'left' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: userRecord?.status === 'REJECTED' ? '#b91c1c' : '#92400e' }}>
+                  {userRecord?.status === 'REJECTED' ? 'Verification rejected' : 'Documents under review — pending approval'}
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                  {userRecord?.status === 'REJECTED'
+                    ? 'Your organization documents were not approved. Please re-upload valid documents for review.'
+                    : 'Your documents have been submitted. Hosting is unlocked once a Safal Events admin approves your organization — we’ll notify you by email.'}
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveSidebar('settings')}
+                style={{
+                  border: 'none', borderRadius: '8px', padding: '9px 16px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                  background: userRecord?.status === 'REJECTED' ? '#dc2626' : '#b45309', color: '#fff',
+                }}
+              >
+                {userRecord?.status === 'REJECTED' ? 'Re-upload documents' : 'Review documents'}
+              </button>
+            </div>
+          )}
+
           {/* ========================================================================= */}
           {/* SECTION 1 - 3 & 6: DASHBOARD HOME PAGE                                    */}
           {/* ========================================================================= */}
