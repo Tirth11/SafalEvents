@@ -76,7 +76,7 @@ function EventsVolumeChart() {
 // ----------------------------------------------------------------------------
 // 3. Main Event Activity Calendar Component
 // ----------------------------------------------------------------------------
-export default function EventCalendarView() {
+export default function EventCalendarView({ onManageEvent }) {
   const [view, setView] = useState('monthly');
   const [selectedDay, setSelectedDay] = useState(null);
 
@@ -109,11 +109,16 @@ export default function EventCalendarView() {
           {events.map((e, i) => (
             <div key={i} style={{ display: 'flex', gap: '16px', padding: '12px', background: 'var(--color-surface)', border: `1px solid var(--color-border)`, borderRadius: '8px', borderLeft: `4px solid ${STATUS_COLORS[e.status]}` }}>
               <div style={{ width: '80px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>{e.time}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)' }}>{e.title}</div>
-                <div style={{ fontSize: '0.8rem', color: STATUS_COLORS[e.status], fontWeight: 600, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', background: `${STATUS_COLORS[e.status]}15`, marginTop: '4px' }}>
-                  {e.status}
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)' }}>{e.title}</div>
+                  <div style={{ fontSize: '0.8rem', color: STATUS_COLORS[e.status], fontWeight: 600, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', background: `${STATUS_COLORS[e.status]}15`, marginTop: '4px' }}>
+                    {e.status}
+                  </div>
                 </div>
+                {onManageEvent && (
+                  <button onClick={() => onManageEvent(e.id || '1')} style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Manage Event</button>
+                )}
               </div>
             </div>
           ))}
@@ -287,6 +292,11 @@ export default function EventCalendarView() {
                           <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>{e.title}</div>
                           <div style={{ fontSize: '0.75rem', color: STATUS_COLORS[e.status], fontWeight: 600, marginTop: '2px' }}>{e.status}</div>
                         </div>
+                        {onManageEvent && (
+                          <div style={{ marginLeft: 'auto' }}>
+                            <button onClick={() => { setSelectedDay(null); onManageEvent(e.id || '1'); }} style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Manage</button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

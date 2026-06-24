@@ -1472,7 +1472,7 @@ export default function HostDashboard({ onLogout }) {
                   <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Insights</h2>
                   <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>Deep dive into your event activity, revenue, and performance trends.</p>
                 </div>
-                <EventCalendarView />
+                <EventCalendarView onManageEvent={handleManageEvent} />
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
                   <EarningsGrowthChart />
