@@ -184,6 +184,7 @@ export function EarningsGrowthChart({ data = [] }) {
 // 3. Events Stacked Bar Chart
 export function EventsStackedBarChart({ data = [] }) {
   const [mounted, setMounted] = useState(false);
+  const [timeframe, setTimeframe] = useState('monthly');
   useEffect(() => { const t = setTimeout(() => setMounted(true), 100); return () => clearTimeout(t); }, []);
 
   const sampleData = data.length ? data : [
@@ -199,22 +200,10 @@ export function EventsStackedBarChart({ data = [] }) {
     <Card className="glass-surface" style={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <ChartTitle icon={PieChart} title="RSVP Response Overview" subtitle="Total RSVPs by event" />
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <select style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>
-            <option>Calendar (Date Range)</option>
-            <option>Last 7 Days</option>
-            <option>Last 30 Days</option>
-          </select>
-          <select style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>
-            <option>Event Type</option>
-            <option>Conference</option>
-            <option>Meetup</option>
-          </select>
-          <select style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>
-            <option>Organizer</option>
-            <option>Me</option>
-            <option>My Team</option>
-          </select>
+        <div style={{ display: 'flex', background: 'var(--color-surface-hover)', borderRadius: '8px', padding: '4px' }}>
+          <button onClick={() => setTimeframe('daily')} style={{ border: 'none', background: timeframe === 'daily' ? '#fff' : 'transparent', color: timeframe === 'daily' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'daily' ? 'var(--shadow-sm)' : 'none' }}>Daily</button>
+          <button onClick={() => setTimeframe('weekly')} style={{ border: 'none', background: timeframe === 'weekly' ? '#fff' : 'transparent', color: timeframe === 'weekly' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'weekly' ? 'var(--shadow-sm)' : 'none' }}>Weekly</button>
+          <button onClick={() => setTimeframe('monthly')} style={{ border: 'none', background: timeframe === 'monthly' ? '#fff' : 'transparent', color: timeframe === 'monthly' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'monthly' ? 'var(--shadow-sm)' : 'none' }}>Monthly</button>
         </div>
       </div>
       
