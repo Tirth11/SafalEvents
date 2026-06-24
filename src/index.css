@@ -1726,9 +1726,7 @@ a .event-photo-card:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(to right, rgba(10, 10, 10, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(10, 10, 10, 0.04) 1px, transparent 1px);
+  background-image: none;
   background-size: 46px 46px;
   -webkit-mask-image: radial-gradient(ellipse 78% 70% at 50% 0%, #000 32%, transparent 78%);
           mask-image: radial-gradient(ellipse 78% 70% at 50% 0%, #000 32%, transparent 78%);

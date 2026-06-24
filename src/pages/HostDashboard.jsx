@@ -4,7 +4,7 @@ import {
   Plus, Calendar, Settings, LogOut, Users, ExternalLink, BarChart2, Check, X,
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
-  UserCheck, AlertCircle, Copy, Share2, ArrowRight, Ticket, TrendingUp,
+  UserCheck, AlertCircle, AlertTriangle, Copy, Share2, ArrowRight, Ticket, TrendingUp,
   MapPin, Eye, Webhook, Compass, Search, Lock, Image, Menu, Upload, Filter, Activity, Wallet
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -16,6 +16,7 @@ import DashboardTopBar from '../components/DashboardTopBar';
 import GuestsDirectory from '../components/GuestsDirectory';
 import { GuestGeographyChart, EarningsGrowthChart, EventsStackedBarChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart, AttendanceGapLeaderboard } from '../components/DashboardCharts';
 import EventCalendarView from '../components/EventCalendarView';
+import QRScanFAB from '../components/QRScanFAB';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
@@ -4761,6 +4762,9 @@ export default function HostDashboard({ onLogout }) {
         )}
 
       </div>
+
+      {/* Global QR Scan Floating Action Button */}
+      <QRScanFAB currentUser={currentUser} />
     </PageShell>
   );
 }
