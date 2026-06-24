@@ -258,10 +258,24 @@ export default function AdminDashboard({ onLogout }) {
     return matchesSearch && matchesStatus && matchesHost;
   });
 
+  const dashboardTopBar = (
+    <DashboardTopBar
+      embedded
+      userName={mockStore.getCurrentUser()?.name || 'Super Admin'}
+      roleLabel="Platform Admin"
+      planLabel="Superadmin"
+      planTone="admin"
+      notifCount={0}
+      onBell={() => setActiveTab('overview')}
+      onProfile={() => setActiveTab('settings')}
+      onLogout={onLogout}
+    />
+  );
+
   return (
-    <PageShell>
+    <PageShell headerActions={dashboardTopBar}>
       <div className="dashboard-layout">
-        
+
         {/* ───────── Sidebar Navigation ───────── */}
         <aside className="dashboard-sidebar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '0 4px' }}>
@@ -323,17 +337,6 @@ export default function AdminDashboard({ onLogout }) {
 
         {/* ───────── Main Content Pane ───────── */}
         <main className="dashboard-main">
-
-          <DashboardTopBar
-            userName={mockStore.getCurrentUser()?.name || 'Super Admin'}
-            roleLabel="Platform Admin"
-            planLabel="Superadmin"
-            planTone="admin"
-            notifCount={0}
-            onBell={() => setActiveTab('overview')}
-            onProfile={() => setActiveTab('settings')}
-            onLogout={onLogout}
-          />
 
           {/* ─── Hero header ─── */}
           <div className="page-hero animate-fade-in" style={{ minHeight: '150px', marginBottom: '20px' }}>

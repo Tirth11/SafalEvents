@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, ArrowRight, LayoutDashboard, Menu, X, LogIn, Sparkles, Bell, UserPlus, CheckCircle, CreditCard } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 
-export default function PageShell({ children }) {
+export default function PageShell({ children, headerActions }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
@@ -32,6 +32,11 @@ export default function PageShell({ children }) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // The dashboard portals (host / staff / guest / admin) carry their own sidebar +
+  // top bar, so the global marketing nav (Explore / Pricing / My Dashboard) is
+  // redundant there — show only the brand lockup and drop the footer.
+  const isDashboard = location.pathname === '/dashboard';
+
   const handleLogout = () => {
     mockStore.setCurrentUser({ role: null, name: '', email: '', phone: '' });
     navigate('/');
@@ -50,25 +55,26 @@ export default function PageShell({ children }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
-      <header className="site-header">
-        <div className="container site-header-inner">
+      <header className={`site-header${isDashboard ? ' site-header--dashboard' : ''}`}>
+        <div className={isDashboard ? 'site-header-inner site-header-inner--full' : 'container site-header-inner'}>
           <Link to="/" className="site-logo">
             <img src="/logo-mark.png" alt="SafalEvents logo" style={{ height: '44px', width: '44px', objectFit: 'contain', display: 'block', flexShrink: 0 }} />
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
               <span style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-heading)', letterSpacing: '-0.3px' }}>
                 <span style={{ color: '#1F3A63' }}>Safal</span><span style={{ color: '#C28C32' }}>Events</span>
               </span>
-              <span style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.2px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                 Creating Successful Moments
               </span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
+          {!isDashboard && (
           <nav className="site-nav site-nav-desktop">
             <Link to="/explore" className="site-nav-link">Explore</Link>
             <Link to="/pricing" className="site-nav-link" onClick={handlePricingClick}>Pricing</Link>
-            {currentUser && currentUser.role && location.pathname !== '/' ? (
+            {currentUser && currentUser.role && location.pathname !== '/' && !location.pathname.startsWith('/login') ? (
               <>
                 {currentUser.role === 'host' && (
                   <div style={{ position: 'relative' }}>
@@ -145,7 +151,7 @@ export default function PageShell({ children }) {
                                   gap: '8px',
                                   padding: '8px',
                                   borderRadius: '8px',
-                                  background: notif.read ? 'transparent' : 'rgba(255,107,53,0.05)',
+                                  background: notif.read ? 'transparent' : 'rgba(31, 58, 99,0.05)',
                                   fontSize: '0.8rem',
                                   transition: 'background-color 0.2s',
                                   alignItems: 'flex-start',
@@ -155,7 +161,7 @@ export default function PageShell({ children }) {
                                 <div style={{
                                   padding: '4px',
                                   borderRadius: '50%',
-                                  background: notif.type === 'rsvp' ? 'rgba(255,107,53,0.1)' : notif.type === 'payment' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                                  background: notif.type === 'rsvp' ? 'rgba(31, 58, 99,0.1)' : notif.type === 'payment' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
                                   color: notif.type === 'rsvp' ? 'var(--color-primary)' : notif.type === 'payment' ? '#16a34a' : '#ca8a04',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -196,23 +202,6 @@ export default function PageShell({ children }) {
                 <Link to="/dashboard" className="dashboard-pill">
                   <LayoutDashboard size={14} /> My Dashboard
                 </Link>
-                <button
-                  onClick={handleLogout}
-                  type="button"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--color-text-muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                  }}
-                >
-                  <LogOut size={14} /> Log out
-                </button>
               </>
             ) : (
               <>
@@ -225,8 +214,10 @@ export default function PageShell({ children }) {
               </>
             )}
           </nav>
+          )}
 
           {/* Mobile Menu Button */}
+          {!isDashboard && (
           <div className="mobile-only" style={{ gap: '8px' }}>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -246,10 +237,19 @@ export default function PageShell({ children }) {
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
+          )}
+
+          {/* On the dashboard portal the single top bar carries the account cluster
+              (plan · notifications · profile + org · logout) on the right. */}
+          {isDashboard && headerActions && (
+            <div className="dashboard-header-actions" style={{ display: 'flex', alignItems: 'center' }}>
+              {headerActions}
+            </div>
+          )}
         </div>
 
         {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
+        {!isDashboard && mobileMenuOpen && (
           <div className="mobile-only" style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--color-bg)', padding: 'var(--spacing-md)', borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)', display: 'flex', flexDirection: 'column', gap: '16px', zIndex: 999 }}>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '12px', borderBottom: '1px solid var(--color-border)' }}>
@@ -257,32 +257,11 @@ export default function PageShell({ children }) {
               <Link to="/pricing" className="site-nav-link" onClick={handlePricingClick} style={{ display: 'block', padding: '8px 0', fontSize: '1.05rem', fontWeight: 600 }}>Pricing</Link>
             </div>
 
-            {currentUser && location.pathname !== '/' ? (
+            {currentUser && location.pathname !== '/' && !location.pathname.startsWith('/login') ? (
               <>
-                {currentUser.role === 'host' && (
-                  <Link to="/dashboard" className="dashboard-pill" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', width: 'fit-content' }}>
-                    <LayoutDashboard size={16} /> My Dashboard
-                  </Link>
-                )}
-                <button
-                  onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                  type="button"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#dc2626',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    padding: '8px 0',
-                    textAlign: 'left'
-                  }}
-                >
-                  <LogOut size={18} /> Log out
-                </button>
+                <Link to="/dashboard" className="dashboard-pill" onClick={() => setMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', width: 'fit-content' }}>
+                  <LayoutDashboard size={16} /> My Dashboard
+                </Link>
               </>
             ) : (
               <>
@@ -302,17 +281,19 @@ export default function PageShell({ children }) {
         {children}
       </main>
 
-      <footer className="site-footer">
-        <div className="container site-footer-inner">
-          <div>
-            <strong>© {new Date().getFullYear()} Safalvir Inc.</strong> All rights reserved.
+      {location.pathname !== '/' && !isDashboard && (
+        <footer className="site-footer">
+          <div className="container site-footer-inner">
+            <div>
+              <strong>© 2026 SafalVir Inc.</strong> All rights reserved.
+            </div>
+            <div className="site-footer-links">
+              <Link to="/terms" className="site-nav-link">Terms</Link>
+              <Link to="/privacy" className="site-nav-link">Privacy</Link>
+            </div>
           </div>
-          <div className="site-footer-links">
-            <Link to="/terms" className="site-nav-link">Terms</Link>
-            <Link to="/privacy" className="site-nav-link">Privacy</Link>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

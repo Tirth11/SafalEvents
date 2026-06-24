@@ -3,7 +3,7 @@ import React from 'react';
 export default function FormField({
   label,
   hint,
-  optional = true,
+  optional = false,
   children,
   className = '',
 }) {

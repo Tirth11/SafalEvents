@@ -704,20 +704,23 @@ export function PricingSection() {
 
   return (
     
-      <div className="mesh-bg" style={{ minHeight: '100vh', paddingBottom: 'var(--spacing-xl)' }}>
+      <div style={{ background: 'transparent', paddingBottom: 'var(--spacing-xl)' }}>
         <div className="container animate-fade-in" style={{ maxWidth: '1200px', paddingTop: 'var(--spacing-xl)' }}>
 
           {/* Hero Section */}
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <h1 style={{
-              fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 900, fontFamily: 'var(--font-heading)',
-              lineHeight: 1.1, margin: '16px 0 12px',
-              background: 'linear-gradient(135deg, var(--color-text), var(--color-primary))',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '48px', textAlign: 'center' }}>
+            <h2 style={{
+              fontSize: 'clamp(1.7rem, 3.4vw, 2.3rem)',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              color: 'var(--color-text)',
+              margin: 0,
+              lineHeight: 1.1,
+              textAlign: 'center',
             }}>
               Plans that grow with you
-            </h1>
-            <p className="text-muted" style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 32px', lineHeight: 1.6 }}>
+            </h2>
+            <p className="text-muted" style={{ fontSize: '1.05rem', maxWidth: '560px', margin: '0', lineHeight: 1.55, textAlign: 'center' }}>
               Start free, scale effortlessly. Whether you're hosting a birthday party or managing corporate conferences — there's a plan for you.
             </p>
 
@@ -884,11 +887,11 @@ export function PricingSection() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                    <th style={{ padding: '14px 16px', textAlign: 'left', fontWeight: 700, position: 'sticky', left: 0, background: 'var(--color-bg)', zIndex: 1 }}>Feature</th>
+                    <th style={{ padding: '14px 16px', textAlign: 'left', fontWeight: 700, position: 'sticky', left: 0, background: 'var(--color-surface)', zIndex: 1 }}>Feature</th>
                     {plans.map(p => (
                       <th key={p.id} style={{
                         padding: '14px 12px', textAlign: 'center', fontWeight: 700,
-                        background: p.popular ? 'rgba(255,107,53,0.04)' : 'transparent',
+                        background: p.popular ? 'rgba(31, 58, 99,0.04)' : 'transparent',
                         minWidth: '120px'
                       }}>
                         {p.name}
@@ -899,11 +902,11 @@ export function PricingSection() {
                 <tbody>
                   {featureKeys.map((fk, i) => (
                     <tr key={fk} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)' }}>
-                      <td style={{ padding: '10px 16px', fontWeight: 600, color: 'var(--color-text-muted)', position: 'sticky', left: 0, background: i % 2 === 0 ? 'var(--color-bg)' : '#fafbfc', zIndex: 1 }}>{fk}</td>
+                      <td style={{ padding: '10px 16px', fontWeight: 600, color: 'var(--color-text-muted)', position: 'sticky', left: 0, background: i % 2 === 0 ? 'var(--color-surface)' : '#fafbfc', zIndex: 1 }}>{fk}</td>
                       {plans.map(p => (
                         <td key={p.id} style={{
                           padding: '10px 12px', textAlign: 'center',
-                          background: p.popular ? 'rgba(255,107,53,0.02)' : 'transparent'
+                          background: p.popular ? 'rgba(31, 58, 99,0.02)' : 'transparent'
                         }}>
                           {renderFeatureValue(p.features[fk])}
                         </td>
@@ -938,7 +941,7 @@ export function PricingSection() {
                 <Card key={i} className="card-hover-lift" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <span style={{
                     width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.5rem', background: 'rgba(255,107,53,0.08)', flexShrink: 0
+                    fontSize: '1.5rem', background: 'rgba(31, 58, 99,0.08)', flexShrink: 0
                   }}>
                     {tu.icon}
                   </span>

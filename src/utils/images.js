@@ -87,6 +87,9 @@ export const HERO_IMAGES = {
   landing: '/hero_mockup.jpg', // local hero image
   crowd: u('photo-1511795409834-ef04bbd61622', 1600), // elegant dinner party
   hosting: u('photo-1475721027785-f74eccf877e2', 1200), // speaker on stage
+  dashboard: u('photo-1492684223066-81342ee5ff30', 1400), // confetti celebration (host dashboard banner)
+  celebration: u('photo-1530103862676-de8c9debad1d', 1400), // sparkler night party
+  festival: u('photo-1514525253161-7a46d19cd819', 1400), // concert / festival crowd
   toast: u('photo-1543007630-9710e4a00a20', 1200), // friends toasting
   loginSide: u('photo-1530023367847-a683933f4172', 1200), // sparkler celebration
   adminOps: u('photo-1551434678-e076c223a692', 1200), // team at work

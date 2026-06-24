@@ -228,7 +228,7 @@ export default function CreateEvent() {
                     background: done ? 'var(--color-accent)' : current ? 'var(--color-primary)' : 'var(--color-surface)',
                     color: done || current ? '#fff' : 'var(--color-text-muted)',
                     border: done || current ? 'none' : '2px solid var(--color-border)',
-                    boxShadow: current ? '0 4px 12px rgba(255,107,53,0.35)' : 'none'
+                    boxShadow: current ? '0 4px 12px rgba(31, 58, 99,0.35)' : 'none'
                   }}>
                     {done ? <Check size={16} strokeWidth={3} /> : s.n}
                   </div>
@@ -307,7 +307,7 @@ export default function CreateEvent() {
                         cursor: 'pointer',
                         textAlign: 'center',
                         transition: 'transform 0.15s, box-shadow 0.15s',
-                        boxShadow: formData.theme === t.id ? '0 6px 16px rgba(255,107,53,0.25)' : 'var(--shadow-sm)'
+                        boxShadow: formData.theme === t.id ? '0 6px 16px rgba(31, 58, 99,0.25)' : 'var(--shadow-sm)'
                       }}
                     >
                       {formData.theme === t.id && (
@@ -351,7 +351,7 @@ export default function CreateEvent() {
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                                 border: selected ? '3px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                boxShadow: selected ? '0 4px 12px rgba(255,107,53,0.3)' : 'var(--shadow-sm)',
+                                boxShadow: selected ? '0 4px 12px rgba(31, 58, 99,0.3)' : 'var(--shadow-sm)',
                                 transition: 'transform 0.15s, box-shadow 0.15s',
                                 background: 'var(--color-surface-hover)'
                               }}
@@ -494,7 +494,7 @@ export default function CreateEvent() {
               </div>
 
               {formData.privacy === 'Private' && (
-                <div style={{ background: 'rgba(255,107,53,0.05)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 'var(--radius-md)', padding: '14px' }}>
+                <div style={{ background: 'rgba(31, 58, 99,0.05)', border: '1px solid rgba(31, 58, 99,0.2)', borderRadius: 'var(--radius-md)', padding: '14px' }}>
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><Shield size={14} className="text-primary" /> Private Event — Share Link</h4>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                     <input readOnly value={`${window.location.origin}/e/[event-id]`} style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem', background: 'var(--color-surface)', color: 'var(--color-text-muted)' }} />
@@ -552,7 +552,7 @@ export default function CreateEvent() {
                           style={{
                             padding: '4px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer',
                             border: formData.minimumAge === a ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                            background: formData.minimumAge === a ? 'rgba(255,107,53,0.1)' : 'var(--color-surface)',
+                            background: formData.minimumAge === a ? 'rgba(31, 58, 99,0.1)' : 'var(--color-surface)',
                             color: formData.minimumAge === a ? 'var(--color-primary)' : 'var(--color-text-muted)'
                           }}
                         >
@@ -928,10 +928,10 @@ export default function CreateEvent() {
 
               {/* Date / time / location chips */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,107,53,0.08)', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 600, padding: '6px 12px', borderRadius: '999px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(31, 58, 99,0.08)', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 600, padding: '6px 12px', borderRadius: '999px' }}>
                   <Calendar size={13} /> {previewDateChip}
                 </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,107,53,0.08)', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 600, padding: '6px 12px', borderRadius: '999px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(31, 58, 99,0.08)', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 600, padding: '6px 12px', borderRadius: '999px' }}>
                   <Clock size={13} /> {formData.time || 'Time TBD'}
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,200,83,0.1)', color: '#00913d', fontSize: '0.75rem', fontWeight: 600, padding: '6px 12px', borderRadius: '999px', maxWidth: '100%' }}>
@@ -998,7 +998,7 @@ export default function CreateEvent() {
 
                 {formData.rsvpStatus === 'Open' ? (
                   <div className="flex gap-xs justify-center" style={{ marginBottom: '12px' }}>
-                    <button type="button" style={{ pointerEvents: 'none', padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '999px', border: 'none', background: 'var(--color-primary)', color: '#fff', boxShadow: '0 4px 12px rgba(255,107,53,0.3)' }}>Going 🎉</button>
+                    <button type="button" style={{ pointerEvents: 'none', padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '999px', border: 'none', background: 'var(--color-primary)', color: '#fff', boxShadow: '0 4px 12px rgba(31, 58, 99,0.3)' }}>Going 🎉</button>
                     <button type="button" style={{ pointerEvents: 'none', padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>Maybe</button>
                     <button type="button" style={{ pointerEvents: 'none', padding: '8px 16px', fontSize: '0.85rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>No</button>
                   </div>

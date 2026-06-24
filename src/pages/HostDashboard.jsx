@@ -5,7 +5,7 @@ import {
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
   UserCheck, AlertCircle, Copy, Share2, ArrowRight, DollarSign, Ticket, TrendingUp,
-  MapPin, Eye, Webhook, Compass, Search, Lock, Image
+  MapPin, Eye, Webhook, Compass, Search, Lock, Image, Menu, Upload, Filter, Activity
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -13,7 +13,7 @@ import PageShell from '../components/PageShell';
 import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import DashboardTopBar from '../components/DashboardTopBar';
-import DashboardCharts from '../components/DashboardCharts';
+import { GuestGeographyChart, EarningsGrowthChart, RSVPIntentChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart } from '../components/DashboardCharts';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
@@ -27,6 +27,11 @@ export default function HostDashboard({ onLogout }) {
   const userRecord = mockStore.getUsers().find(u => u.email === currentUser?.email) || null;
   const isOrgHost = (currentUser?.hostType || userRecord?.hostType) === 'organization';
   const docsAlreadyVerified = !!userRecord?.orgDocsUploaded;
+
+  // Resolve the host's display identity for the sidebar title + top-bar profile.
+  // Org hosts → organisation name; individual hosts → their own name.
+  const orgNameResolved = userRecord?.orgProfile?.orgName || currentUser?.orgProfile?.orgName || currentUser?.orgName || 'Organization';
+  const hostDisplayName = isOrgHost ? orgNameResolved : (currentUser?.name || userRecord?.name || 'Host');
 
   // UC-08: a staff member sees a permission-limited version of the portal,
   // scoped to only the events they have been added to.
@@ -43,6 +48,10 @@ export default function HostDashboard({ onLogout }) {
 
   // Navigation: dashboard, events, earnings, messages, audience, settings
   const [activeSidebar, setActiveSidebar] = useState(currentUser?.role === 'staff' ? 'events' : 'dashboard');
+  // Help / Quick Resources flyout (opened from the sidebar Help button)
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  // Collapsible (hamburger) sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Org document upload state (seeded from the persisted user record)
   const [orgDocsUploaded, setOrgDocsUploaded] = useState(docsAlreadyVerified);
@@ -66,6 +75,41 @@ export default function HostDashboard({ onLogout }) {
   // My Events search & filter
   const [eventSearch, setEventSearch] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState('');
+
+  // Analytics → report-history filters
+  const [analyticsSearch, setAnalyticsSearch] = useState('');
+  const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState('all'); // all | upcoming | past | draft
+  const [analyticsSort, setAnalyticsSort] = useState('date'); // date | revenue | guests | fill
+
+  // Messages → optional filter to a single event's conversations (set from an event's Overview)
+  const [messageEventFilter, setMessageEventFilter] = useState(null); // event title | null
+
+  // Host's own profile avatar — null until they upload one (no default image)
+  const [profileAvatar, setProfileAvatar] = useState(currentUser?.avatar || userRecord?.avatar || null);
+
+  // Top-bar notifications dropdown data
+  const [hostNotifs, setHostNotifs] = useState(() => {
+    try { return mockStore.getHostNotifications() || []; } catch (e) { return []; }
+  });
+  const handleMarkAllNotifsRead = () => {
+    try { mockStore.markHostNotificationsRead(); } catch (e) { /* no-op */ }
+    try { setHostNotifs(mockStore.getHostNotifications() || []); } catch (e) { setHostNotifs([]); }
+  };
+  // Read an uploaded image file as a data URL and store it as the profile avatar
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      setProfileAvatar(dataUrl);
+      try { mockStore.setCurrentUser({ ...currentUser, avatar: dataUrl }); } catch (err) { /* no-op */ }
+    };
+    reader.readAsDataURL(file);
+  };
+  // Host initials for the placeholder avatar (shown until an image is uploaded)
+  const hostInitials = (currentUser?.name || hostDisplayName || 'H')
+    .split(' ').filter(Boolean).map(s => s[0]).slice(0, 2).join('').toUpperCase() || 'H';
 
   // State for events, RSVPs, global stats
   const [events, setEvents] = useState([]);
@@ -314,11 +358,53 @@ export default function HostDashboard({ onLogout }) {
   // Calculate total RSVPs across all events
   let totalRsvps = 0;
   let totalViews = 0;
+  let totalPendingApprovals = 0;
   events.forEach(e => {
     const rsvps = mockStore.getRSVPs(e.id);
     totalRsvps += rsvps.filter(r => r.status === 'going').length;
+    totalPendingApprovals += rsvps.filter(r => r.approvalState === 'UNDER_APPROVAL').length;
     totalViews += mockStore.getViews(e.id);
   });
+  
+  const unreadMessagesCount = conversations.filter(c => c.unread).length;
+
+  // ── Analytics: one normalized report row per event the host has organised ──
+  const now = new Date();
+  const eventReportRows = events.map(e => {
+    const rsvps = mockStore.getRSVPs(e.id);
+    const going = rsvps.filter(r => r.status === 'going').length;
+    const maybe = rsvps.filter(r => r.status === 'maybe').length;
+    const declined = rsvps.filter(r => r.status === 'declined').length;
+    const waitlist = rsvps.filter(r => r.status === 'waitlist').length;
+    const views = mockStore.getViews(e.id);
+    const revenue = e.ticketPrice ? going * e.ticketPrice : 0;
+    const fill = e.capacity ? Math.min(100, Math.round((going / e.capacity) * 100)) : 0;
+    const isDraft = e.status === 'Draft';
+    const isPast = !isDraft && new Date(e.date) < now;
+    const bucket = isDraft ? 'draft' : isPast ? 'past' : 'upcoming';
+    return { ...e, going, maybe, declined, waitlist, views, revenue, fill, isPast, isDraft, bucket, totalRsvps: going + maybe + declined };
+  });
+  const totalRevenueAll = eventReportRows.reduce((s, r) => s + r.revenue, 0);
+  const totalViewsAll = eventReportRows.reduce((s, r) => s + r.views, 0);
+  const avgFill = eventReportRows.length ? Math.round(eventReportRows.reduce((s, r) => s + r.fill, 0) / eventReportRows.length) : 0;
+  // Chart inputs derived from real event data
+  const topEventsData = eventReportRows
+    .filter(r => r.going > 0 || r.revenue > 0)
+    .map(r => ({ label: r.title, revenue: r.revenue, guests: r.going }));
+  const rsvpIntentData = eventReportRows.reduce(
+    (acc, r) => ({ going: acc.going + r.going, maybe: acc.maybe + r.maybe, declined: acc.declined + r.declined }),
+    { going: 0, maybe: 0, declined: 0 }
+  );
+  // Apply the report-history filters + sort
+  const filteredReportRows = eventReportRows
+    .filter(r => analyticsStatusFilter === 'all' || r.bucket === analyticsStatusFilter)
+    .filter(r => !analyticsSearch || `${r.title} ${r.eventType || ''} ${r.location || ''}`.toLowerCase().includes(analyticsSearch.toLowerCase()))
+    .sort((a, b) => {
+      if (analyticsSort === 'revenue') return b.revenue - a.revenue;
+      if (analyticsSort === 'guests') return b.going - a.going;
+      if (analyticsSort === 'fill') return b.fill - a.fill;
+      return new Date(b.date) - new Date(a.date); // date desc
+    });
 
   // Unique audience list
   const getAudienceList = () => {
@@ -991,17 +1077,39 @@ export default function HostDashboard({ onLogout }) {
     handleExportCSV(managedEvent, selectedRsvps);
   };
 
+  // Sidebar navigation, grouped into sections for a compact, organised left rail
+  const navGroups = [
+    { label: null, items: [{ key: 'dashboard', icon: <Compass size={18} />, label: 'Dashboard', staff: false }] },
+    { label: 'Manage', items: [
+      { key: 'events', icon: <Calendar size={18} />, label: 'My Events', staff: true },
+      { key: 'messages', icon: <MessageSquare size={18} />, label: 'Messages', staff: true, badge: true },
+      { key: 'audience', icon: <Users size={18} />, label: 'Guests', staff: false },
+    ] },
+    { label: 'Grow', items: [
+      { key: 'analytics', icon: <BarChart2 size={18} />, label: 'Analytics', staff: false },
+      { key: 'earnings', icon: <CreditCard size={18} />, label: 'Earnings', staff: false },
+      { key: 'integrations', icon: <Webhook size={18} />, label: 'Integration', staff: false },
+    ] },
+    { label: 'Account', items: [
+      { key: 'billing', icon: <Ticket size={18} />, label: 'Billing & Plans', staff: false },
+      { key: 'settings', icon: <Settings size={18} />, label: 'Settings', staff: false },
+    ] },
+  ];
+
   // Single top navbar account cluster — rendered on the right of the global header.
   const dashboardTopBar = (
     <DashboardTopBar
       embedded
       userName={currentUser?.name}
-      orgName={isOrgHost ? (userRecord?.orgProfile?.orgName || currentUser?.orgName || 'Organization') : null}
+      orgName={isOrgHost ? orgNameResolved : null}
       roleLabel={isStaffViewer ? 'Staff' : (isOrgHost ? 'Organization Host' : 'Individual Host')}
       planLabel={topbarPlanLabel}
       planTone={topbarPlanTone}
-      notifCount={topbarNotif}
-      onBell={() => setActiveSidebar(isStaffViewer ? 'events' : 'messages')}
+      notifCount={hostNotifs.filter(n => !n.read).length}
+      notifications={hostNotifs}
+      onMarkAllRead={handleMarkAllNotifsRead}
+      avatarUrl={profileAvatar}
+      initials={hostInitials}
       onProfile={() => setActiveSidebar(isStaffViewer ? 'events' : 'settings')}
       onPlan={() => setActiveSidebar(isStaffViewer ? 'events' : 'billing')}
       onLogout={onLogout}
@@ -1012,94 +1120,68 @@ export default function HostDashboard({ onLogout }) {
     <PageShell headerActions={dashboardTopBar}>
       <div className="dashboard-layout">
         {/* Sidebar */}
-        <aside className="dashboard-sidebar">
-          <div className="dashboard-sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.4rem' }}>{isStaffViewer ? '🛠️' : '👑'}</span> {isStaffViewer ? 'Team Portal' : 'Host Portal'}
+        <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="dashboard-sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between' }}>
+            <span className="nav-label" style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+              {profileAvatar ? (
+                <img src={profileAvatar} alt="" style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              ) : (
+                <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(31,58,99,0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.76rem', fontWeight: 800, flexShrink: 0 }}>{hostInitials}</span>
+              )}
+              <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.2 }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {isStaffViewer ? 'Assigned Events' : hostDisplayName}
+                </span>
+                <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                  {isStaffViewer ? 'Team Portal' : (isOrgHost ? 'Organization' : 'Host')}
+                </span>
+              </span>
+            </span>
+            <button
+              onClick={() => setSidebarCollapsed(v => !v)}
+              aria-label="Toggle menu"
+              title="Toggle menu"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)', padding: '6px', borderRadius: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Menu size={20} />
+            </button>
           </div>
 
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-            {!isStaffViewer && (
-            <button
-              onClick={() => { setActiveSidebar('dashboard'); setSelectedEventId(null); }}
-              className={`dashboard-nav-btn ${activeSidebar === 'dashboard' ? 'active' : ''}`}
-            >
-              <Compass size={18} /> Dashboard
-            </button>
-            )}
-
-            <button
-              onClick={() => { setActiveSidebar('events'); setSelectedEventId(null); }} 
-              className={`dashboard-nav-btn ${activeSidebar === 'events' ? 'active' : ''}`}
-            >
-              <Calendar size={18} /> My Events
-            </button>
-            
-            {!isStaffViewer && (
-            <button
-              onClick={() => { setActiveSidebar('earnings'); setSelectedEventId(null); }}
-              className={`dashboard-nav-btn ${activeSidebar === 'earnings' ? 'active' : ''}`}
-            >
-              <CreditCard size={18} /> Earnings
-            </button>
-            )}
-
-            {!isStaffViewer && (
-            <button
-              onClick={() => { setActiveSidebar('billing'); setSelectedEventId(null); }}
-              className={`dashboard-nav-btn ${activeSidebar === 'billing' ? 'active' : ''}`}
-            >
-              <Ticket size={18} /> Billing & Plans
-            </button>
-            )}
-
-            <button
-              onClick={() => { setActiveSidebar('messages'); setSelectedEventId(null); }}
-              className={`dashboard-nav-btn ${activeSidebar === 'messages' ? 'active' : ''}`}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-            >
-              <div className="flex items-center gap-sm">
-                <MessageSquare size={18} /> Messages
-              </div>
-              {conversations.some(c => c.unread) && (
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff3b30' }} />
-              )}
-            </button>
-
-            {!isStaffViewer && (
-            <button
-              onClick={() => { setActiveSidebar('audience'); setSelectedEventId(null); }}
-              className={`dashboard-nav-btn ${activeSidebar === 'audience' ? 'active' : ''}`}
-            >
-              <Users size={18} /> Audience
-            </button>
-            )}
-
-            {!isStaffViewer && (
-            <button
-              onClick={() => { setActiveSidebar('settings'); setSelectedEventId(null); }}
-              className={`dashboard-nav-btn ${activeSidebar === 'settings' ? 'active' : ''}`}
-            >
-              <Settings size={18} /> Settings
-            </button>
-            )}
-
-            {!isStaffViewer && (
-            <button
-              onClick={() => { setActiveSidebar('integrations'); setSelectedEventId(null); }}
-              className={`dashboard-nav-btn ${activeSidebar === 'integrations' ? 'active' : ''}`}
-            >
-              <Webhook size={18} /> Integrations
-            </button>
-            )}
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            {navGroups.map((g, gi) => {
+              const items = g.items.filter(it => !isStaffViewer || it.staff);
+              if (!items.length) return null;
+              return (
+                <div key={gi} style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                  {g.label && (
+                    <div className="nav-label nav-section-label">{g.label}</div>
+                  )}
+                  {items.map(it => (
+                    <button
+                      key={it.key}
+                      onClick={() => { setActiveSidebar(it.key); setSelectedEventId(null); setMessageEventFilter(null); }}
+                      className={`dashboard-nav-btn ${activeSidebar === it.key ? 'active' : ''}`}
+                      title={it.label}
+                    >
+                      {it.icon} <span className="nav-label">{it.label}</span>
+                      {it.badge && conversations.some(c => c.unread) && (
+                        <span style={{ position: 'absolute', top: '9px', right: '11px', width: '7px', height: '7px', borderRadius: '50%', background: '#ff3b30' }} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
           </nav>
 
-          <button 
-            onClick={onLogout} 
-            className="dashboard-nav-btn"
-            style={{ marginTop: 'auto', border: '1px solid var(--color-border)' }}
-          >
-            <LogOut size={18} /> Log Out
-          </button>
+          <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <button onClick={() => setShowHelpModal(true)} className="dashboard-nav-btn" title="Help & Resources">
+              <HelpCircle size={18} /> <span className="nav-label">Help &amp; Resources</span>
+            </button>
+            <button onClick={onLogout} className="dashboard-nav-btn" title="Log Out" style={{ color: '#ef4444' }}>
+              <LogOut size={18} /> <span className="nav-label">Log Out</span>
+            </button>
+          </div>
         </aside>
 
         {/* Main Content Pane */}
@@ -1112,69 +1194,69 @@ export default function HostDashboard({ onLogout }) {
             <div className="flex flex-col gap-xl">
               
               {/* SECTION 1: WELCOME HERO BANNER */}
-              <div className="page-hero animate-fade-in" style={{ padding: '32px', minHeight: '260px' }}>
-                <img src={HERO_IMAGES.hosting} alt="Host on stage" className="page-hero-img" />
-                <div className="page-hero-overlay" />
-                <div className="page-hero-content" style={{ width: '100%', textAlign: 'left' }}>
-                  <div className="flex justify-between items-end" style={{ flexWrap: 'wrap', gap: '20px', width: '100%' }}>
-                    <div>
-                      <div className="flex items-center gap-sm" style={{ marginBottom: '10px' }}>
-                        <img src={getAvatar(currentUser?.email || currentUser?.name || 'Host')} alt={currentUser?.name || 'Host'} className="avatar-img" />
-                        <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Host Portal</span>
+              <div className="page-hero animate-fade-in" style={{ padding: '48px 40px', minHeight: '300px', borderRadius: '16px', marginBottom: '8px' }}>
+                <img src={HERO_IMAGES.dashboard} alt="Celebration confetti" className="page-hero-img" style={{ objectPosition: 'center 30%' }} />
+                <div className="page-hero-overlay" style={{ background: 'linear-gradient(90deg, rgba(10,37,64,0.95) 0%, rgba(10,37,64,0.7) 100%)' }} />
+                <div className="page-hero-content" style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div className="flex justify-between items-center" style={{ flexWrap: 'wrap', gap: '32px', width: '100%' }}>
+                    
+                    <div style={{ flex: 1, minWidth: '320px' }}>
+                      <div className="flex items-center" style={{ gap: '18px' }}>
+                        {profileAvatar ? (
+                          <img src={profileAvatar} alt={currentUser?.name || 'Host'} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.25)', flexShrink: 0 }} />
+                        ) : (
+                          <span style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.12)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, letterSpacing: '0.02em', flexShrink: 0 }}>
+                            {hostInitials}
+                          </span>
+                        )}
+                        <div style={{ minWidth: 0 }}>
+                          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, margin: 0, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
+                            Welcome, {(currentUser?.name || 'there').split(' ')[0]} 👋
+                          </h1>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px', background: 'rgba(255,255,255,0.14)', color: '#fff', fontSize: '0.78rem', fontWeight: 700, padding: '5px 12px', borderRadius: '999px' }}>
+                            {isOrgHost ? orgNameResolved : 'Individual Host'}
+                          </span>
+                        </div>
                       </div>
-                      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>
-                        {getGreeting()}, {(currentUser?.name || 'there').split(' ')[0]}! 👋
-                      </h1>
-                      <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', maxWidth: '560px' }}>
+                      <p style={{ margin: '18px 0 0 0', fontSize: '1.15rem', color: 'rgba(255,255,255,0.85)', maxWidth: '640px', lineHeight: 1.5 }}>
                         {getWeeklyEventsText()}
                       </p>
-                      <div className="flex gap-md" style={{ marginTop: '16px', flexWrap: 'wrap' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 'var(--radius-md)', padding: '8px 16px', textAlign: 'left' }}>
-                          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.2 }}>{totalEvents}</div>
-                          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Events</div>
-                        </div>
-                        <div style={{ background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 'var(--radius-md)', padding: '8px 16px', textAlign: 'left' }}>
-                          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.2 }}>{totalRsvps}</div>
-                          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Guests RSVP'd</div>
-                        </div>
-                        <div style={{ background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 'var(--radius-md)', padding: '8px 16px', textAlign: 'left' }}>
-                          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.2 }}>${availableBalance.toLocaleString()}</div>
-                          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Balance</div>
-                        </div>
-                      </div>
                     </div>
-                    <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                      <Link to="/create" onClick={(e) => { if (orgHostLocked) { e.preventDefault(); setShowOrgDocModal(true); } }}>
-                        <Button variant="primary" className="flex items-center gap-xs">
-                          <Plus size={18} /> Create New Event
-                        </Button>
+
+                    <div className="flex flex-col gap-sm" style={{ minWidth: '220px' }}>
+                      <Link to="/create" onClick={(e) => { if (orgHostLocked) { e.preventDefault(); setShowOrgDocModal(true); } }} style={{ textDecoration: 'none' }}>
+                        <button className="btn" style={{ width: '100%', padding: '14px 24px', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px', boxShadow: '0 4px 14px rgba(31, 58, 99, 0.4)' }}>
+                          <Plus size={20} /> Create New Event
+                        </button>
                       </Link>
-                      <Button variant="outline" onClick={handleDuplicateLastEvent} className="flex items-center gap-xs" style={{ background: 'rgba(255,255,255,0.92)' }}>
-                        <Copy size={16} /> Copy Last Event
-                      </Button>
+                      <button onClick={handleDuplicateLastEvent} className="btn" style={{ width: '100%', padding: '14px 24px', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', backdropFilter: 'blur(10px)' }}>
+                        <Copy size={18} /> Copy Last Event
+                      </button>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(`${window.location.origin}/host/alex`);
                           alert("Host profile link copied to clipboard!");
                         }}
-                        className="btn btn-outline"
-                        style={{ padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', color: 'white', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.4)' }}
+                        className="btn"
+                        style={{ width: '100%', padding: '14px 24px', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '8px' }}
                       >
-                        <Share2 size={16} /> Share Profile
+                        <Share2 size={18} /> Share Profile
                       </button>
                     </div>
+
                   </div>
                 </div>
               </div>
 
               {/* SECTION 2: STATUS OVERVIEW CARDS */}
-              <div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>Quick Stats</h2>
-                <div className="grid-3" style={{ gap: '16px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: '0 0 20px 0', textAlign: 'left', letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Quick Stats</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+                  
+                  {/* Card 1: Total Earnings */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
                       <div className="stat-icon-tile stat-icon-green"><DollarSign size={22} /></div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(0,200,83,0.1)', color: 'var(--color-accent)' }}>↑ +$850 this week</span>
                     </div>
                     <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Earnings</h3>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>${availableBalance.toLocaleString()}</p>
@@ -1186,28 +1268,31 @@ export default function HostDashboard({ onLogout }) {
                     </button>
                   </Card>
 
+                  {/* Card 2: Total Events Organized */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-orange"><Ticket size={22} /></div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)' }}>{upcomingEventsCount} Active</span>
+                      <div className="stat-icon-tile stat-icon-orange"><Calendar size={22} /></div>
                     </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Active RSVPs</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalRsvps} guests</p>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Events Organized</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalEvents}</p>
                     <button 
                       onClick={() => setActiveSidebar('events')}
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
                     >
-                      Manage guests &rarr;
+                      View events &rarr;
                     </button>
                   </Card>
 
+                  {/* Card 3: Total Unread Messages */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-blue"><Mail size={22} /></div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fee2e2', color: '#ef4444' }}>3 urgent</span>
+                      <div className="stat-icon-tile stat-icon-blue"><MessageSquare size={22} /></div>
+                      {unreadMessagesCount > 0 && (
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#e0f2fe', color: '#0284c7' }}>{unreadMessagesCount} unread</span>
+                      )}
                     </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Unread Messages</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>8 new</p>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Unread Messages</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{unreadMessagesCount}</p>
                     <button 
                       onClick={() => setActiveSidebar('messages')}
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
@@ -1216,60 +1301,53 @@ export default function HostDashboard({ onLogout }) {
                     </button>
                   </Card>
 
+                  {/* Card 4: Pending Approvals */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
                       <div className="stat-icon-tile stat-icon-red"><Clock size={22} /></div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#d97706' }}>Ends in 3h</span>
+                      {totalPendingApprovals > 0 && (
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#d97706' }}>{totalPendingApprovals} urgent</span>
+                      )}
                     </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Ending Soon</h3>
-                    <p style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 12px 0' }}>Registration Closing</p>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Pending Approvals</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalPendingApprovals}</p>
                     <button 
-                      onClick={() => {
-                        const ending = events.find(e => e.rsvpStatus === 'Open');
-                        if (ending) handleManageEvent(ending.id);
-                      }}
+                      onClick={() => setActiveSidebar('events')}
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
                     >
-                      Extend registration &rarr;
-                    </button>
-                  </Card>
-
-                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
-                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-purple"><Star size={22} /></div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#b45309' }}>Recent reviews</span>
-                    </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>New Reviews</h3>
-                    <p style={{ fontSize: '2.0rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>4.8 Rating</p>
-                    <button 
-                      onClick={() => {
-                        const feedbackEvt = events.find(e => e.status === 'Completed');
-                        if (feedbackEvt) {
-                          handleManageEvent(feedbackEvt.id);
-                          setSelectedEventTab('overview');
-                        } else {
-                          alert("No completed events with reviews found.");
-                        }
-                      }}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
-                    >
-                      Read reviews &rarr;
+                      Review guests &rarr;
                     </button>
                   </Card>
 
                 </div>
               </div>
 
-              {/* SECTION 2.5: ANALYTICS / GRAPHS */}
-              <DashboardCharts events={events} getRsvps={(id) => mockStore.getRSVPs(id)} />
+              {/* ── SECTION 1.5: 4 AGGREGATE GRAPHS (As per Definitive Layout) ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
+                  <EarningsGrowthChart />
+                  <RSVPIntentChart />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
+                  <DayOfWeekChart />
+                  <GuestGeographyChart />
+                </div>
+              </div>
 
-              {/* SECTION 3: THIS WEEK AT A GLANCE */}
+              {/* SECTION 2: THIS WEEK AT A GLANCE (Calendar) */}
               <div>
-                <div style={{ textAlign: 'left', marginBottom: '16px' }}>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>This Week at a Glance</h2>
-                  <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
-                    Monday, {daysOfWeek[0].toLocaleDateString([], {month: 'short', day: 'numeric'})} &mdash; Sunday, {daysOfWeek[6].toLocaleDateString([], {month: 'short', day: 'numeric'})}
-                  </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: 'var(--color-text)' }}>This Week at a Glance</h2>
+                    <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>
+                      Monday, {daysOfWeek[0].toLocaleDateString([], {month: 'short', day: 'numeric'})} &mdash; Sunday, {daysOfWeek[6].toLocaleDateString([], {month: 'short', day: 'numeric'})}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', background: 'var(--color-surface)', borderRadius: '8px', padding: '4px', border: '1px solid var(--color-border)' }}>
+                    <button style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>Daily</button>
+                    <button style={{ border: 'none', background: 'var(--color-primary)', color: '#fff', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}>Weekly</button>
+                    <button style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}>Monthly</button>
+                  </div>
                 </div>
 
                 <div className="grid-7" style={{ gap: '10px' }}>
@@ -1284,7 +1362,7 @@ export default function HostDashboard({ onLogout }) {
                         key={idx}
                         onClick={() => setSelectedCalendarDate(isSelected ? null : day)}
                         style={{
-                          background: isToday ? 'rgba(255,107,53,0.05)' : 'var(--color-surface)',
+                          background: isToday ? 'rgba(31, 58, 99,0.05)' : 'var(--color-surface)',
                           border: isSelected 
                             ? '2.5px solid var(--color-primary)' 
                             : isToday 
@@ -1316,7 +1394,7 @@ export default function HostDashboard({ onLogout }) {
                           {hasEvents ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'center' }}>
                               <span style={{ fontSize: '1.1rem' }}>🎉</span>
-                              <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 6px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 6px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', borderRadius: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {dayEvents[0].title}
                               </span>
                             </div>
@@ -1336,42 +1414,201 @@ export default function HostDashboard({ onLogout }) {
                       <span>Schedule for {selectedCalendarDate.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                       <button onClick={() => setSelectedCalendarDate(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={16} /></button>
                     </h4>
-                    {getEventsForDate(selectedCalendarDate).length > 0 ? (
-                      <div className="flex flex-col gap-sm">
-                        {getEventsForDate(selectedCalendarDate).map(evt => {
-                          const rsvps = mockStore.getRSVPs(evt.id);
-                          const going = rsvps.filter(r => r.status === 'going').length;
-                          return (
-                            <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', items: 'center', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '10px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <img src={getEventCover(evt)} alt={evt.title} className="thumb-img" />
-                                <div>
-                                  <h5 style={{ margin: '0 0 2px 0', fontSize: '1rem', fontWeight: 700 }}>{evt.title}</h5>
-                                  <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
-                                    🕒 {evt.time} • 📍 {evt.location.split(',')[0]} • 👥 {going} / {evt.capacity} spots filled
-                                  </p>
+                    {(() => {
+                      const dayEvents = getEventsForDate(selectedCalendarDate);
+                      if (dayEvents.length === 0) return <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No events scheduled for this day.</p>;
+                      
+                      let dayRevenue = 0;
+                      let dayHeadcount = 0;
+                      dayEvents.forEach(e => {
+                        const rsvps = mockStore.getRSVPs(e.id);
+                        dayHeadcount += rsvps.filter(r => r.status === 'going').length;
+                        if (e.ticketType === 'Paid' && e.ticketPrice) {
+                           dayRevenue += e.ticketPrice * rsvps.filter(r => r.status === 'going').length;
+                        }
+                      });
+
+                      return (
+                        <>
+                          <div style={{ display: 'flex', gap: '24px', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                             <div>
+                               <span className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Total Expected Headcount</span>
+                               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{dayHeadcount} Guests</div>
+                             </div>
+                             <div>
+                               <span className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Total Daily Revenue</span>
+                               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>${dayRevenue.toLocaleString()}</div>
+                             </div>
+                          </div>
+                          <div className="flex flex-col gap-sm">
+                            {dayEvents.map(evt => {
+                               const rsvps = mockStore.getRSVPs(evt.id);
+                               const going = rsvps.filter(r => r.status === 'going').length;
+                               return (
+                                <div key={evt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '10px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <img src={getEventCover(evt)} alt={evt.title} className="thumb-img" />
+                                    <div>
+                                      <h5 style={{ margin: '0 0 2px 0', fontSize: '1rem', fontWeight: 700 }}>{evt.title}</h5>
+                                      <p className="text-muted" style={{ margin: 0, fontSize: '0.8rem' }}>
+                                        🕒 {evt.time} • 📍 {evt.location.split(',')[0]}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-xs">
+                                    <Button variant="primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { handleManageEvent(evt.id); setSelectedEventTab('guests'); }}>Manage Guests</Button>
+                                    <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => { setBroadcastTarget(evt.id); setShowBroadcastModal(true); }}><Mail size={14}/> Send Broadcast</Button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex gap-xs">
-                                <Button variant="primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleManageEvent(evt.id)}>Edit</Button>
-                                <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/e/${evt.id}`); alert("Link copied!"); }}>Copy Link</Button>
-                                <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { handleManageEvent(evt.id); setSelectedEventTab('guests'); }}>Guests</Button>
-                                <Button variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => { handleManageEvent(evt.id); setSelectedEventTab('checkin'); }}>Check-in</Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>No events scheduled for this day.</p>
-                    )}
+                               );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
 
-              {/* SECTION 6: RECENT ACTIVITY FEED */}
+
+
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* SECTION 3.5: GLOBAL ANALYTICS VIEW                                        */}
+          {/* ========================================================================= */}
+          {activeSidebar === 'analytics' && (
+            <div className="animate-fade-in text-left flex flex-col" style={{ gap: '32px' }}>
+              <div style={{ textAlign: 'left' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.035em' }}>Analytics</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Everything happening across your events — performance, guests, and a full report history.</p>
+              </div>
+
+              {/* KPI summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+                {[
+                  { icon: <Calendar size={20} />, tile: 'stat-icon-orange', label: 'Events Organised', value: totalEvents },
+                  { icon: <Users size={20} />, tile: 'stat-icon-blue', label: 'Confirmed Guests', value: totalRsvps.toLocaleString() },
+                  { icon: <DollarSign size={20} />, tile: 'stat-icon-green', label: 'Total Revenue', value: `$${totalRevenueAll.toLocaleString()}` },
+                  { icon: <Eye size={20} />, tile: 'stat-icon-purple', label: 'Page Views', value: totalViewsAll.toLocaleString() },
+                  { icon: <TrendingUp size={20} />, tile: 'stat-icon-orange', label: 'Avg. Capacity Filled', value: `${avgFill}%` },
+                ].map((k, i) => (
+                  <Card key={i} style={{ padding: '18px' }} className="glass-surface">
+                    <div className={`stat-icon-tile ${k.tile}`} style={{ marginBottom: '12px' }}>{k.icon}</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1, color: 'var(--color-text)', letterSpacing: '-0.02em' }}>{k.value}</div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.label}</div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Performance charts */}
+              <div className="flex flex-col" style={{ gap: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
+                  <EarningsGrowthChart />
+                  <RSVPIntentChart data={rsvpIntentData} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
+                  <TopPerformingEventsChart data={topEventsData} />
+                  <ConversionFunnelChart />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
+                  <DayOfWeekChart />
+                  <GuestGeographyChart />
+                </div>
+              </div>
+
+              {/* Report history — per event, with filters */}
               <div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>What's Happening</h2>
+                <div className="flex justify-between items-center" style={{ flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: 'var(--color-text)' }}>Report History</h2>
+                    <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.85rem' }}>Every event you've organised, with its guests, revenue and attendance.</p>
+                  </div>
+                </div>
+
+                {/* Filter toolbar */}
+                <div className="flex" style={{ gap: '10px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                    <input
+                      type="text"
+                      placeholder="Search events…"
+                      value={analyticsSearch}
+                      onChange={(e) => setAnalyticsSearch(e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.88rem', outline: 'none', background: 'var(--color-surface)', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  <select value={analyticsStatusFilter} onChange={(e) => setAnalyticsStatusFilter(e.target.value)} style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', background: 'var(--color-surface)', outline: 'none' }}>
+                    <option value="all">All status</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="past">Completed</option>
+                    <option value="draft">Drafts</option>
+                  </select>
+                  <select value={analyticsSort} onChange={(e) => setAnalyticsSort(e.target.value)} style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', background: 'var(--color-surface)', outline: 'none' }}>
+                    <option value="date">Sort: Most recent</option>
+                    <option value="revenue">Sort: Revenue</option>
+                    <option value="guests">Sort: Guests</option>
+                    <option value="fill">Sort: Capacity filled</option>
+                  </select>
+                </div>
+
+                {filteredReportRows.length > 0 ? (
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-surface)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--color-surface-hover)' }}>
+                          {['Event', 'Date', 'Status', 'Guests', 'Capacity', 'Revenue', 'Rating', ''].map((h, i) => (
+                            <th key={i} style={{ padding: '12px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredReportRows.map((r) => {
+                          const s = { upcoming: { label: 'Upcoming', bg: 'rgba(31,58,99,0.1)', fg: 'var(--color-primary)' }, past: { label: 'Completed', bg: 'rgba(0,200,83,0.12)', fg: '#16a34a' }, draft: { label: 'Draft', bg: 'rgba(107,114,128,0.14)', fg: '#4b5563' } }[r.bucket];
+                          return (
+                            <tr key={r.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ padding: '12px 16px' }}>
+                                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{r.title}</div>
+                                <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>{r.eventType || 'Event'} · {r.location ? r.location.split(',')[0] : '—'}</div>
+                              </td>
+                              <td style={{ padding: '12px 16px', fontSize: '0.85rem', color: 'var(--color-text)', whiteSpace: 'nowrap' }}>{r.date}</td>
+                              <td style={{ padding: '12px 16px' }}>
+                                <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, background: s.bg, color: s.fg, whiteSpace: 'nowrap' }}>{s.label}</span>
+                              </td>
+                              <td style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>{r.going}<span style={{ fontWeight: 500, color: 'var(--color-text-muted)', fontSize: '0.8rem' }}> / {r.capacity || '∞'}</span></td>
+                              <td style={{ padding: '12px 16px', minWidth: '120px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ flex: 1, height: '6px', background: 'var(--color-surface-hover)', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${r.fill}%`, background: r.fill >= 95 ? '#ef4444' : r.fill >= 80 ? 'var(--color-gold)' : 'var(--color-primary)', borderRadius: '3px' }} />
+                                  </div>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', width: '34px', textAlign: 'right' }}>{r.fill}%</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>{r.revenue ? `$${r.revenue.toLocaleString()}` : 'Free'}</td>
+                              <td style={{ padding: '12px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>{r.rating ? `★ ${r.rating}` : '—'}</td>
+                              <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                <button onClick={() => handleManageEvent(r.id)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.78rem', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>View report</button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="empty-state" style={{ padding: '40px var(--spacing-md)', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <Search size={40} style={{ opacity: 0.3, color: 'var(--color-text-muted)' }} />
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>No events match these filters</h3>
+                    <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '360px' }}>Try a different search term or status.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Recent activity */}
+              <div>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, marginBottom: '4px', textAlign: 'left', letterSpacing: '-0.03em', color: 'var(--color-text)' }}>Recent Activity</h2>
+                <p className="text-muted" style={{ margin: '0 0 16px 0', fontSize: '0.85rem' }}>The latest RSVPs, payments and alerts across all events.</p>
                 <Card style={{ padding: 0, overflow: 'hidden' }} className="glass-surface">
                   <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                     
@@ -1428,32 +1665,6 @@ export default function HostDashboard({ onLogout }) {
                   </div>
                 </Card>
               </div>
-
-              {/* QUICK TOOLS & RESOURCES */}
-              <div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', textAlign: 'left' }}>Quick Tools & Resources</h2>
-                <div className="grid-3" style={{ gap: '16px' }}>
-                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface card-hover-lift">
-                    <div className="stat-icon-tile stat-icon-blue" style={{ marginBottom: '10px' }}><HelpCircle size={20} /></div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Help Center</h4>
-                    <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Learn how to customize your check-in scanner and RSVPs workflows.</p>
-                    <a href="#help" style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Browse articles &rarr;</a>
-                  </Card>
-                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface card-hover-lift">
-                    <div className="stat-icon-tile stat-icon-orange" style={{ marginBottom: '10px' }}><FileText size={20} /></div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Auto-Reply Templates</h4>
-                    <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Set default templates for instant confirmation and reminders.</p>
-                    <a href="#templates" onClick={() => { setActiveSidebar('settings'); }} style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Edit templates &rarr;</a>
-                  </Card>
-                  <Card style={{ padding: '16px', textAlign: 'left' }} className="glass-surface card-hover-lift">
-                    <div className="stat-icon-tile stat-icon-green" style={{ marginBottom: '10px' }}><Settings size={20} /></div>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 700 }}>Waitlist Promotion</h4>
-                    <p className="text-muted" style={{ margin: '0 0 12px 0', fontSize: '0.75rem' }}>Configure auto-promote settings when RSVPs get cancelled.</p>
-                    <a href="#rules" onClick={() => { handleManageEvent('2'); setSelectedEventTab('staff'); }} style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Manage rules &rarr;</a>
-                  </Card>
-                </div>
-              </div>
-
             </div>
           )}
 
@@ -1512,7 +1723,7 @@ export default function HostDashboard({ onLogout }) {
                           fontSize: '0.75rem',
                           fontWeight: 700,
                           padding: '1px 6px',
-                          background: t.key === 'live' ? '#ff3b30' : 'rgba(255,107,53,0.1)',
+                          background: t.key === 'live' ? '#ff3b30' : 'rgba(31, 58, 99,0.1)',
                           color: t.key === 'live' ? 'white' : 'var(--color-primary)',
                           borderRadius: '10px'
                         }}>
@@ -1668,26 +1879,18 @@ export default function HostDashboard({ onLogout }) {
                               )}
                             </div>
 
-                            {/* Stats Grid */}
-                            <div className="grid-3" style={{ gap: '12px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                              <div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Going</div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                                  {going} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>/ {event.capacity} cap</span>
+                            {/* Stats strip — three equal, aligned cells */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', background: 'var(--color-surface-hover)', borderRadius: '10px', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+                              {[
+                                { label: 'Going', node: <>{going}<span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}> / {event.capacity}</span></> },
+                                { label: 'Revenue', node: <>{event.ticketPrice ? `$${(going * event.ticketPrice).toLocaleString()}` : 'Free'}</> },
+                                { label: 'Rating', node: <>{event.rating ? `★ ${event.rating}` : '—'}</> },
+                              ].map((s, i) => (
+                                <div key={s.label} style={{ padding: '12px 14px', borderLeft: i ? '1px solid var(--color-border)' : 'none' }}>
+                                  <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '5px' }}>{s.label}</div>
+                                  <div style={{ fontSize: '1.15rem', fontWeight: 800, lineHeight: 1, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>{s.node}</div>
                                 </div>
-                              </div>
-                              <div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Revenue</div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                                  ${event.ticketPrice ? (going * event.ticketPrice).toLocaleString() : 'Free'}
-                                </div>
-                              </div>
-                              <div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Rating</div>
-                                <div style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                  ⭐ {event.rating || 'N/A'}
-                                </div>
-                              </div>
+                              ))}
                             </div>
 
                             {/* Capacity Progress Bar */}
@@ -1878,50 +2081,52 @@ export default function HostDashboard({ onLogout }) {
               {/* SUB-TAB: STATS OVERVIEW */}
               {selectedEventTab === 'overview' && (
                 <div className="flex flex-col gap-lg">
-                  <div className="grid-3" style={{ gap: '16px' }}>
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface card-hover-lift">
-                      <div className="stat-icon-tile stat-icon-blue" style={{ marginBottom: '12px' }}><TrendingUp size={20} /></div>
-                      <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Conversion Rate</h4>
-                      <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
-                        {Math.round((managedEventRsvps.length / (managedEventViews || 1)) * 100)}%
-                      </p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                        {managedEventRsvps.length} RSVPs from {managedEventViews} views
-                      </p>
-                    </Card>
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface card-hover-lift">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
                       <div className="stat-icon-tile stat-icon-orange" style={{ marginBottom: '12px' }}><Users size={20} /></div>
-                      <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Capacity Fill</h4>
-                      <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#ca8a04' }}>
-                        {Math.round((managedEventRsvps.filter(r => r.status === 'going').length / (managedEvent.capacity || 1)) * 100)}%
-                      </p>
+                      <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Guests RSVP'd</h4>
+                      <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>{managedEventRsvps.length}</p>
                       <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                        {managedEventRsvps.filter(r => r.status === 'going').length} Confirmed vs {managedEvent.capacity} Cap
+                        {managedEventRsvps.filter(r => r.status === 'going').length} going · {managedEventRsvps.filter(r => r.status === 'maybe').length} maybe
                       </p>
                     </Card>
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface card-hover-lift">
-                      <div className="stat-icon-tile stat-icon-green" style={{ marginBottom: '12px' }}><UserCheck size={20} /></div>
-                      <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Check-in Rate</h4>
-                      <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#16a34a' }}>
-                        {Math.round((managedEventRsvps.filter(r => r.checkedIn).length / (managedEventRsvps.filter(r => r.status === 'going').length || 1)) * 100)}%
-                      </p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                        {managedEventRsvps.filter(r => r.checkedIn).length} checked in of {managedEventRsvps.filter(r => r.status === 'going').length} Confirmed
-                      </p>
-                    </Card>
+
+                    {(() => {
+                      const eventUnread = conversations.filter(c => c.eventTitle === managedEvent.title && c.unread).length;
+                      const eventMsgs = conversations.filter(c => c.eventTitle === managedEvent.title).length;
+                      return (
+                        <Card
+                          onClick={() => {
+                            setMessageEventFilter(managedEvent.title);
+                            const target = conversations.find(c => c.eventTitle === managedEvent.title && c.unread) || conversations.find(c => c.eventTitle === managedEvent.title);
+                            if (target) setActiveConversationId(target.id);
+                            setActiveSidebar('messages');
+                          }}
+                          style={{ padding: '20px', textAlign: 'left', cursor: 'pointer' }}
+                          className="glass-surface card-hover-lift"
+                        >
+                          <div className="stat-icon-tile stat-icon-blue" style={{ marginBottom: '12px' }}><MessageSquare size={20} /></div>
+                          <h4 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Unread Messages</h4>
+                          <p style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: eventUnread > 0 ? 'var(--color-primary)' : 'var(--color-text)' }}>{eventUnread}</p>
+                          <p style={{ fontSize: '0.78rem', color: 'var(--color-primary)', marginTop: '4px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            View this event's messages <ArrowRight size={13} />
+                          </p>
+                        </Card>
+                      );
+                    })()}
                   </div>
 
-                  <div className="grid-2" style={{ gap: '16px' }}>
-                    <Card style={{ padding: '16px', textAlign: 'center' }}>
-                      <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Going</p>
-                      <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#16a34a' }}>{managedEventRsvps.filter(r => r.status === 'going').length}</p>
-                    </Card>
-                    
-                    <Card style={{ padding: '16px', textAlign: 'center' }}>
-                      <p className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>Waitlist</p>
-                      <p style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#ef4444' }}>{managedEventRsvps.filter(r => r.status === 'waitlist').length}</p>
-                    </Card>
-                  </div>
+                  <RSVPIntentChart
+                    title="RSVP Breakdown"
+                    subtitle="Every response for this event — yes, maybe, no & waitlist"
+                    centerLabel="Total RSVPs"
+                    data={{
+                      going: managedEventRsvps.filter(r => r.status === 'going').length,
+                      maybe: managedEventRsvps.filter(r => r.status === 'maybe').length,
+                      declined: managedEventRsvps.filter(r => r.status === 'declined').length,
+                      waitlist: managedEventRsvps.filter(r => r.status === 'waitlist').length,
+                    }}
+                  />
                 </div>
               )}
 
@@ -2145,7 +2350,7 @@ export default function HostDashboard({ onLogout }) {
                         <div style={{ display: 'flex', gap: '8px', background: 'var(--color-surface-hover)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', alignItems: 'center' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{selectedGuestIds.length} Selected:</span>
                           {can('guests_edit') && <button onClick={handleBulkCheckIn} style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Check-in</button>}
-                          {can('messaging_reply') && <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>}
+                          {can('messaging_reply') && <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>}
                           {can('guests_export') && <button onClick={handleBulkExport} style={{ border: 'none', background: 'rgba(71,85,105,0.1)', color: '#475569', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Export</button>}
                           <button onClick={() => setSelectedGuestIds([])} style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
                         </div>
@@ -2222,7 +2427,7 @@ export default function HostDashboard({ onLogout }) {
                                       <button
                                         type="button"
                                         onClick={() => setExpandedGuestId(isExpanded ? null : rsvp.id)}
-                                        style={{ fontSize: '0.65rem', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '1px 7px', borderRadius: '999px', marginLeft: '6px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                                        style={{ fontSize: '0.65rem', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', padding: '1px 7px', borderRadius: '999px', marginLeft: '6px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                                         title="Show party members"
                                       >
                                         +{partyCount} {isExpanded ? '▲' : '▼'}
@@ -2238,8 +2443,8 @@ export default function HostDashboard({ onLogout }) {
                               <td>
                                 <span style={{
                                   fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', textTransform: 'capitalize',
-                                  background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : false ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)',
-                                  color: rsvp.status === 'going' ? '#00963f' : false ? '#ef4444' : '#e0531f'
+                                  background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : false ? 'rgba(239,68,68,0.12)' : 'rgba(31, 58, 99,0.12)',
+                                  color: rsvp.status === 'going' ? '#00963f' : false ? '#ef4444' : '#936a1d'
                                 }}>
                                   {'● Registered'}
                                 </span>
@@ -2457,13 +2662,13 @@ export default function HostDashboard({ onLogout }) {
                       {[...managedEventComments]
                         .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
                         .map(comment => (
-                          <div key={comment.id} className="flex justify-between items-start" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', background: comment.pinned ? 'rgba(255,107,53,0.01)' : 'transparent', padding: comment.pinned ? '12px' : '0 0 12px 0', borderRadius: '8px' }}>
+                          <div key={comment.id} className="flex justify-between items-start" style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', background: comment.pinned ? 'rgba(31, 58, 99,0.01)' : 'transparent', padding: comment.pinned ? '12px' : '0 0 12px 0', borderRadius: '8px' }}>
                             <div className="flex gap-sm" style={{ alignItems: 'flex-start' }}>
                               <img src={getAvatar(comment.name)} alt={comment.name} className="avatar-img avatar-sm" />
                               <div>
                               <div className="flex items-center gap-xs" style={{ marginBottom: '4px' }}>
                                 <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{comment.name}</span>
-                                {comment.pinned && <span style={{ fontSize: '0.65rem', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>PINNED</span>}
+                                {comment.pinned && <span style={{ fontSize: '0.65rem', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>PINNED</span>}
                                 <span className="text-muted" style={{ fontSize: '0.75rem', marginLeft: '6px' }}>{new Date(comment.timestamp).toLocaleDateString()}</span>
                               </div>
                               <p style={{ fontSize: '0.85rem', margin: 0 }}>{comment.text}</p>
@@ -2671,7 +2876,7 @@ export default function HostDashboard({ onLogout }) {
                                 <button key={a} type="button" onClick={() => setEditEventForm({ ...editEventForm, minimumAge: a })}
                                   style={{ padding: '4px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer',
                                     border: editEventForm.minimumAge === a ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                    background: editEventForm.minimumAge === a ? 'rgba(255,107,53,0.1)' : 'var(--color-surface)',
+                                    background: editEventForm.minimumAge === a ? 'rgba(31, 58, 99,0.1)' : 'var(--color-surface)',
                                     color: editEventForm.minimumAge === a ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
                                   {a}+
                                 </button>
@@ -2785,7 +2990,7 @@ export default function HostDashboard({ onLogout }) {
                                 <td style={{ fontSize: '0.8rem' }}>{new Date(log.sentAt).toLocaleTimeString()}</td>
                                 <td>{log.guestEmail}</td>
                                 <td>
-                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)' }}>
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)' }}>
                                     {log.channel}
                                   </span>
                                 </td>
@@ -2872,11 +3077,11 @@ export default function HostDashboard({ onLogout }) {
                           <div className="flex items-center gap-sm">
                             <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
                             <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rsvp.name} {rsvp.isManualInvite && <span style={{ fontSize: '0.65rem', background: 'rgba(255,107,53,0.12)', color: 'var(--color-primary)', padding: '1px 5px', borderRadius: '3px' }}>Manual</span>}</div>
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{rsvp.name} {rsvp.isManualInvite && <span style={{ fontSize: '0.65rem', background: 'rgba(31, 58, 99,0.12)', color: 'var(--color-primary)', padding: '1px 5px', borderRadius: '3px' }}>Manual</span>}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.email}</div>
                             </div>
                           </div>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : false ? 'rgba(239,68,68,0.12)' : 'rgba(255,107,53,0.12)', color: rsvp.status === 'going' ? '#00963f' : false ? '#ef4444' : '#e0531f' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : false ? 'rgba(239,68,68,0.12)' : 'rgba(31, 58, 99,0.12)', color: rsvp.status === 'going' ? '#00963f' : false ? '#ef4444' : '#936a1d' }}>
                             {rsvp.status.toUpperCase()}
                           </span>
                         </div>
@@ -2983,7 +3188,7 @@ export default function HostDashboard({ onLogout }) {
                               loadDashboardData();
                               setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: `${rsvp.name} checked in successfully.` });
                             }}
-                            style={{ border: 'none', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}
+                            style={{ border: 'none', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}
                           >
                             Check-in
                           </button>
@@ -3405,6 +3610,15 @@ export default function HostDashboard({ onLogout }) {
                 <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Answer guest questions, verify requests, and coordinate announcements.</p>
               </div>
 
+              {messageEventFilter && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '10px 14px', background: 'rgba(31,58,99,0.06)', border: '1px solid var(--color-border)', borderRadius: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <Filter size={15} style={{ color: 'var(--color-primary)' }} /> Showing messages for <strong>{messageEventFilter}</strong>
+                  </span>
+                  <button onClick={() => setMessageEventFilter(null)} style={{ border: 'none', background: 'transparent', color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Show all conversations</button>
+                </div>
+              )}
+
               <div style={{
                 flex: 1,
                 display: 'grid',
@@ -3427,7 +3641,12 @@ export default function HostDashboard({ onLogout }) {
                   </div>
                   
                   <div style={{ flex: 1, overflowY: 'auto' }}>
-                    {conversations.map(c => {
+                    {(messageEventFilter ? conversations.filter(c => c.eventTitle === messageEventFilter) : conversations).length === 0 && (
+                      <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                        No messages for this event yet.
+                      </div>
+                    )}
+                    {(messageEventFilter ? conversations.filter(c => c.eventTitle === messageEventFilter) : conversations).map(c => {
                       const lastMsg = c.messages[c.messages.length - 1];
                       const isActive = c.id === activeConversationId;
                       return (
@@ -3445,7 +3664,7 @@ export default function HostDashboard({ onLogout }) {
                             padding: '16px',
                             borderBottom: '1px solid var(--color-border)',
                             cursor: 'pointer',
-                            background: isActive ? 'rgba(255,107,53,0.06)' : 'transparent',
+                            background: isActive ? 'rgba(31, 58, 99,0.06)' : 'transparent',
                             textAlign: 'left',
                             display: 'flex',
                             gap: '12px',
@@ -3595,12 +3814,12 @@ export default function HostDashboard({ onLogout }) {
           )}
 
           {/* ========================================================================= */}
-          {/* GLOBAL AUDIENCE VIEW                                                      */}
+          {/* GLOBAL GUESTS DIRECTORY                                                   */}
           {/* ========================================================================= */}
           {activeSidebar === 'audience' && (
-            <div>
+            <div className="animate-fade-in">
               <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Audience Directory</h1>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Guests Directory</h1>
                 <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Manage contacts and histories for unique registered attendees.</p>
               </div>
               
@@ -3673,27 +3892,42 @@ export default function HostDashboard({ onLogout }) {
               </div>
               
               <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left' }} className="glass-surface">
-                <div className="flex items-center gap-md" style={{ marginBottom: '20px' }}>
-                  <img src={getAvatar('alex@safalevent.com')} alt="Alex Rivera" className="avatar-img avatar-lg" />
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Organizer Profile Info</h4>
-                    <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>This is how guests see you across invitations and event pages.</p>
+                <div className="flex items-center gap-md" style={{ marginBottom: '24px', flexWrap: 'wrap' }}>
+                  {profileAvatar ? (
+                    <img src={profileAvatar} alt={currentUser?.name || 'Host'} className="avatar-img avatar-lg" style={{ objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(31,58,99,0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.35rem', fontWeight: 800, flexShrink: 0, border: '1px solid var(--color-border)' }}>
+                      {hostInitials}
+                    </span>
+                  )}
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Profile Photo</h4>
+                    <p className="text-muted" style={{ margin: '2px 0 10px 0', fontSize: '0.8rem' }}>This is how guests see you across invitations and event pages. No photo is shown until you upload one.</p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <label htmlFor="profile-avatar-upload" className="btn btn-outline" style={{ padding: '8px 14px', fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Upload size={15} /> {profileAvatar ? 'Change photo' : 'Upload photo'}
+                      </label>
+                      <input id="profile-avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
+                      {profileAvatar && (
+                        <button type="button" onClick={() => { setProfileAvatar(null); try { mockStore.setCurrentUser({ ...currentUser, avatar: null }); } catch (e) { /* no-op */ } }} className="btn btn-ghost" style={{ padding: '8px 14px', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Remove</button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <form onSubmit={(e) => { e.preventDefault(); alert('Profile preferences updated!'); }} className="flex flex-col gap-md">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Host Display Name</label>
-                    <input type="text" defaultValue="Alex Rivera" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                    <input type="text" defaultValue={currentUser?.name || ''} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Email Address</label>
-                    <input type="email" defaultValue="alex@safalevent.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                    <input type="email" defaultValue={currentUser?.email || ''} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Contact Phone</label>
-                    <input type="text" defaultValue="+1 (555) 999-8888" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
+                    <input type="text" defaultValue={currentUser?.phone || ''} placeholder="+1 (555) 000-0000" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
                   </div>
-                  
+
                   <Button variant="primary" type="submit" style={{ marginTop: '10px', alignSelf: 'start' }}>Save Changes</Button>
                 </form>
               </Card>
@@ -3800,17 +4034,17 @@ export default function HostDashboard({ onLogout }) {
           {activeSidebar === 'integrations' && (
             <div style={{ maxWidth: '100%' }}>
 
-              {/* ── Apple-style Hero Header ── */}
+              {/* ── Hero Header ── */}
               <div style={{
                 textAlign: 'center', marginBottom: '56px', padding: '48px 24px 40px',
-                background: 'linear-gradient(180deg, rgba(255,107,53,0.04) 0%, transparent 100%)',
-                borderRadius: '24px'
+                background: 'linear-gradient(180deg, var(--tint-primary-soft) 0%, var(--color-bg) 100%)',
+                borderRadius: '24px', border: '1px solid var(--color-border)'
               }}>
                 <div style={{
                   width: '64px', height: '64px', borderRadius: '18px', margin: '0 auto 20px',
-                  background: 'linear-gradient(135deg, var(--color-primary), #ff3cac)',
+                  background: 'linear-gradient(135deg, var(--color-primary), var(--color-gold))',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 8px 32px rgba(255,107,53,0.25)'
+                  boxShadow: '0 8px 32px rgba(31,58,99,0.25)'
                 }}>
                   <Webhook size={28} style={{ color: 'white' }} />
                 </div>
@@ -3825,7 +4059,7 @@ export default function HostDashboard({ onLogout }) {
                   fontSize: '1.05rem', color: 'var(--color-text-muted)', margin: '0 auto',
                   maxWidth: '520px', lineHeight: 1.6
                 }}>
-                  Seamlessly connect the tools you already use. Automate your workflows, sync your data, and focus on what matters — hosting amazing events.
+                  Seamlessly connect the tools you already use. Automate your workflows, sync your data, and focus on what matters.
                 </p>
               </div>
 
@@ -3881,13 +4115,13 @@ export default function HostDashboard({ onLogout }) {
                   platforms: [
                     {
                       name: 'Jotform',
-                      logo: 'J', logoColor: '#0099ff', logoBg: 'rgba(0,153,255,0.08)',
+                      logo: '/logos/jotform.png',
                       desc: 'Build custom registration forms with drag-and-drop simplicity. Guest submissions sync automatically to your RSVP list in real time.',
                       features: ['Custom registration fields', 'Auto-sync to RSVP list', 'Conditional logic support']
                     },
                     {
                       name: 'Google Sheets',
-                      logo: 'G', logoColor: '#34a853', logoBg: 'rgba(52,168,83,0.08)',
+                      logo: '/logos/google-sheets.png',
                       desc: 'Export guest lists, attendance records, and analytics directly into Google Sheets. Share live data with your entire team.',
                       features: ['Real-time data export', 'Shared team access', 'Auto-updating attendance']
                     },
@@ -3899,26 +4133,26 @@ export default function HostDashboard({ onLogout }) {
                   platforms: [
                     {
                       name: 'WhatsApp',
-                      logo: 'W', logoColor: '#25d366', logoBg: 'rgba(37,211,102,0.08)',
+                      logo: '/logos/whatsapp.png',
                       desc: 'Send RSVP confirmations, event reminders, and last-minute updates directly via WhatsApp. Higher open rates than email.',
-                      features: ['Automated RSVP confirmations', 'Event day reminders', 'Broadcast updates to all guests']
+                      features: ['Automated RSVP confirmations', 'Event day reminders', 'Broadcast updates']
                     },
                     {
                       name: 'Slack',
-                      logo: 'S', logoColor: '#e01e5a', logoBg: 'rgba(224,30,90,0.08)',
-                      desc: 'Get instant RSVP notifications, check-in alerts, and capacity updates posted to your team\'s Slack channels.',
+                      logo: '/logos/slack.png',
+                      desc: 'Get instant RSVP notifications, check-in alerts, and capacity updates posted to your Slack channels automatically.',
                       features: ['Real-time RSVP alerts', 'Check-in notifications', 'Capacity warnings']
                     },
                     {
                       name: 'Mailchimp',
-                      logo: 'M', logoColor: '#ffe01b', logoBg: 'rgba(255,224,27,0.1)',
+                      logo: '/logos/mailchimp.png',
                       desc: 'Automatically sync your guest list to Mailchimp audiences. Run post-event follow-ups and grow your subscriber base.',
-                      features: ['Auto-sync guest lists', 'Segment by event type', 'Post-event email campaigns']
+                      features: ['Auto-sync guest lists', 'Segment by event type', 'Post-event campaigns']
                     },
                     {
                       name: 'Twilio',
-                      logo: 'T', logoColor: '#f22f46', logoBg: 'rgba(242,47,70,0.08)',
-                      desc: 'Send SMS reminders, ticket confirmations, and real-time alerts globally. Reach guests even without internet.',
+                      logo: '/logos/twilio.png',
+                      desc: 'Send SMS reminders, ticket confirmations, and real-time alerts globally. Reach guests even without internet access.',
                       features: ['Global SMS delivery', 'Ticket confirmations', 'Two-way messaging']
                     },
                   ]
@@ -3929,13 +4163,13 @@ export default function HostDashboard({ onLogout }) {
                   platforms: [
                     {
                       name: 'HubSpot',
-                      logo: 'H', logoColor: '#ff5c35', logoBg: 'rgba(255,92,53,0.08)',
+                      logo: '/logos/hubspot.png',
                       desc: 'Sync event attendees and leads into your HubSpot CRM with automatic contact enrichment. Track the full journey from signup to conversion.',
                       features: ['Contact auto-enrichment', 'Lead scoring from events', 'Pipeline integration']
                     },
                     {
                       name: 'Zapier',
-                      logo: 'Z', logoColor: '#ff4a00', logoBg: 'rgba(255,74,0,0.08)',
+                      logo: '/logos/zapier.png',
                       desc: 'Automate workflows across 5,000+ apps. Trigger actions when guests RSVP, check in, or cancel — no coding required.',
                       features: ['5,000+ app connections', 'Custom trigger workflows', 'Zero-code automation']
                     },
@@ -3971,18 +4205,18 @@ export default function HostDashboard({ onLogout }) {
                           {/* Card top: logo + name + desc */}
                           <div style={{ padding: '28px 24px 20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                              {/* Logo mark */}
+                              {/* Actual Platform Logo */}
                               <div style={{
                                 width: '52px', height: '52px', borderRadius: '14px',
-                                background: platform.logoBg,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0, border: `1px solid ${platform.logoColor}20`
+                                overflow: 'hidden', flexShrink: 0,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                border: '1px solid var(--color-border)'
                               }}>
-                                <span style={{
-                                  fontSize: '1.5rem', fontWeight: 900,
-                                  fontFamily: 'var(--font-heading)',
-                                  color: platform.logoColor, lineHeight: 1
-                                }}>{platform.logo}</span>
+                                <img
+                                  src={platform.logo}
+                                  alt={platform.name + ' logo'}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
                               </div>
                               <div>
                                 <h4 style={{
@@ -4048,7 +4282,7 @@ export default function HostDashboard({ onLogout }) {
                 </div>
               ))}
 
-              {/* ── Bottom info banner ── */}
+              {/* ── Bottom security banner ── */}
               <div style={{
                 padding: '32px', borderRadius: '20px',
                 background: 'var(--color-surface)', border: '1px solid var(--color-border)',
@@ -4056,7 +4290,7 @@ export default function HostDashboard({ onLogout }) {
               }}>
                 <div style={{
                   width: '48px', height: '48px', borderRadius: '14px',
-                  background: 'rgba(255,107,53,0.08)',
+                  background: 'var(--tint-primary-soft)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, color: 'var(--color-primary)'
                 }}>
@@ -4071,13 +4305,13 @@ export default function HostDashboard({ onLogout }) {
                     fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0,
                     lineHeight: 1.5
                   }}>
-                    All integrations use encrypted API connections. Your data and your guests' data are never shared with third parties without your explicit consent.
+                    All integrations use encrypted API connections. Your data is never shared with third parties without your explicit consent.
                   </p>
                 </div>
               </div>
 
             </div>
-          )}}
+          )}
 
         </main>
 
@@ -4213,7 +4447,7 @@ export default function HostDashboard({ onLogout }) {
               padding: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)',
               textAlign: 'center'
             }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', marginBottom: '16px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', marginBottom: '16px' }}>
                 <Calendar size={22} />
               </div>
               
@@ -4477,6 +4711,58 @@ export default function HostDashboard({ onLogout }) {
               <p className="text-muted" style={{ fontSize: '0.72rem', margin: '10px 0 0 0' }}>
                 You can review or re-upload your documents anytime under Settings → Organization Documents.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ===== HELP & QUICK RESOURCES FLYOUT ===== */}
+        {showHelpModal && (
+          <div
+            onClick={() => setShowHelpModal(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '20px' }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="animate-fade-in"
+              style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '560px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', overflow: 'hidden' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="stat-icon-tile stat-icon-blue" style={{ width: '36px', height: '36px' }}><HelpCircle size={18} /></div>
+                  <div style={{ textAlign: 'left' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Help &amp; Quick Resources</h3>
+                    <p className="text-muted" style={{ margin: '1px 0 0 0', fontSize: '0.78rem' }}>Guides and shortcuts to run your events</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowHelpModal(false)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '4px' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { title: 'Create your first event', desc: 'Set the date, venue, capacity and a cover photo.' },
+                  { title: 'Collect RSVPs', desc: 'Share one link — guests reply without an account.' },
+                  { title: 'Check guests in', desc: 'Scan QR passes at the door and track attendance.' },
+                  { title: 'Send reminders & updates', desc: 'Message everyone at once from the event page.' },
+                  { title: 'Read your analytics', desc: 'Track revenue, attendance and your best day to host.' },
+                ].map((r, i) => (
+                  <a
+                    key={i}
+                    href="#"
+                    onClick={(e) => e.preventDefault()}
+                    className="card-hover-lift"
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-text)' }}
+                  >
+                    <span style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(31,58,99,0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, fontSize: '0.82rem' }}>{i + 1}</span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700 }}>{r.title}</span>
+                      <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>{r.desc}</span>
+                    </span>
+                    <ArrowRight size={16} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         )}

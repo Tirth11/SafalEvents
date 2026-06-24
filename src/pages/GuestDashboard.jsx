@@ -490,10 +490,23 @@ export default function GuestDashboard({ onLogout }) {
   const attendedCount = pastRsvps.filter(r => r.status === 'going').length;
   const firstName = (currentUser?.name || 'there').split(' ')[0];
 
+  const dashboardTopBar = (
+    <DashboardTopBar
+      embedded
+      userName={currentUser?.name}
+      roleLabel="Guest"
+      planLabel={null}
+      notifCount={typeof pendingReplyCount === 'number' ? pendingReplyCount : 0}
+      onBell={() => setActiveTab('timeline')}
+      onProfile={() => setActiveTab('profile')}
+      onLogout={onLogout}
+    />
+  );
+
   return (
-    <PageShell>
+    <PageShell headerActions={dashboardTopBar}>
       <div className="dashboard-layout">
-        
+
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
           <div className="dashboard-sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -525,16 +538,6 @@ export default function GuestDashboard({ onLogout }) {
 
         {/* Main Content */}
         <main className="dashboard-main">
-
-          <DashboardTopBar
-            userName={currentUser?.name}
-            roleLabel="Guest"
-            planLabel={null}
-            notifCount={typeof pendingReplyCount === 'number' ? pendingReplyCount : 0}
-            onBell={() => setActiveTab('timeline')}
-            onProfile={() => setActiveTab('profile')}
-            onLogout={onLogout}
-          />
 
           {/* Personal Photo Hero Strip */}
           <div className="page-hero animate-fade-in" style={{ marginBottom: '16px' }}>
@@ -661,7 +664,7 @@ export default function GuestDashboard({ onLogout }) {
                                     Confirmed
                                   </span>
                                 ) : (
-                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,107,53,0.12)', color: 'var(--color-primary)' }}>
+                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(31, 58, 99,0.12)', color: 'var(--color-primary)' }}>
                                     {rsvp.status === 'waitlist' ? 'Waitlisted' : 'Awaiting RSVP'}
                                   </span>
                                 )}
@@ -874,7 +877,7 @@ export default function GuestDashboard({ onLogout }) {
                       alignItems: 'start'
                     }} className="card-hover-lift">
                       <img src={getEventCover(upNext.event)} alt={upNext.event.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(20,10,5,0.88) 10%, rgba(255,107,53,0.45) 100%)', zIndex: 1 }}></div>
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(20,10,5,0.88) 10%, rgba(31, 58, 99,0.45) 100%)', zIndex: 1 }}></div>
                       <div style={{
                         position: 'relative', zIndex: 2,
                         background: 'rgba(255,255,255,0.2)',
@@ -937,9 +940,9 @@ export default function GuestDashboard({ onLogout }) {
                   )}
 
                   {/* Help Support Widget */}
-                  <Card style={{ padding: '20px', border: '1px solid rgba(255,107,53,0.2)', background: 'rgba(255,107,53,0.03)' }} className="glass-surface">
+                  <Card style={{ padding: '20px', border: '1px solid rgba(31, 58, 99,0.2)', background: 'rgba(31, 58, 99,0.03)' }} className="glass-surface">
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                      <div style={{ padding: '8px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '8px' }}>
+                      <div style={{ padding: '8px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', borderRadius: '8px' }}>
                         <HelpCircle size={20} />
                       </div>
                       <div>
@@ -1100,7 +1103,7 @@ export default function GuestDashboard({ onLogout }) {
             // Visual meta per activity type
             const metaFor = (type) => {
               switch (type) {
-                case 'booking': return { Icon: Ticket, bg: 'rgba(255,107,53,0.12)', color: 'var(--color-primary)' };
+                case 'booking': return { Icon: Ticket, bg: 'rgba(31, 58, 99,0.12)', color: 'var(--color-primary)' };
                 case 'checkin': return { Icon: QrCode, bg: 'rgba(34,197,94,0.12)', color: '#16a34a' };
                 case 'payment': return { Icon: CreditCard, bg: 'rgba(234,179,8,0.12)', color: '#ca8a04' };
                 case 'comment': return { Icon: MessageSquare, bg: 'rgba(147,51,234,0.12)', color: '#9333ea' };
@@ -1156,7 +1159,7 @@ export default function GuestDashboard({ onLogout }) {
                                 </p>
                               )}
                             </div>
-                            <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', flexShrink: 0 }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', flexShrink: 0 }}>
                               {group.items.length} {group.items.length === 1 ? 'update' : 'updates'}
                             </span>
                           </div>
@@ -1240,7 +1243,7 @@ export default function GuestDashboard({ onLogout }) {
                   >
                     {t.label}
                     {t.count > 0 && (
-                      <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '1px 7px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '10px' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '1px 7px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', borderRadius: '10px' }}>
                         {t.count}
                       </span>
                     )}
@@ -1270,7 +1273,7 @@ export default function GuestDashboard({ onLogout }) {
                                 display: 'flex', gap: '12px', alignItems: 'center', textAlign: 'left',
                                 padding: '14px 16px', border: 'none', cursor: 'pointer',
                                 borderBottom: '1px solid var(--color-border)',
-                                background: isActive ? 'rgba(255,107,53,0.06)' : 'transparent',
+                                background: isActive ? 'rgba(31, 58, 99,0.06)' : 'transparent',
                                 borderLeft: isActive ? '3px solid var(--color-primary)' : '3px solid transparent'
                               }}
                             >
@@ -1376,7 +1379,7 @@ export default function GuestDashboard({ onLogout }) {
                           <tr key={log.id}>
                             <td style={{ fontSize: '0.85rem' }}>{new Date(log.sentAt).toLocaleString()}</td>
                             <td>
-                              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(255,107,53,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: log.channel === 'Email' ? 'rgba(31, 58, 99,0.1)' : 'rgba(34,197,94,0.1)', color: log.channel === 'Email' ? 'var(--color-primary)' : '#16a34a', fontWeight: 600 }}>
                                 {log.channel}
                               </span>
                             </td>
@@ -1524,7 +1527,7 @@ export default function GuestDashboard({ onLogout }) {
               {/* Ticket Header */}
               <div style={{ position: 'relative', padding: '28px 16px', color: 'white', textAlign: 'center', overflow: 'hidden' }}>
                 <img src={getEventCover(selectedTicket.event)} alt={selectedTicket.event.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(20,10,5,0.85) 0%, rgba(255,107,53,0.55) 100%)', zIndex: 1 }}></div>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(20,10,5,0.85) 0%, rgba(31, 58, 99,0.55) 100%)', zIndex: 1 }}></div>
                 <div style={{ position: 'relative', zIndex: 2 }}>
                   <Ticket size={36} style={{ marginBottom: '8px' }} />
                   <h3 style={{ fontSize: '1.35rem', fontFamily: 'var(--font-heading)', fontWeight: 800, margin: 0 }}>OFFICIAL EVENT PASS</h3>
@@ -1626,7 +1629,7 @@ export default function GuestDashboard({ onLogout }) {
                     href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(selectedTicket.event.title)}&dates=${selectedTicket.event.date.replace(/-/g,'')}T${(selectedTicket.event.time||'180000').replace(':','')}00/${selectedTicket.event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(selectedTicket.event.location)}`}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(255,107,53,0.06)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                    style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(31, 58, 99,0.06)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
                   >
                     + Google Calendar
                   </a>
@@ -1666,7 +1669,7 @@ export default function GuestDashboard({ onLogout }) {
                     onClick={() => setEditRsvpStatus('going')}
                     style={{
                       flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                      background: editRsvpStatus === 'going' ? 'rgba(255, 107, 53, 0.08)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 700, color: 'var(--color-text)'
+                      background: editRsvpStatus === 'going' ? 'rgba(31, 58, 99, 0.08)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 700, color: 'var(--color-text)'
                     }}
                   >
                     Going
@@ -1715,7 +1718,7 @@ export default function GuestDashboard({ onLogout }) {
                       fontSize: '0.7rem', 
                       padding: '2px 8px', 
                       borderRadius: '9999px', 
-                      background: viewLogDetail.channel === 'Email' ? 'rgba(255,107,53,0.1)' : 'rgba(34,197,94,0.1)', 
+                      background: viewLogDetail.channel === 'Email' ? 'rgba(31, 58, 99,0.1)' : 'rgba(34,197,94,0.1)', 
                       color: viewLogDetail.channel === 'Email' ? 'var(--color-primary)' : '#16a34a',
                       fontWeight: 600
                     }}>

@@ -103,7 +103,7 @@ export default function BillingPanel({ hostEmail }) {
         <Card className="glass-surface" style={{ padding: '28px', textAlign: 'left', position: 'relative', overflow: 'hidden' }}>
           <div style={{
             position: 'absolute', top: 0, right: 0, width: '120px', height: '120px',
-            background: 'linear-gradient(135deg, rgba(255,107,53,0.08), rgba(255,60,172,0.05))',
+            background: 'linear-gradient(135deg, rgba(31, 58, 99,0.08), rgba(255,60,172,0.05))',
             borderRadius: '0 0 0 100%'
           }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px', position: 'relative' }}>
@@ -265,7 +265,7 @@ export default function BillingPanel({ hostEmail }) {
                   style={{
                     padding: '16px', borderRadius: '14px', cursor: isCurrent ? 'default' : 'pointer',
                     border: selectedPlanId === p.id ? '2px solid var(--color-primary)' : isCurrent ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
-                    opacity: isCurrent ? 0.6 : 1, background: selectedPlanId === p.id ? 'rgba(255,107,53,0.04)' : 'var(--color-surface)',
+                    opacity: isCurrent ? 0.6 : 1, background: selectedPlanId === p.id ? 'rgba(31, 58, 99,0.04)' : 'var(--color-surface)',
                     transition: 'all 0.2s'
                   }}
                 >
@@ -322,7 +322,7 @@ export default function BillingPanel({ hostEmail }) {
               }}>
                 <span style={{
                   width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.3rem', background: 'rgba(255,107,53,0.08)', flexShrink: 0
+                  fontSize: '1.3rem', background: 'rgba(31, 58, 99,0.08)', flexShrink: 0
                 }}>
                   {tu.category === 'attendees' ? '👥' : tu.category === 'events' ? '📅' : tu.category === 'staff' ? '🎫' : tu.category === 'photos' ? '📸' : tu.category === 'sms' ? '💬' : '⭐'}
                 </span>

@@ -1,31 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
   /* Apple Light Theme Base */
-  --color-primary: #F2541B; /* Orange Zomato Energy */
-  --color-primary-hover: #d8430f;
-  --color-accent: #00C853; /* Blinkit Green */
-  --color-accent-hover: #00b047;
-  --color-urgent: #FF1744; /* Urgent Red */
-  --color-bg: #f8f9fa; /* Sleek light grey background */
+  --color-primary: #1F3A63; /* Logo navy */
+  --color-primary-hover: #16304F;
+  --color-accent: #00A152; /* Success green (semantic) */
+  --color-accent-hover: #00913f;
+  --color-urgent: #E03131; /* Urgent red */
+  --color-bg: #ffffff; /* Pure white — clean, Apple-style canvas */
   --color-surface: #ffffff;
-  --color-surface-hover: #f1f3f5;
-  --color-text: #0A0A0A; /* Deep rich dark text */
-  --color-text-muted: #6b7280;
-  --color-border: #e9ecef;
-  --color-border-hover: #ced4da;
+  --color-surface-hover: #f5f5f7; /* Apple cool light gray (hovers / fills only) */
+  --color-text: #1d1d1f; /* Apple near-black ink */
+  --color-text-muted: #6e6e73; /* Apple secondary gray */
+  --color-border: #e5e5ea;
+  --color-border-hover: #d2d2d7;
 
   /* Brand RGB channels (for tints / glows that need alpha) */
-  --color-primary-rgb: 242, 84, 27;
-  --color-accent-rgb: 0, 200, 83;
+  --color-primary-rgb: 31, 58, 99;
+  --color-accent-rgb: 0, 161, 82;
+  /* Gold accent from the logo wordmark */
+  --color-gold: #C28C32;
+  --color-gold-rgb: 194, 140, 50;
   /* Reusable brand tints — keeps every "primary"-flavoured surface on-brand */
-  --tint-primary-soft: rgba(242, 84, 27, 0.08);
-  --tint-primary-medium: rgba(242, 84, 27, 0.14);
-  --tint-accent-soft: rgba(0, 200, 83, 0.1);
+  --tint-primary-soft: rgba(31, 58, 99, 0.06);
+  --tint-primary-medium: rgba(31, 58, 99, 0.12);
+  --tint-accent-soft: rgba(0, 161, 82, 0.1);
+  --tint-gold-soft: rgba(194, 140, 50, 0.12);
 
-  /* Typography */
-  --font-heading: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  /* Typography — one family everywhere (Inter ≈ Apple SF Pro / Salesforce Sans) */
+  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -34,6 +39,9 @@
   --spacing-lg: 2.5rem;
   --spacing-xl: 4rem;
   --spacing-2xl: 6rem;
+
+  /* Fixed app header height — shared by sticky sidebar / panel offsets */
+  --header-h: 64px;
 
   /* Border Radius */
   --radius-sm: 8px;
@@ -46,7 +54,7 @@
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.08);
   --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.10);
-  --shadow-glow: 0 0 0 4px rgba(242, 84, 27, 0.18), 0 8px 24px rgba(242, 84, 27, 0.28);
+  --shadow-glow: 0 0 0 4px rgba(31, 58, 99, 0.14), 0 8px 24px rgba(31, 58, 99, 0.24);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -70,14 +78,17 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
+  letter-spacing: -0.011em; /* Inter reads cleaner very slightly tightened */
+  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
 /* On-brand text selection */
 ::selection {
-  background: rgba(242, 84, 27, 0.22);
+  background: rgba(31, 58, 99, 0.22);
   color: var(--color-text);
 }
 
@@ -136,7 +147,7 @@ body {
   left: -10%;
   width: 50%;
   height: 50%;
-  background: radial-gradient(circle, rgba(242, 84, 27, 0.06) 0%, rgba(245, 245, 247, 0) 70%);
+  background: radial-gradient(circle, rgba(31, 58, 99, 0.05) 0%, rgba(245, 245, 247, 0) 70%);
   border-radius: 50%;
   z-index: -1;
   animation: float 10s ease-in-out infinite alternate;
@@ -149,7 +160,7 @@ body {
   right: -10%;
   width: 60%;
   height: 60%;
-  background: radial-gradient(circle, rgba(0, 200, 83, 0.045) 0%, rgba(245, 245, 247, 0) 70%);
+  background: radial-gradient(circle, rgba(194, 140, 50, 0.05) 0%, rgba(245, 245, 247, 0) 70%);
   border-radius: 50%;
   z-index: -1;
   animation: float 12s ease-in-out infinite alternate-reverse;
@@ -176,8 +187,8 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 1.08;
+  letter-spacing: -0.022em;
 }
 
 a {
@@ -226,11 +237,11 @@ a {
 }
 
 .btn:hover {
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(-1px);
 }
 
 .btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0);
 }
 
 .btn:disabled,
@@ -242,14 +253,14 @@ a {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  background: var(--color-primary);
   color: white;
-  box-shadow: 0 4px 14px 0 rgba(242, 84, 27, 0.32);
+  box-shadow: 0 1px 2px rgba(31, 58, 99, 0.18);
 }
 
 .btn-primary:hover {
-  box-shadow: var(--shadow-glow);
-  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
+  background: var(--color-primary-hover);
+  box-shadow: 0 4px 14px rgba(31, 58, 99, 0.22);
 }
 
 .btn-ghost {
@@ -281,19 +292,13 @@ a {
   border: 1px solid var(--color-border);
 }
 
-/* Gradient Text — warm brand sweep with a slow shimmer */
+/* Gradient Text — static navy→gold, straight from the logo palette */
 .text-gradient {
-  background: linear-gradient(120deg, #F2541B 0%, #FF7A45 45%, #FF5E7A 100%);
-  background-size: 200% auto;
+  background: linear-gradient(100deg, #1F3A63 0%, #2E5286 45%, #C28C32 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradientShift 7s ease-in-out infinite alternate;
-}
-
-@keyframes gradientShift {
-  from { background-position: 0% center; }
-  to { background-position: 100% center; }
+  color: var(--color-primary); /* fallback */
 }
 
 /* Responsive Utilities */
@@ -399,7 +404,7 @@ a {
 }
 
 .premium-table tr:hover {
-  background-color: rgba(242, 84, 27, 0.03);
+  background-color: rgba(31, 58, 99, 0.03);
 }
 
 /* SVG Chart Animations */
@@ -532,13 +537,13 @@ input[type="url"]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 4px rgba(242, 84, 27, 0.16) !important;
+  box-shadow: 0 0 0 4px rgba(31, 58, 99, 0.16) !important;
   outline: none !important;
 }
 
 /* Redefined table tr hover color for light mode */
 .premium-table tr:hover {
-  background-color: rgba(242, 84, 27, 0.04);
+  background-color: rgba(31, 58, 99, 0.04);
 }
 
 /* ─── Form System ─── */
@@ -597,7 +602,7 @@ textarea:focus {
 .form-textarea:focus,
 .form-select:focus {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 4px rgba(242, 84, 27, 0.14) !important;
+  box-shadow: 0 0 0 4px rgba(31, 58, 99, 0.14) !important;
   outline: none !important;
 }
 
@@ -654,33 +659,61 @@ textarea:focus {
 /* ─── Dashboard Layout ─── */
 .dashboard-layout {
   display: flex;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--header-h));
   background: var(--color-bg);
 }
 
 .dashboard-sidebar {
-  width: 264px;
+  width: 228px;
   flex-shrink: 0;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
-  padding: var(--spacing-lg) var(--spacing-md);
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   position: sticky;
-  top: 64px;
+  top: var(--header-h);
   align-self: flex-start;
-  height: calc(100vh - 64px);
+  height: calc(100vh - var(--header-h));
+  transition: width var(--transition-fast);
 }
 
 .dashboard-sidebar-title {
-  font-size: 1.1rem;
-  font-weight: 800;
+  font-size: 0.92rem;
+  font-weight: 700;
   font-family: var(--font-heading);
-  letter-spacing: -0.01em;
-  padding: 0 var(--spacing-xs) var(--spacing-md);
-  margin-bottom: var(--spacing-sm);
+  letter-spacing: -0.015em;
+  padding: 2px 6px 12px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
+}
+
+/* Small uppercase section header inside the rail */
+.nav-section-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+  padding: 0 10px;
+  margin: 12px 0 3px;
+}
+
+/* Collapsed (hamburger) sidebar — icon rail only */
+.dashboard-sidebar.collapsed {
+  width: 76px;
+}
+.dashboard-sidebar.collapsed .nav-label {
+  display: none;
+}
+.dashboard-sidebar.collapsed .dashboard-nav-btn {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.dashboard-sidebar.collapsed .dashboard-sidebar-title {
+  justify-content: center;
 }
 
 .dashboard-nav-btn {
@@ -689,13 +722,15 @@ textarea:focus {
   border: none;
   text-align: left;
   cursor: pointer;
-  padding: 11px 14px;
-  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+  letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   background: transparent;
   color: var(--color-text-muted);
   transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
@@ -716,7 +751,7 @@ textarea:focus {
 }
 
 .dashboard-nav-btn.active {
-  background: rgba(242, 84, 27, 0.09);
+  background: rgba(31, 58, 99, 0.09);
   color: var(--color-primary);
   font-weight: 700;
 }
@@ -743,7 +778,7 @@ textarea:focus {
 /* ─── Create Event Layout ─── */
 .create-event-layout {
   display: flex;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--header-h));
   background: var(--color-bg);
 }
 
@@ -764,8 +799,8 @@ textarea:focus {
   align-items: flex-start;
   justify-content: center;
   position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h));
   overflow-y: auto;
 }
 
@@ -868,7 +903,7 @@ textarea:focus {
 
 .host-type-option.selected {
   border-color: var(--color-primary);
-  background: rgba(242, 84, 27, 0.06);
+  background: rgba(31, 58, 99, 0.06);
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -905,7 +940,7 @@ textarea:focus {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border);
-  padding: 12px 0;
+  padding: 0;
 }
 
 .site-header-inner {
@@ -913,6 +948,24 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
   gap: var(--spacing-sm);
+  min-height: var(--header-h);
+}
+
+/* Dashboard: full-bleed top bar so the brand sits directly above the sidebar
+   and the account cluster sits above the content — header lines up with the
+   layout below it instead of floating inside a centered container. */
+.site-header-inner--full {
+  max-width: none;
+  margin: 0;
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-xl);
+}
+
+@media (max-width: 767px) {
+  .site-header-inner--full {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 .site-logo {
@@ -980,7 +1033,7 @@ textarea:focus {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(242, 84, 27, 0.08);
+  background: rgba(31, 58, 99, 0.08);
   padding: 6px 12px;
   border-radius: var(--radius-sm);
 }
@@ -1062,7 +1115,7 @@ textarea:focus {
 }
 
 .badge-primary {
-  background: rgba(242, 84, 27, 0.08);
+  background: rgba(31, 58, 99, 0.08);
   color: var(--color-primary);
 }
 
@@ -1256,7 +1309,7 @@ button.text-link:hover {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(242, 84, 27, 0.25);
+  box-shadow: 0 4px 12px rgba(31, 58, 99, 0.25);
 }
 
 /* Collection Card styling (Zomato-style) */
@@ -1514,7 +1567,7 @@ button.text-link:hover {
   box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.22);
 }
 
-.stat-icon-orange { background: linear-gradient(135deg, #F2541B, #d8430f); }
+.stat-icon-orange { background: linear-gradient(135deg, #1F3A63, #16304F); }
 .stat-icon-green { background: linear-gradient(135deg, #00C853, #00963f); }
 .stat-icon-blue { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
 .stat-icon-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
@@ -1633,7 +1686,7 @@ button.text-link:hover {
 
 /* Accent ring helper for emphasized avatars/tiles */
 .ring-primary {
-  box-shadow: 0 0 0 3px rgba(242, 84, 27, 0.18);
+  box-shadow: 0 0 0 3px rgba(31, 58, 99, 0.18);
 }
 
 /* Smooth, consistent card-photo hover lift on linked event cards */
@@ -1648,6 +1701,16 @@ a .event-photo-card:hover {
    ════════════════════════════════════════════════════════════ */
 
 /* Hero: light surface + faint grid + soft brand glow (no photo) */
+/* Big landing + auth headlines — tight, bold Inter (Apple display feel) */
+.landing-page h1,
+.landing-page h2,
+.auth-page h1,
+.auth-page h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
 .platform-hero {
   position: relative;
   background: var(--color-surface);
@@ -1669,11 +1732,14 @@ a .event-photo-card:hover {
 .platform-hero::after {
   content: '';
   position: absolute;
-  top: -25%;
-  right: -8%;
-  width: 55%;
-  height: 80%;
-  background: radial-gradient(circle, rgba(var(--color-primary-rgb), 0.13) 0%, transparent 66%);
+  top: -22%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%;
+  height: 78%;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(var(--color-primary-rgb), 0.06) 0%, transparent 60%),
+    radial-gradient(circle at 76% 16%, rgba(var(--color-gold-rgb), 0.045) 0%, transparent 50%);
   z-index: 0;
   pointer-events: none;
 }
@@ -1707,6 +1773,7 @@ a .event-photo-card:hover {
   flex-shrink: 0;
 }
 .chip-primary { background: rgba(var(--color-primary-rgb), 0.12); color: var(--color-primary); }
+.chip-gold    { background: rgba(var(--color-gold-rgb), 0.16);    color: #936a1d; }
 .chip-green   { background: rgba(0, 200, 83, 0.12);   color: #00a344; }
 .chip-blue    { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
 .chip-violet  { background: rgba(139, 92, 246, 0.14); color: #7c3aed; }
@@ -1792,9 +1859,9 @@ a .event-photo-card:hover {
   text-align: center;
   color: #fff;
   background:
-    radial-gradient(circle at 18% 12%, rgba(var(--color-primary-rgb), 0.32), transparent 45%),
-    radial-gradient(circle at 86% 88%, rgba(0, 200, 83, 0.16), transparent 45%),
-    linear-gradient(135deg, #141210 0%, #221913 100%);
+    radial-gradient(circle at 18% 12%, rgba(46, 82, 134, 0.50), transparent 50%),
+    radial-gradient(circle at 86% 88%, rgba(var(--color-gold-rgb), 0.20), transparent 48%),
+    linear-gradient(150deg, #16243f 0%, #0f1b30 100%);
 }
 .cta-band h2 { color: #fff; }
 .cta-band::after {
@@ -1822,7 +1889,7 @@ h1, h2, h3 {
 .hero-blob-1 {
   width: 420px;
   height: 420px;
-  background: rgba(var(--color-primary-rgb), 0.16);
+  background: rgba(var(--color-primary-rgb), 0.06);
   top: -120px;
   left: -110px;
   animation: blobDrift 16s ease-in-out infinite alternate;
@@ -1830,7 +1897,7 @@ h1, h2, h3 {
 .hero-blob-2 {
   width: 360px;
   height: 360px;
-  background: rgba(0, 200, 83, 0.10);
+  background: rgba(var(--color-gold-rgb), 0.055);
   bottom: -150px;
   right: 6%;
   animation: blobDrift 20s ease-in-out infinite alternate-reverse;
@@ -1868,7 +1935,7 @@ h1, h2, h3 {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--color-primary), #FF9A62);
+  background: linear-gradient(90deg, var(--color-primary), #C28C32);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   opacity: 0;
   transition: opacity 0.3s ease;

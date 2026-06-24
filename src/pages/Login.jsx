@@ -300,7 +300,7 @@ export default function Login() {
 
 
   // ─── UI-only helpers (no logic) ───
-  const orangeTint = 'rgba(255, 107, 53, 0.1)';
+  const orangeTint = 'rgba(31, 58, 99, 0.1)';
   const greenTint = 'rgba(0, 200, 83, 0.1)';
 
   const sectionLabelStyle = {
@@ -389,7 +389,7 @@ export default function Login() {
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(20,20,25,0.25) 0%, rgba(20,20,25,0.75) 100%)' }} />
             <div style={{ position: 'absolute', left: '20px', bottom: '14px', color: '#fff' }}>
               <div style={{ fontWeight: 800, fontSize: '1.05rem', fontFamily: 'var(--font-heading)' }}>Where great events begin</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>Trusted by 2,000+ hosts &amp; guests</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>Creating successful moments</div>
             </div>
           </div>
 
@@ -486,7 +486,9 @@ export default function Login() {
                     ? 'Join SafalEvents'
                     : signupRole === 'guest'
                     ? 'Create your guest account'
-                    : 'Become a Host'}
+                    : hostType === 'organization'
+                    ? 'Register your organization'
+                    : 'Become a host'}
                 </h1>
                 <p className="text-muted" style={{ fontSize: '0.9rem' }}>
                   {!isSignup
@@ -495,7 +497,9 @@ export default function Login() {
                     ? 'How would you like to use SafalEvents?'
                     : signupRole === 'guest'
                     ? 'RSVP to events, get your tickets, and message hosts.'
-                    : 'Share only what you want — every field is optional.'}
+                    : hostType === 'organization'
+                    ? "Set up a verified organization profile to host events at scale — we'll review your details for approval."
+                    : 'Create your host account — it only takes a minute.'}
                 </p>
               </div>
 
@@ -537,11 +541,11 @@ export default function Login() {
                 /* UC-12: guest signup form */
                 <form onSubmit={handleGuestSignupSubmit} className="flex flex-col gap-md">
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <FormField label="First name"><FormInput value={guestForm.firstName} onChange={(e) => setGuestForm({ ...guestForm, firstName: e.target.value })} placeholder="Alice" /></FormField>
-                    <FormField label="Last name"><FormInput value={guestForm.lastName} onChange={(e) => setGuestForm({ ...guestForm, lastName: e.target.value })} placeholder="Vance" /></FormField>
+                    <FormField label="First name"><FormInput value={guestForm.firstName} onChange={(e) => setGuestForm({ ...guestForm, firstName: e.target.value })} placeholder="Alice" required /></FormField>
+                    <FormField label="Last name"><FormInput value={guestForm.lastName} onChange={(e) => setGuestForm({ ...guestForm, lastName: e.target.value })} placeholder="Vance" required /></FormField>
                   </div>
-                  <FormField label="Email"><FormInput type="email" value={guestForm.email} onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })} placeholder="you@email.com" /></FormField>
-                  <FormField label="Phone"><FormInput value={guestForm.phone} onChange={(e) => setGuestForm({ ...guestForm, phone: e.target.value })} placeholder="+1 (555) 000-0000" /></FormField>
+                  <FormField label="Email"><FormInput type="email" value={guestForm.email} onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })} placeholder="you@email.com" required /></FormField>
+                  <FormField label="Phone"><FormInput value={guestForm.phone} onChange={(e) => setGuestForm({ ...guestForm, phone: e.target.value })} placeholder="+1 (555) 000-0000" required /></FormField>
                   <Button variant="primary" type="submit" style={{ width: '100%', padding: '13px', fontWeight: 700, fontSize: '1rem' }}><Mail size={16} /> Send verification code</Button>
                   <button type="button" onClick={() => { setSignupRole(null); setErrorMsg(''); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', alignSelf: 'center' }}><ArrowLeft size={14} /> Back</button>
                 </form>
@@ -577,7 +581,6 @@ export default function Login() {
                           <User size={17} />
                         </span>
                         <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text)' }}>Individual</span>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 400, lineHeight: 1.35 }}>Birthdays, meetups &amp; personal events</span>
                         {hostType === 'individual' && (
                           <span style={{ position: 'absolute', top: '10px', right: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff' }}>
                             <Check size={12} />
@@ -605,7 +608,6 @@ export default function Login() {
                           <Building2 size={17} />
                         </span>
                         <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text)' }}>Organization</span>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 400, lineHeight: 1.35 }}>NGOs, temples, companies &amp; clubs</span>
                         {hostType === 'organization' && (
                           <span style={{ position: 'absolute', top: '10px', right: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff' }}>
                             <Check size={12} />
@@ -622,18 +624,18 @@ export default function Login() {
                       </div>
                       <div className="grid-2">
                         <FormField label="First name">
-                          <FormInput type="text" placeholder="Alex" value={individualForm.firstName} onChange={(e) => setIndividualForm({ ...individualForm, firstName: e.target.value })} />
+                          <FormInput type="text" placeholder="Alex" value={individualForm.firstName} onChange={(e) => setIndividualForm({ ...individualForm, firstName: e.target.value })} required />
                         </FormField>
                         <FormField label="Last name">
-                          <FormInput type="text" placeholder="Rivera" value={individualForm.lastName} onChange={(e) => setIndividualForm({ ...individualForm, lastName: e.target.value })} />
+                          <FormInput type="text" placeholder="Rivera" value={individualForm.lastName} onChange={(e) => setIndividualForm({ ...individualForm, lastName: e.target.value })} required />
                         </FormField>
                       </div>
                       <div className="grid-2">
                         <FormField label="Email">
-                          <FormInput type="email" placeholder="alex@example.com" value={individualForm.email} onChange={(e) => setIndividualForm({ ...individualForm, email: e.target.value })} />
+                          <FormInput type="email" placeholder="alex@example.com" value={individualForm.email} onChange={(e) => setIndividualForm({ ...individualForm, email: e.target.value })} required />
                         </FormField>
                         <FormField label="Phone">
-                          <FormInput type="tel" placeholder="+1 (555) 000-0000" value={individualForm.phone} onChange={(e) => setIndividualForm({ ...individualForm, phone: e.target.value })} />
+                          <FormInput type="tel" placeholder="+1 (555) 000-0000" value={individualForm.phone} onChange={(e) => setIndividualForm({ ...individualForm, phone: e.target.value })} required />
                         </FormField>
                       </div>
                       <FormField label="City">
@@ -651,7 +653,7 @@ export default function Login() {
                       </div>
                       <div className="grid-2">
                         <FormField label="Organization name">
-                          <FormInput type="text" placeholder="Temple Community Group" value={orgForm.orgName} onChange={(e) => setOrgForm({ ...orgForm, orgName: e.target.value })} />
+                          <FormInput type="text" placeholder="Temple Community Group" value={orgForm.orgName} onChange={(e) => setOrgForm({ ...orgForm, orgName: e.target.value })} required />
                         </FormField>
                         <FormField label="Organization type">
                           <FormSelect value={orgForm.orgType} onChange={(e) => setOrgForm({ ...orgForm, orgType: e.target.value })}>
@@ -677,21 +679,25 @@ export default function Login() {
                         </span>
                         <div className="grid-2">
                           <FormField label="First name">
-                            <FormInput type="text" placeholder="Alex" value={orgForm.firstName} onChange={(e) => setOrgForm({ ...orgForm, firstName: e.target.value })} />
+                            <FormInput type="text" placeholder="Alex" value={orgForm.firstName} onChange={(e) => setOrgForm({ ...orgForm, firstName: e.target.value })} required />
                           </FormField>
                           <FormField label="Last name">
-                            <FormInput type="text" placeholder="Rivera" value={orgForm.lastName} onChange={(e) => setOrgForm({ ...orgForm, lastName: e.target.value })} />
+                            <FormInput type="text" placeholder="Rivera" value={orgForm.lastName} onChange={(e) => setOrgForm({ ...orgForm, lastName: e.target.value })} required />
                           </FormField>
                         </div>
                         <div className="grid-2">
                           <FormField label="Email">
-                            <FormInput type="email" placeholder="alex@org.com" value={orgForm.email} onChange={(e) => setOrgForm({ ...orgForm, email: e.target.value })} />
+                            <FormInput type="email" placeholder="alex@org.com" value={orgForm.email} onChange={(e) => setOrgForm({ ...orgForm, email: e.target.value })} required />
                           </FormField>
                           <FormField label="Phone">
-                            <FormInput type="tel" placeholder="+1 (555) 777-6666" value={orgForm.phone} onChange={(e) => setOrgForm({ ...orgForm, phone: e.target.value })} />
+                            <FormInput type="tel" placeholder="+1 (555) 777-6666" value={orgForm.phone} onChange={(e) => setOrgForm({ ...orgForm, phone: e.target.value })} required />
                           </FormField>
                         </div>
                       </div>
+                      <label style={{ display: 'flex', gap: '8px', fontSize: '0.8rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={orgForm.agreeTerms} onChange={(e) => setOrgForm({ ...orgForm, agreeTerms: e.target.checked })} style={{ marginTop: '2px', accentColor: 'var(--color-primary)' }} />
+                        <span>I agree to the Terms and Privacy Policy</span>
+                      </label>
                     </div>
                   )}
 
@@ -814,33 +820,6 @@ export default function Login() {
                 ))}
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: '2px', marginBottom: '8px' }}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} size={13} style={{ fill: '#FFC107', color: '#FFC107' }} />
-                  ))}
-                </div>
-                <p style={{ fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '10px', fontStyle: 'italic' }}>
-                  "I set up our temple's Diwali night in one evening — RSVPs, reminders, QR check-in. Our smoothest event ever."
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <img src={getAvatar('priya.sharma')} alt="Priya Sharma" className="avatar-img avatar-sm" />
-                  <div>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700 }}>Priya Sharma</div>
-                    <div style={{ fontSize: '0.68rem', opacity: 0.75 }}>Community Host · 14 events</div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div className="avatar-stack">
-                  {AVATARS.slice(0, 4).map((a, i) => (
-                    <img key={i} src={a} alt="Community member" className="avatar-img avatar-sm" />
-                  ))}
-                  <span className="avatar-stack-more" style={{ width: '28px', height: '28px', fontSize: '0.6rem' }}>+2k</span>
-                </div>
-                <span style={{ fontSize: '0.78rem', opacity: 0.85 }}>Joined by 2,000+ hosts &amp; happy guests</span>
-              </div>
             </div>
           </div>
         </div>

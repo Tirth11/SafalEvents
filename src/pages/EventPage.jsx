@@ -646,7 +646,7 @@ export default function EventPage() {
                       href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${event.date.replace(/-/g,'')}T${(event.time||'180000').replace(':','')}00/${event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(event.location)}&details=${encodeURIComponent(event.description)}`}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                      style={{ flex: 1, textAlign: 'center', padding: '8px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', borderRadius: '6px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
                     >
                       + Google Calendar
                     </a>
@@ -789,7 +789,7 @@ export default function EventPage() {
                   <p className="text-muted" style={{ fontSize: '0.875rem' }}>
                     Enter the 6-digit verification code we sent to your email and phone.
                   </p>
-                  <div style={{ margin: '12px auto', background: 'rgba(255, 107, 53, 0.08)', border: '1px dashed rgba(255, 107, 53, 0.35)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  <div style={{ margin: '12px auto', background: 'rgba(31, 58, 99, 0.08)', border: '1px dashed rgba(31, 58, 99, 0.35)', borderRadius: '8px', padding: '8px 12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                     Active Code: {rsvpSession.otpCode}
                   </div>
                 </div>
@@ -1053,7 +1053,7 @@ export default function EventPage() {
                       href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${event.date.replace(/-/g,'')}T${(event.time||'180000').replace(':','')}00/${event.date.replace(/-/g,'')}T220000&location=${encodeURIComponent(event.location)}&details=${encodeURIComponent(event.description)}`}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(255,107,53,0.1)', color: 'var(--color-primary)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                      style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', borderRadius: '8px', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
                     >
                       Google
                     </a>

@@ -104,7 +104,7 @@ export default function FeedbackPage() {
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   width: '72px', height: '72px', borderRadius: '50%',
                   background: 'linear-gradient(135deg, var(--color-primary), #ff9a6b)',
-                  color: 'white', marginBottom: '16px', boxShadow: '0 8px 24px rgba(255, 107, 53, 0.35)'
+                  color: 'white', marginBottom: '16px', boxShadow: '0 8px 24px rgba(31, 58, 99, 0.35)'
                 }}>
                   <Heart size={36} fill="white" />
                 </div>
@@ -229,7 +229,7 @@ export default function FeedbackPage() {
                   style={{
                     width: '100%', padding: '14px', fontSize: '1rem', fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    marginTop: '6px', borderRadius: '14px', boxShadow: '0 6px 18px rgba(255, 107, 53, 0.3)'
+                    marginTop: '6px', borderRadius: '14px', boxShadow: '0 6px 18px rgba(31, 58, 99, 0.3)'
                   }}
                 >
                   <MessageSquare size={18} /> Send My Feedback
