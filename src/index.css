@@ -687,6 +687,11 @@ textarea:focus {
   padding: 2px 6px 12px;
   margin-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
 }
 
 /* Small uppercase section header inside the rail */

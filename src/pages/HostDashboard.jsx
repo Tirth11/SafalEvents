@@ -1223,7 +1223,7 @@ export default function HostDashboard({ onLogout }) {
       <div className="dashboard-layout">
         {/* Sidebar */}
         <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <div className="dashboard-sidebar-title" style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between' }}>
+          <div className="dashboard-sidebar-title">
             <span className="nav-label" style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
               {profileAvatar ? (
                 <img src={profileAvatar} alt="" style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
@@ -1460,21 +1460,6 @@ export default function HostDashboard({ onLogout }) {
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
                     >
                       Review guests &rarr;
-                    </button>
-                  </Card>
-
-                  {/* Card 5: Total Page Views */}
-                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
-                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-purple"><Eye size={22} /></div>
-                    </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Page Views</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalViewsAll.toLocaleString()}</p>
-                    <button
-                      onClick={() => setActiveSidebar('analytics')}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
-                    >
-                      View analytics &rarr;
                     </button>
                   </Card>
 

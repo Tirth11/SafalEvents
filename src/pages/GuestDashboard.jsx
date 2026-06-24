@@ -30,6 +30,8 @@ export default function GuestDashboard({ onLogout }) {
     optOutSms: false
   });
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileAvatar, setProfileAvatar] = useState(mockStore.getCurrentUser()?.avatar || null);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [timelineItems, setTimelineItems] = useState([]);
   const [messageLogs, setMessageLogs] = useState([]);
   const [viewLogDetail, setViewLogDetail] = useState(null);
@@ -334,6 +336,21 @@ export default function GuestDashboard({ onLogout }) {
     }
   };
 
+  // Read an uploaded image as a data URL and store it as the guest's profile photo
+  const handleGuestAvatarUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfileAvatar(reader.result);
+      try { mockStore.setCurrentUser({ ...mockStore.getCurrentUser(), avatar: reader.result }); } catch (err) { /* no-op */ }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Resolved guest avatar: uploaded photo if present, else a generated one
+  const guestAvatar = profileAvatar || getAvatar(currentUser?.email || currentUser?.name);
+
   const handleProfileSubmit = (e) => {
     e.preventDefault();
     mockStore.setCurrentUser({
@@ -495,6 +512,7 @@ export default function GuestDashboard({ onLogout }) {
       embedded
       userName={currentUser?.name}
       roleLabel="Guest"
+      avatarUrl={profileAvatar}
       planLabel={null}
       notifCount={typeof pendingReplyCount === 'number' ? pendingReplyCount : 0}
       onBell={() => setActiveTab('timeline')}
@@ -530,8 +548,11 @@ export default function GuestDashboard({ onLogout }) {
               <Settings size={18} /> Profile
             </button>
           </nav>
-          
-          <button type="button" onClick={onLogout} className="dashboard-nav-btn" style={{ marginTop: 'auto', border: '1px solid var(--color-border)' }}>
+
+          <button type="button" onClick={() => setShowHelpModal(true)} className="dashboard-nav-btn" style={{ marginTop: 'auto' }}>
+            <HelpCircle size={18} /> Help &amp; Resources
+          </button>
+          <button type="button" onClick={onLogout} className="dashboard-nav-btn" style={{ border: '1px solid var(--color-border)' }}>
             <LogOut size={18} /> Log Out
           </button>
         </aside>
@@ -545,7 +566,7 @@ export default function GuestDashboard({ onLogout }) {
             <div className="page-hero-overlay"></div>
             <div className="page-hero-content" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <img className="avatar-img avatar-lg" src={getAvatar(currentUser?.email || currentUser?.name)} alt={currentUser?.name || 'Guest'} />
+                <img className="avatar-img avatar-lg" src={guestAvatar} alt={currentUser?.name || 'Guest'} />
                 <div>
                   <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0, lineHeight: 1.15 }}>Hey, {firstName}! 👋</h1>
                   <p style={{ margin: '6px 0 0 0', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -831,7 +852,7 @@ export default function GuestDashboard({ onLogout }) {
                   {/* Profile Summary Card */}
                   <Card style={{ padding: '20px' }} className="glass-surface">
                     <div className="flex items-center gap-md" style={{ marginBottom: '16px' }}>
-                      <img className="avatar-img avatar-lg" src={getAvatar(currentUser?.email || currentUser?.name)} alt={currentUser?.name || 'Guest'} />
+                      <img className="avatar-img avatar-lg" src={guestAvatar} alt={currentUser?.name || 'Guest'} />
                       <div>
                         <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>{currentUser?.name}</h3>
                         <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Guest Member</span>
@@ -1420,6 +1441,23 @@ export default function GuestDashboard({ onLogout }) {
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px' }}>Guest Profile Preferences</h3>
                 <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '20px' }}>Update your default RSVP contact information and dietary settings.</p>
                 
+                <div className="flex items-center gap-md" style={{ marginBottom: '20px', flexWrap: 'wrap' }}>
+                  <img src={guestAvatar} alt={currentUser?.name || 'Guest'} className="avatar-img avatar-lg" style={{ objectFit: 'cover' }} />
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Profile Photo</h4>
+                    <p className="text-muted" style={{ margin: '2px 0 10px 0', fontSize: '0.8rem' }}>Add a photo so hosts recognize you across RSVPs and messages.</p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <label htmlFor="guest-avatar-upload" className="btn btn-outline" style={{ padding: '8px 14px', fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <User size={15} /> {profileAvatar ? 'Change photo' : 'Upload photo'}
+                      </label>
+                      <input id="guest-avatar-upload" type="file" accept="image/*" onChange={handleGuestAvatarUpload} style={{ display: 'none' }} />
+                      {profileAvatar && (
+                        <button type="button" onClick={() => { setProfileAvatar(null); try { mockStore.setCurrentUser({ ...mockStore.getCurrentUser(), avatar: null }); } catch (e) { /* no-op */ } }} className="btn btn-ghost" style={{ padding: '8px 14px', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Remove</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <form onSubmit={handleProfileSubmit} className="flex flex-col gap-md">
                   <FormField label="Full name">
                     <FormInput type="text" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
@@ -1505,6 +1543,61 @@ export default function GuestDashboard({ onLogout }) {
           )}
 
         </main>
+
+        {/* Help & Resources Modal (guest) */}
+        {showHelpModal && (
+          <div
+            onClick={() => setShowHelpModal(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '20px' }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="animate-fade-in"
+              style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '560px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', overflow: 'hidden' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="stat-icon-tile stat-icon-blue" style={{ width: '36px', height: '36px' }}><HelpCircle size={18} /></div>
+                  <div style={{ textAlign: 'left' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Help &amp; Resources</h3>
+                    <p className="text-muted" style={{ margin: '1px 0 0 0', fontSize: '0.78rem' }}>Everything you need to RSVP and attend with ease</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowHelpModal(false)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '4px' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { title: 'RSVP to an event', desc: 'Open an invite link, pick Yes / Maybe / No and add your party size.' },
+                  { title: 'Find your ticket & QR pass', desc: 'Your passes live under “My RSVPs” — show the QR code at the door.' },
+                  { title: 'Edit or cancel an RSVP', desc: 'Update your answers or cancel from a ticket, before the host’s cutoff.' },
+                  { title: 'Message a host', desc: 'Ask questions from a ticket or the “Message Logs” tab anytime.' },
+                  { title: 'Manage notifications', desc: 'Choose email or SMS reminders under Profile preferences.' },
+                ].map((r, i) => (
+                  <a
+                    key={i}
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); }}
+                    className="card-hover-lift"
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-text)' }}
+                  >
+                    <span style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(31,58,99,0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, fontSize: '0.82rem' }}>{i + 1}</span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700 }}>{r.title}</span>
+                      <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>{r.desc}</span>
+                    </span>
+                    <ArrowRight size={16} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                  </a>
+                ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', padding: '12px 14px', borderRadius: '12px', background: 'var(--color-surface-hover)', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                  <Mail size={15} style={{ flexShrink: 0 }} /> Still stuck? Email <strong style={{ color: 'var(--color-text)' }}>&nbsp;support@safalevents.com</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Ticket Details Modal */}
         {selectedTicket && !showEditModal && (
