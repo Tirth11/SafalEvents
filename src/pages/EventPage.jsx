@@ -271,6 +271,24 @@ export default function EventPage() {
   // Builds the RSVP payload after running name + age validation (US-EVENT-014/015).
   // Returns { ok: true, payload } or { ok: false, error }.
   const buildValidatedRsvp = () => {
+    // A "No" response needs no party size or age check — just record the decline.
+    if (rsvpForm.status === 'declined') {
+      return {
+        ok: true,
+        payload: {
+          name: rsvpForm.name || 'Guest',
+          email,
+          phone,
+          status: 'declined',
+          guestCount: 1,
+          answers: rsvpForm.answers,
+          dob: '',
+          additionalGuests: [],
+          ageVerified: null,
+        }
+      };
+    }
+
     const guestCount = rsvpForm.guestCount || 1;
     const extras = (rsvpForm.additionalGuests || []).slice(0, Math.max(0, guestCount - 1));
 
@@ -849,7 +867,37 @@ export default function EventPage() {
                   <FormInput type="text" placeholder="Enter name" value={rsvpForm.name} onChange={(e) => setRsvpForm({ ...rsvpForm, name: e.target.value })} />
                 </FormField>
 
-                {event.ageRestricted && (
+                <FormField label="Will you attend?">
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'going', label: 'Yes' },
+                      ...(event.allowMaybeRsvp ? [{ key: 'maybe', label: 'Maybe' }] : []),
+                      { key: 'declined', label: 'No' },
+                    ].map(opt => {
+                      const active = rsvpForm.status === opt.key;
+                      const tone = opt.key === 'going' ? 'var(--color-primary)' : opt.key === 'maybe' ? 'var(--color-gold)' : '#ef4444';
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setRsvpForm({ ...rsvpForm, status: opt.key })}
+                          style={{
+                            flex: 1, minWidth: '80px', padding: '10px 12px', fontSize: '0.85rem', fontWeight: 700,
+                            borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                            border: active ? `2px solid ${tone}` : '1px solid var(--color-border)',
+                            background: active ? tone : 'var(--color-surface)',
+                            color: active ? '#fff' : 'var(--color-text)',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormField>
+
+                {event.ageRestricted && rsvpForm.status !== 'declined' && (
                   <FormField label="Your date of birth" hint="Used only to verify you meet the age requirement. Never shown publicly.">
                     <FormInput
                       type="date"
@@ -861,6 +909,7 @@ export default function EventPage() {
                   </FormField>
                 )}
 
+                {rsvpForm.status !== 'declined' && (
                 <FormField label="Number of guests (including yourself)" hint={`Max ${event.maxGuestsPerRsvp} per RSVP`}>
                   <select
                     value={rsvpForm.guestCount || 1}
@@ -872,6 +921,7 @@ export default function EventPage() {
                     ))}
                   </select>
                 </FormField>
+                )}
 
                 {/* Additional guest details (US-EVENT-015) */}
                 {(rsvpForm.additionalGuests || []).length > 0 && (
@@ -931,7 +981,11 @@ export default function EventPage() {
                 )}
 
                 <Button variant="primary" type="submit" style={{ width: '100%', marginTop: 'var(--spacing-md)' }}>
-                  {event.approvalRequired ? 'Request to Join' : 'Register'}
+                  {rsvpForm.status === 'declined'
+                    ? 'Submit response (Not attending)'
+                    : rsvpForm.status === 'maybe'
+                    ? 'Submit response (Maybe)'
+                    : event.approvalRequired ? 'Request to Join' : 'Register'}
                 </Button>
               </form>
             )}

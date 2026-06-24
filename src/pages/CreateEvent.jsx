@@ -35,9 +35,11 @@ export default function CreateEvent() {
     minimumAge: 18,
 
     allowSelfEdit: true,
+    selfEditCutoff: 24, // hours before event — guests can only self-edit until then
     allowSelfCancellation: true,
     cancellationCutoff: 24, // hours
     requireCancellationReason: false,
+    allowMaybeRsvp: false, // when on, guests can answer "Maybe" in addition to Yes/No
     approvalRequired: false,   // UC-01/02: hold RSVPs for host approval
     messagingEnabled: true,    // UC-09: allow guest <-> host messaging
 
@@ -594,6 +596,22 @@ export default function CreateEvent() {
                   small
                 />
 
+                {formData.allowSelfEdit && (
+                  <div style={{ marginTop: '-2px', marginBottom: '4px', paddingLeft: '4px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600 }}>Edit Cutoff (hrs before event)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.selfEditCutoff}
+                      onChange={(e) => setFormData({ ...formData, selfEditCutoff: Number(e.target.value) })}
+                      style={{ width: '100%', padding: '8px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', marginTop: '4px' }}
+                    />
+                    <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.72rem' }}>
+                      Guests can only change their RSVP up to {formData.selfEditCutoff || 0} hour{Number(formData.selfEditCutoff) === 1 ? '' : 's'} before the event starts. After that, edits are locked.
+                    </p>
+                  </div>
+                )}
+
                 <ToggleRow
                   title="Allow guests to self-cancel RSVPs"
                   desc="Frees their spot automatically for waitlisted guests."
@@ -620,6 +638,23 @@ export default function CreateEvent() {
                         <span className="slider"></span>
                       </label>
                     </div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '8px', paddingTop: '8px' }}>
+                  <ToggleRow
+                    title="Allow “Maybe” responses"
+                    desc="Guests always choose Yes or No (Yes pre-selected). Turn this on to also offer Maybe, so undecided guests show as “Maybe” in your guest list."
+                    checked={formData.allowMaybeRsvp}
+                    onChange={(e) => setFormData({ ...formData, allowMaybeRsvp: e.target.checked })}
+                    small
+                  />
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    {['Yes', 'No', ...(formData.allowMaybeRsvp ? ['Maybe'] : [])].map(opt => (
+                      <span key={opt} style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', border: '1px solid var(--color-border)', background: opt === 'Yes' ? 'rgba(31,58,99,0.1)' : 'var(--color-surface)', color: opt === 'Yes' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                        {opt}{opt === 'Yes' ? ' (default)' : ''}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
