@@ -167,13 +167,13 @@ export default function QRScanFAB({ currentUser }) {
                         type="text" 
                         value={scanInput}
                         onChange={(e) => setScanInput(e.target.value)}
-                        placeholder="e.g. g2"
+                        placeholder="e.g. r2"
                         style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
                         onKeyDown={(e) => e.key === 'Enter' && handleScan()}
                       />
                       <Button variant="primary" onClick={handleScan}>Simulate</Button>
                     </div>
-                    <Button variant="outline" onClick={() => handleScan('g2')} style={{ marginTop: '8px' }}>
+                    <Button variant="outline" onClick={() => handleScan('r2')} style={{ marginTop: '8px' }}>
                       ✨ Try Demo (Preview Result UI)
                     </Button>
                   </div>
