@@ -13,6 +13,7 @@ import PageShell from '../components/PageShell';
 import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import DashboardTopBar from '../components/DashboardTopBar';
+import GuestsDirectory from '../components/GuestsDirectory';
 import { GuestGeographyChart, EarningsGrowthChart, EventsStackedBarChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart, AttendanceGapLeaderboard } from '../components/DashboardCharts';
 import EventCalendarView from '../components/EventCalendarView';
 import { mockStore, defaultTemplates } from '../utils/mockStore';
@@ -3551,66 +3552,7 @@ export default function HostDashboard({ onLogout }) {
           {/* ========================================================================= */}
           {activeSidebar === 'audience' && (
             <div className="animate-fade-in">
-              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Guests Directory</h1>
-                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Manage contacts and histories for unique registered attendees.</p>
-              </div>
-              
-              <Card style={{ padding: 0 }} className="glass-surface text-left">
-                {audienceList.length > 0 ? (
-                  <table className="premium-table">
-                    <thead>
-                      <tr>
-                        <th>Guest Name</th>
-                        <th>Email Address</th>
-                        <th>Phone Number</th>
-                        <th>Events RSVP'd</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {audienceList.map(guest => (
-                        <tr key={guest.email}>
-                          <td style={{ fontWeight: 600 }}>
-                            <div className="flex items-center gap-sm">
-                              <img src={getAvatar(guest.name || guest.email)} alt={guest.name} className="avatar-img" />
-                              {guest.name}
-                            </div>
-                          </td>
-                          <td>{guest.email}</td>
-                          <td>{guest.phone || 'N/A'}</td>
-                          <td>{guest.eventsAttended.join(', ')}</td>
-                          <td>
-                            <Button 
-                              variant="ghost" 
-                              style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              onClick={() => {
-                                setBroadcastTarget(guest.email);
-                                setShowBroadcastModal(true);
-                              }}
-                            >
-                              <Mail size={12} /> Message
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="empty-state" style={{ padding: '48px 16px' }}>
-                    <img src={HERO_IMAGES.crowd} alt="Dinner party crowd" className="empty-state-img" />
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Your audience starts here</h3>
-                    <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', maxWidth: '380px' }}>
-                      Once guests RSVP to your events, their contact details and attendance history will appear in this directory.
-                    </p>
-                    <Link to="/create" onClick={(e) => { if (orgHostLocked) { e.preventDefault(); setShowOrgDocModal(true); } }}>
-                      <Button variant="primary" className="flex items-center gap-xs">
-                        <Plus size={16} /> Host Your First Event
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </Card>
+              <GuestsDirectory />
             </div>
           )}
 
@@ -3910,6 +3852,57 @@ export default function HostDashboard({ onLogout }) {
                   <Button variant="primary" type="submit" style={{ marginTop: '10px', alignSelf: 'start' }}>Save Changes</Button>
                 </form>
               </Card>
+
+              {/* GUEST ATTENDANCE POLICIES */}
+              {!isStaffViewer && (
+                <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left', marginTop: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+                      <AlertTriangle size={22} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Guest Attendance Policies</h4>
+                      <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.8rem' }}>Automatically flag and manage guests with low RSVP reliability.</p>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                      <input type="checkbox" defaultChecked style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }} />
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Detect Repeated Over-RSVP Behaviour</span>
+                    </label>
+
+                    <div style={{ background: 'var(--color-surface-hover)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>Variance Threshold (%)</label>
+                          <input type="number" defaultValue={50} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>Trigger After (Events)</label>
+                          <input type="number" defaultValue={3} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '8px' }}>Automatic Actions</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text)' }}>
+                            <input type="checkbox" defaultChecked style={{ accentColor: 'var(--color-primary)' }} /> Send Email Reminder
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text)' }}>
+                            <input type="checkbox" defaultChecked style={{ accentColor: 'var(--color-primary)' }} /> Send SMS Reminder
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text)' }}>
+                            <input type="checkbox" defaultChecked style={{ accentColor: 'var(--color-primary)' }} /> Send In-App Notification
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="primary" style={{ marginTop: '16px' }}>Save Policy</Button>
+                </Card>
+              )}
 
               {/* ORG DOCUMENT UPLOAD SECTION — always available in Settings so any host
                   can view documents submitted at registration, upload, or re-submit. */}
