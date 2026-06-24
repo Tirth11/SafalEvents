@@ -55,8 +55,8 @@ export default function QRScanFAB({ currentUser }) {
     return { history: history.sort((a,b) => new Date(b.date) - new Date(a.date)), score, hasWarning };
   };
 
-  const handleScan = () => {
-    const passId = scanInput.trim();
+  const handleScan = (overrideId) => {
+    const passId = (typeof overrideId === 'string' ? overrideId : scanInput).trim();
     if (!passId) return;
 
     // Search for RSVP globally across events user has access to
@@ -161,16 +161,21 @@ export default function QRScanFAB({ currentUser }) {
                   </div>
                   <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px' }}>Ready to Scan</h3>
                   <p className="text-muted" style={{ marginBottom: '24px' }}>Simulate a scan by pasting a guest's RSVP ID below.</p>
-                  <div style={{ display: 'flex', gap: '8px', maxWidth: '400px', margin: '0 auto' }}>
-                    <input 
-                      type="text" 
-                      value={scanInput}
-                      onChange={(e) => setScanInput(e.target.value)}
-                      placeholder="e.g. g2"
-                      style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
-                      onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-                    />
-                    <Button variant="primary" onClick={handleScan}>Simulate</Button>
+                  <div style={{ display: 'flex', gap: '8px', maxWidth: '400px', margin: '0 auto', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        value={scanInput}
+                        onChange={(e) => setScanInput(e.target.value)}
+                        placeholder="e.g. g2"
+                        style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+                      />
+                      <Button variant="primary" onClick={handleScan}>Simulate</Button>
+                    </div>
+                    <Button variant="outline" onClick={() => handleScan('g2')} style={{ marginTop: '8px' }}>
+                      ✨ Try Demo (Preview Result UI)
+                    </Button>
                   </div>
                 </div>
               )}
