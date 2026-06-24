@@ -239,7 +239,81 @@ export function EventsStackedBarChart({ data = [] }) {
 }
 
 
-// 4. Top Performing Events
+// 4. Attendance Gap Leaderboard
+export function AttendanceGapLeaderboard({ data = [] }) {
+  const [filter, setFilter] = useState('All Events');
+
+  const allEventsOptions = [
+    'All Events',
+    'Summer Meetup 2026',
+    'Startup Networking Night',
+    'Product Launch Event',
+    'Annual Conference'
+  ];
+
+  const sampleData = data.length ? data : [
+    { rank: 1, guest: 'John Doe', eventsRsvpd: 10, rsvpCount: 25, checkedIn: 8, noShows: 17, reliability: '32%' },
+    { rank: 2, guest: 'Jane Smith', eventsRsvpd: 8, rsvpCount: 18, checkedIn: 7, noShows: 11, reliability: '39%' },
+    { rank: 3, guest: 'Alex Johnson', eventsRsvpd: 5, rsvpCount: 12, checkedIn: 4, noShows: 8, reliability: '33%' },
+    { rank: 4, guest: 'Emily Davis', eventsRsvpd: 4, rsvpCount: 10, checkedIn: 5, noShows: 5, reliability: '50%' }
+  ];
+
+  const displayData = filter === 'All Events' 
+    ? sampleData 
+    : sampleData.slice(0, 2).map((d, i) => ({ ...d, rsvpCount: d.rsvpCount - 2, noShows: d.noShows - 1, rank: i + 1 }));
+
+  return (
+    <Card className="glass-surface" style={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <ChartTitle icon={Users} title="RSVP vs Attendance Gap" subtitle="Guests with highest drop-off rate" />
+        <select 
+          value={filter} 
+          onChange={(e) => setFilter(e.target.value)}
+          style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem', fontWeight: 600, background: 'var(--color-surface)', color: 'var(--color-text)' }}
+        >
+          {allEventsOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+      </div>
+
+      <div style={{ overflowX: 'auto', flex: 1 }}>
+        <table className="premium-table" style={{ width: '100%', fontSize: '0.85rem', textAlign: 'left', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+              <th style={{ padding: '10px 8px', color: 'var(--color-text-muted)' }}>Rank</th>
+              <th style={{ padding: '10px 8px', color: 'var(--color-text-muted)' }}>Guest</th>
+              <th style={{ padding: '10px 8px', color: 'var(--color-text-muted)' }}>Events RSVP'd</th>
+              <th style={{ padding: '10px 8px', color: 'var(--color-text-muted)' }}>RSVP Count</th>
+              <th style={{ padding: '10px 8px', color: 'var(--color-text-muted)' }}>Checked In</th>
+              <th style={{ padding: '10px 8px', color: 'var(--color-text-muted)' }}>No Shows</th>
+              <th style={{ padding: '10px 8px', color: 'var(--color-text-muted)' }}>Reliability</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayData.map((d, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid var(--color-surface-hover)' }}>
+                <td style={{ padding: '10px 8px', fontWeight: 700 }}>#{d.rank}</td>
+                <td style={{ padding: '10px 8px', fontWeight: 600 }}>{d.guest}</td>
+                <td style={{ padding: '10px 8px' }}>{d.eventsRsvpd}</td>
+                <td style={{ padding: '10px 8px' }}>{d.rsvpCount}</td>
+                <td style={{ padding: '10px 8px', color: GREEN, fontWeight: 600 }}>{d.checkedIn}</td>
+                <td style={{ padding: '10px 8px', color: RED, fontWeight: 600 }}>{d.noShows}</td>
+                <td style={{ padding: '10px 8px', fontWeight: 700, color: 'var(--color-primary)' }}>{d.reliability}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
+        <button style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
+          View all guests &rarr;
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// 5. Top Performing Events
 export function TopPerformingEventsChart({ data = [] }) {
   const [mounted, setMounted] = useState(false);
   const [metric, setMetric] = useState('revenue');
