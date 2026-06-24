@@ -65,7 +65,7 @@ export default function LandingPage() {
 
   return (
     <PageShell>
-      <div className="landing-page" style={{ background: 'var(--color-surface)' }}>
+      <div className="landing-page" style={{ background: '#ffffff' }}>
 
         {/* ───────── HERO ───────── */}
         <section className="platform-hero">
@@ -210,7 +210,7 @@ export default function LandingPage() {
         </section>
 
         {/* ───────── FEATURES / MODULES ───────── */}
-        <section style={{ padding: 'var(--spacing-xl) 0', background: 'transparent' }}>
+        <section id="features" style={{ padding: 'var(--spacing-xl) 0', background: 'transparent' }}>
           <div className="container">
             <div className="text-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: 'var(--spacing-lg)' }}>
               <h2

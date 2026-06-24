@@ -13,8 +13,7 @@ import PageShell from '../components/PageShell';
 import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import DashboardTopBar from '../components/DashboardTopBar';
-import { GuestGeographyChart, EarningsGrowthChart, RSVPIntentChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart } from '../components/DashboardCharts';
-import { mockStore, defaultTemplates } from '../utils/mockStore';
+import { GuestGeographyChart, EarningsGrowthChart, EventsStackedBarChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart } from '../components/DashboardCharts';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
 
@@ -967,7 +966,8 @@ export default function HostDashboard({ onLogout }) {
     const nextEvent = [...weeklyEvents].sort((a, b) => new Date(a.date) - new Date(b.date))[0];
     return (
       <span>
-        You have <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{weeklyEvents.length} events</span> happening this week. Next up: <strong>{nextEvent.title}</strong> starts on {nextEvent.date} at {nextEvent.time}.
+        You have <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{weeklyEvents.length} events</span> happening this week.<br />
+        Next up: <strong>{nextEvent.title}</strong> starts on {nextEvent.date} at {nextEvent.time}.
       </span>
     );
   };
@@ -1194,7 +1194,7 @@ export default function HostDashboard({ onLogout }) {
     ] },
     { label: 'Account', items: [
       { key: 'billing', icon: <Ticket size={18} />, label: 'Billing & Plans', staff: false },
-      { key: 'settings', icon: <Settings size={18} />, label: 'Settings', staff: false },
+      { key: 'settings', icon: <Settings size={18} />, label: 'Settings', staff: true },
     ] },
   ];
 
@@ -1340,29 +1340,29 @@ export default function HostDashboard({ onLogout }) {
               {/* SECTION 1: WELCOME HERO BANNER */}
               <div className="page-hero animate-fade-in" style={{ padding: '48px 40px', minHeight: '300px', borderRadius: '16px', marginBottom: '8px' }}>
                 <img src={HERO_IMAGES.dashboard} alt="Celebration confetti" className="page-hero-img" style={{ objectPosition: 'center 30%' }} />
-                <div className="page-hero-overlay" style={{ background: 'linear-gradient(90deg, rgba(10,37,64,0.95) 0%, rgba(10,37,64,0.7) 100%)' }} />
+                <div className="page-hero-overlay" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 100%)' }} />
                 <div className="page-hero-content" style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <div className="flex justify-between items-center" style={{ flexWrap: 'wrap', gap: '32px', width: '100%' }}>
                     
                     <div style={{ flex: 1, minWidth: '320px' }}>
                       <div className="flex items-center" style={{ gap: '18px' }}>
                         {profileAvatar ? (
-                          <img src={profileAvatar} alt={currentUser?.name || 'Host'} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.25)', flexShrink: 0 }} />
+                          <img src={profileAvatar} alt={currentUser?.name || 'Host'} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(31,58,99,0.1)', flexShrink: 0 }} />
                         ) : (
-                          <span style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.12)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, letterSpacing: '0.02em', flexShrink: 0 }}>
+                          <span style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid rgba(31,58,99,0.1)', background: 'rgba(31,58,99,0.05)', color: '#1f3a63', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, letterSpacing: '0.02em', flexShrink: 0 }}>
                             {hostInitials}
                           </span>
                         )}
                         <div style={{ minWidth: 0 }}>
-                          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, margin: 0, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
+                          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, margin: 0, letterSpacing: '-0.035em', lineHeight: 1.05, color: '#1f3a63' }}>
                             Welcome, {(currentUser?.name || 'there').split(' ')[0]} 👋
                           </h1>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px', background: 'rgba(255,255,255,0.14)', color: '#fff', fontSize: '0.78rem', fontWeight: 700, padding: '5px 12px', borderRadius: '999px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px', background: 'rgba(31,58,99,0.1)', color: '#1f3a63', fontSize: '0.78rem', fontWeight: 700, padding: '5px 12px', borderRadius: '999px' }}>
                             {isOrgHost ? orgNameResolved : 'Individual Host'}
                           </span>
                         </div>
                       </div>
-                      <p style={{ margin: '18px 0 0 0', fontSize: '1.15rem', color: 'rgba(255,255,255,0.85)', maxWidth: '640px', lineHeight: 1.5 }}>
+                      <p style={{ margin: '18px 0 0 0', fontSize: '1.15rem', color: 'rgba(31,58,99,0.85)', maxWidth: '640px', lineHeight: 1.5 }}>
                         {getWeeklyEventsText()}
                       </p>
                     </div>
@@ -1373,18 +1373,8 @@ export default function HostDashboard({ onLogout }) {
                           <Plus size={20} /> Create New Event
                         </button>
                       </Link>
-                      <button onClick={handleDuplicateLastEvent} className="btn" style={{ width: '100%', padding: '14px 24px', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', backdropFilter: 'blur(10px)' }}>
+                      <button onClick={handleDuplicateLastEvent} className="btn" style={{ width: '100%', padding: '14px 24px', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(31,58,99,0.05)', color: 'var(--color-primary)', border: '1px solid rgba(31,58,99,0.1)', borderRadius: '8px', backdropFilter: 'blur(10px)' }}>
                         <Copy size={18} /> Copy Last Event
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/host/alex`);
-                          alert("Host profile link copied to clipboard!");
-                        }}
-                        className="btn"
-                        style={{ width: '100%', padding: '14px 24px', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '8px' }}
-                      >
-                        <Share2 size={18} /> Share Profile
                       </button>
                     </div>
 
@@ -1396,23 +1386,7 @@ export default function HostDashboard({ onLogout }) {
               <div style={{ marginBottom: '16px' }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: '0 0 20px 0', textAlign: 'left', letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Quick Stats</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                  
-                  {/* Card 1: Total Earnings */}
-                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
-                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-green"><Wallet size={22} /></div>
-                    </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Earnings</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{formatMoney(availableBalance)}</p>
-                    <button 
-                      onClick={() => setActiveSidebar('earnings')}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
-                    >
-                      View breakdown &rarr;
-                    </button>
-                  </Card>
-
-                  {/* Card 2: Total Events Organized */}
+                  {/* Card 1: Total Events Organized */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
                       <div className="stat-icon-tile stat-icon-orange"><Calendar size={22} /></div>
@@ -1427,7 +1401,7 @@ export default function HostDashboard({ onLogout }) {
                     </button>
                   </Card>
 
-                  {/* Card 3: Total Unread Messages */}
+                  {/* Card 2: Total Unread Messages */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
                       <div className="stat-icon-tile stat-icon-blue"><MessageSquare size={22} /></div>
@@ -1445,7 +1419,7 @@ export default function HostDashboard({ onLogout }) {
                     </button>
                   </Card>
 
-                  {/* Card 4: Pending Approvals */}
+                  {/* Card 3: RSVP pending approval */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
                       <div className="stat-icon-tile stat-icon-red"><Clock size={22} /></div>
@@ -1453,28 +1427,45 @@ export default function HostDashboard({ onLogout }) {
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#d97706' }}>{totalPendingApprovals} urgent</span>
                       )}
                     </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Pending Approvals</h3>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>RSVP Pending Approval</h3>
                     <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalPendingApprovals}</p>
                     <button
                       onClick={() => setActiveSidebar('events')}
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
                     >
-                      Review guests &rarr;
+                      View filters &rarr;
                     </button>
                   </Card>
-
+                  
+                  {/* Card 4: Event pending approval by staff */}
+                  <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
+                    <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
+                      <div className="stat-icon-tile stat-icon-red"><Shield size={22} /></div>
+                      {events.filter(e => e.status === 'Pending').length > 0 && (
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '20px', background: '#fef3c7', color: '#d97706' }}>Action needed</span>
+                      )}
+                    </div>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Event pending approval</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{events.filter(e => e.status === 'Pending').length}</p>
+                    <button
+                      onClick={() => setActiveSidebar('events')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                    >
+                      Check status &rarr;
+                    </button>
+                  </Card>
                 </div>
               </div>
 
-              {/* ── SECTION 1.5: 4 AGGREGATE GRAPHS (As per Definitive Layout) ── */}
+              {/* ── SECTION 1.5: 4 AGGREGATE GRAPHS ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
+                  <EventsStackedBarChart />
                   <EarningsGrowthChart />
-                  <RSVPIntentChart />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
-                  <DayOfWeekChart />
                   <GuestGeographyChart />
+                  <DayOfWeekChart />
                 </div>
               </div>
 
@@ -4010,8 +4001,8 @@ export default function HostDashboard({ onLogout }) {
           {activeSidebar === 'settings' && (
             <div>
               <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Organizer Settings</h1>
-                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Configure default host profile settings and brand styles.</p>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{isStaffViewer ? 'Profile Settings' : 'Organizer Settings'}</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>{isStaffViewer ? 'Update your profile photo and contact details.' : 'Configure default host profile settings and brand styles.'}</p>
               </div>
               
               <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left' }} className="glass-surface">
@@ -4050,6 +4041,7 @@ export default function HostDashboard({ onLogout }) {
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Contact Phone</label>
                     <input type="text" defaultValue={currentUser?.phone || ''} placeholder="+1 (555) 000-0000" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }} />
                   </div>
+                  {!isStaffViewer && (
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '4px' }}>Payout Currency</label>
                     <select value={hostCurrency} onChange={(e) => setHostCurrency(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer' }}>
@@ -4063,6 +4055,7 @@ export default function HostDashboard({ onLogout }) {
                     </select>
                     <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.75rem' }}>All earnings and revenue across your dashboard display in this currency. Currently showing {formatMoney(1234)}.</p>
                   </div>
+                  )}
 
                   <Button variant="primary" type="submit" style={{ marginTop: '10px', alignSelf: 'start' }}>Save Changes</Button>
                 </form>

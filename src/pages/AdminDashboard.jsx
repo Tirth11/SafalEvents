@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Building2, CheckCircle2, XCircle, FileText, UserCheck, UserX,
   Shield, Check, X, Mail, Phone, MapPin, Search, Users, Calendar,
-  Ticket, Clock, Lock, Settings, Activity, Compass, Eye, LogOut, ArrowRight
+  Ticket, Clock, Lock, Settings, Activity, Compass, Eye, LogOut, ArrowRight, HelpCircle, Upload
 } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { HERO_IMAGES, getAvatar, getEventCover, EVENT_COVERS } from '../utils/images';
@@ -16,6 +16,21 @@ export default function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('overview'); // overview, hosts, events, applications, settings
   const [users, setUsers] = useState([]);
   const [events, setEvents] = useState([]);
+  const [profileAvatar, setProfileAvatar] = useState(mockStore.getCurrentUser()?.avatar || null);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+  // Read an uploaded image as a data URL and store it as the admin's profile photo
+  const handleAdminAvatarUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfileAvatar(reader.result);
+      try { mockStore.setCurrentUser({ ...mockStore.getCurrentUser(), avatar: reader.result }); } catch (err) { /* no-op */ }
+    };
+    reader.readAsDataURL(file);
+  };
+  const adminAvatar = profileAvatar || getAvatar('Super Admin');
   
   // Platform settings state
   const [platformSettings, setPlatformSettings] = useState({
@@ -263,6 +278,7 @@ export default function AdminDashboard({ onLogout }) {
       embedded
       userName={mockStore.getCurrentUser()?.name || 'Super Admin'}
       roleLabel="Platform Admin"
+      avatarUrl={profileAvatar}
       planLabel="Superadmin"
       planTone="admin"
       notifCount={0}
@@ -326,10 +342,17 @@ export default function AdminDashboard({ onLogout }) {
             </button>
           </nav>
 
-          <button 
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="dashboard-nav-btn"
+            style={{ marginTop: 'auto' }}
+          >
+            <HelpCircle size={18} /> Help &amp; Resources
+          </button>
+          <button
             onClick={onLogout}
             className="dashboard-nav-btn"
-            style={{ marginTop: 'auto', border: '1px solid var(--color-border)' }}
+            style={{ border: '1px solid var(--color-border)' }}
           >
             <LogOut size={18} /> Exit Admin Portal
           </button>
@@ -351,7 +374,7 @@ export default function AdminDashboard({ onLogout }) {
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', opacity: 0.9 }}>Control and oversee hosts, applications, events, and default configurations.</p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src={getAvatar('Super Admin')} alt="Super Admin" className="avatar-img" />
+                <img src={adminAvatar} alt="Super Admin" className="avatar-img" />
                 <div style={{ fontSize: '0.75rem', lineHeight: 1.3, textAlign: 'left' }}>
                   <div style={{ fontWeight: 700 }}>Super Admin</div>
                   <div style={{ opacity: 0.85 }}>admin@safalevent.com</div>
@@ -902,6 +925,27 @@ export default function AdminDashboard({ onLogout }) {
                 <p className="text-muted" style={{ fontSize: '0.88rem', margin: '4px 0 0 0' }}>Configure global branding styles, email/SMS sender ID templates, and default booking policies.</p>
               </div>
 
+              {/* Admin profile photo */}
+              <Card style={{ padding: '24px', marginBottom: '20px' }} className="glass-surface">
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '12px', borderBottom: '1px solid var(--color-border)', paddingBottom: '6px' }}>Admin Profile</h3>
+                <div className="flex items-center gap-md" style={{ flexWrap: 'wrap' }}>
+                  <img src={adminAvatar} alt="Super Admin" className="avatar-img avatar-lg" style={{ objectFit: 'cover' }} />
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Profile Photo</h4>
+                    <p className="text-muted" style={{ margin: '2px 0 10px 0', fontSize: '0.8rem' }}>Shown on the admin top bar and console header.</p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <label htmlFor="admin-avatar-upload" className="btn btn-outline" style={{ padding: '8px 14px', fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Upload size={15} /> {profileAvatar ? 'Change photo' : 'Upload photo'}
+                      </label>
+                      <input id="admin-avatar-upload" type="file" accept="image/*" onChange={handleAdminAvatarUpload} style={{ display: 'none' }} />
+                      {profileAvatar && (
+                        <button type="button" onClick={() => { setProfileAvatar(null); try { mockStore.setCurrentUser({ ...mockStore.getCurrentUser(), avatar: null }); } catch (e) { /* no-op */ } }} className="btn btn-ghost" style={{ padding: '8px 14px', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Remove</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
               <Card style={{ padding: '24px' }} className="glass-surface">
                 <form onSubmit={handleSaveSettings} className="flex flex-col gap-md">
                   
@@ -1387,6 +1431,58 @@ export default function AdminDashboard({ onLogout }) {
 
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="ghost" onClick={() => setDocumentPreview(null)}>Close Preview</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Help & Resources Modal (admin) */}
+        {showHelpModal && (
+          <div
+            onClick={() => setShowHelpModal(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '20px' }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="animate-fade-in"
+              style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '560px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border)', color: 'var(--color-text)', overflow: 'hidden' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="stat-icon-tile" style={{ width: '36px', height: '36px', background: 'rgba(124,58,237,0.12)', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}><HelpCircle size={18} /></div>
+                  <div style={{ textAlign: 'left' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Help &amp; Resources</h3>
+                    <p className="text-muted" style={{ margin: '1px 0 0 0', fontSize: '0.78rem' }}>How to run the SafalEvents platform</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowHelpModal(false)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '4px' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { title: 'Review host applications', desc: 'Open the documents an organization submitted, then approve or reject with a reason.' },
+                  { title: 'Manage the hosts directory', desc: 'Suspend, reactivate or inspect any host account from the Hosts Directory.' },
+                  { title: 'Oversee events', desc: 'Browse every event on the platform read-only from the Events Directory.' },
+                  { title: 'Branding & defaults', desc: 'Set the platform name, theme color, sender IDs and default RSVP policies.' },
+                  { title: 'Economics & plans', desc: 'Configure subscription tiers, pricing and platform economics.' },
+                ].map((r, i) => (
+                  <a
+                    key={i}
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); }}
+                    className="card-hover-lift"
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-text)' }}
+                  >
+                    <span style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(124,58,237,0.12)', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, fontSize: '0.82rem' }}>{i + 1}</span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700 }}>{r.title}</span>
+                      <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>{r.desc}</span>
+                    </span>
+                    <ArrowRight size={16} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                  </a>
+                ))}
               </div>
             </div>
           </div>

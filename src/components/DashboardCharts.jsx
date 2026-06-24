@@ -181,78 +181,63 @@ export function EarningsGrowthChart({ data = [] }) {
   );
 }
 
-// 3. RSVP Intent Ratio — donut of Going / Maybe / Declined (+ optional Waitlist)
-export function RSVPIntentChart({
-  data,
-  title = 'RSVP Intent Ratio',
-  subtitle = 'Overall guest engagement',
-  centerLabel = 'Total All-Time Headcount',
-}) {
+// 3. Events Stacked Bar Chart
+export function EventsStackedBarChart({ data = [] }) {
   const [mounted, setMounted] = useState(false);
+  const [timeframe, setTimeframe] = useState('monthly');
   useEffect(() => { const t = setTimeout(() => setMounted(true), 100); return () => clearTimeout(t); }, []);
 
-  const d = data || { going: 680, maybe: 220, declined: 100 };
-  const going = d.going || 0, maybe = d.maybe || 0, declined = d.declined || 0, waitlist = d.waitlist || 0;
-  const total = going + maybe + declined + waitlist;
-  const denom = total || 1;
-
-  const R = 60, C = 2 * Math.PI * R;
-  const segs = [
-    { label: 'Going', color: GREEN, value: going },
-    { label: 'Maybe', color: YELLOW, value: maybe },
-    { label: 'Declined', color: RED, value: declined },
-    ...(waitlist > 0 ? [{ label: 'Waitlist', color: '#9aa0a6', value: waitlist }] : []),
+  const sampleData = data.length ? data : timeframe === 'daily' ? [
+    { label: 'Today', going: 12, maybe: 4, declined: 2 }
+  ] : timeframe === 'weekly' ? [
+    { label: 'This Week', going: 150, maybe: 30, declined: 10 },
+    { label: 'Next Week', going: 80, maybe: 20, declined: 5 }
+  ] : [
+    { label: 'June', going: 320, maybe: 45, declined: 15 },
+    { label: 'July', going: 450, maybe: 60, declined: 20 },
+    { label: 'August', going: 210, maybe: 35, declined: 10 }
   ];
 
-  // Cumulative arc offsets so the segments stack around the ring
-  let acc = 0;
-  const arcs = segs.map((s, i) => {
-    const len = (s.value / denom) * C;
-    const before = acc * C;
-    acc += s.value / denom;
-    return (
-      <circle
-        key={i}
-        cx="80" cy="80" r={R} fill="none" stroke={s.color} strokeWidth="20"
-        strokeDasharray={`${mounted ? len : 0} ${C}`}
-        strokeDashoffset={`-${mounted ? before : 0}`}
-        style={{ transition: 'all 1s cubic-bezier(0.16, 1, 0.3, 1)' }}
-      />
-    );
-  });
+  const maxTotal = Math.max(1, ...sampleData.map(d => d.going + d.maybe + d.declined));
 
   return (
     <Card className="glass-surface" style={{ padding: '24px', height: '100%' }}>
-      <ChartTitle icon={PieChart} title={title} subtitle={subtitle} />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', width: '160px', height: '160px' }}>
-          <svg viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="80" cy="80" r={R} fill="none" stroke="var(--color-surface-hover)" strokeWidth="20" />
-            {arcs}
-          </svg>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>{total.toLocaleString()}</span>
-            <span style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', textAlign: 'center', maxWidth: '92px', marginTop: '4px', letterSpacing: '0.04em' }}>{centerLabel}</span>
-          </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+        <ChartTitle icon={PieChart} title="RSVP Overview" subtitle="Total RSVPs across events" />
+        <div style={{ display: 'flex', background: 'var(--color-surface-hover)', borderRadius: '8px', padding: '4px' }}>
+          <button onClick={() => setTimeframe('daily')} style={{ border: 'none', background: timeframe === 'daily' ? '#fff' : 'transparent', color: timeframe === 'daily' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'daily' ? 'var(--shadow-sm)' : 'none' }}>Daily</button>
+          <button onClick={() => setTimeframe('weekly')} style={{ border: 'none', background: timeframe === 'weekly' ? '#fff' : 'transparent', color: timeframe === 'weekly' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'weekly' ? 'var(--shadow-sm)' : 'none' }}>Weekly</button>
+          <button onClick={() => setTimeframe('monthly')} style={{ border: 'none', background: timeframe === 'monthly' ? '#fff' : 'transparent', color: timeframe === 'monthly' ? NAVY : 'var(--color-text-muted)', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', boxShadow: timeframe === 'monthly' ? 'var(--shadow-sm)' : 'none' }}>Monthly</button>
         </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '160px' }}>
-          {segs.map((s, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: 600 }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: s.color }} /> {s.label}
+      </div>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {sampleData.map((d, i) => {
+          const total = d.going + d.maybe + d.declined;
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ width: '80px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{d.label}</div>
+              <div style={{ flex: 1, height: '24px', background: 'var(--color-surface-hover)', borderRadius: '6px', overflow: 'hidden', display: 'flex' }}>
+                <div style={{ height: '100%', width: mounted ? `${(d.going / maxTotal) * 100}%` : '0%', background: GREEN, transition: 'width 1s ease' }} title={`Going: ${d.going}`} />
+                <div style={{ height: '100%', width: mounted ? `${(d.maybe / maxTotal) * 100}%` : '0%', background: YELLOW, transition: 'width 1s ease' }} title={`Maybe: ${d.maybe}`} />
+                <div style={{ height: '100%', width: mounted ? `${(d.declined / maxTotal) * 100}%` : '0%', background: RED, transition: 'width 1s ease' }} title={`Declined: ${d.declined}`} />
               </div>
-              <span style={{ fontWeight: 800 }}>
-                {s.value}
-                <span style={{ color: 'var(--color-text-muted)', fontWeight: 600, fontSize: '0.8rem' }}> ({Math.round((s.value / denom) * 100)}%)</span>
-              </span>
+              <div style={{ width: '40px', textAlign: 'right', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                {total}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '24px', fontSize: '0.8rem', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: GREEN, borderRadius: 2 }}/> Going</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: YELLOW, borderRadius: 2 }}/> Maybe</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, background: RED, borderRadius: 2 }}/> Declined</div>
       </div>
     </Card>
   );
 }
+
 
 // 4. Top Performing Events
 export function TopPerformingEventsChart({ data = [] }) {
@@ -377,7 +362,7 @@ export function DayOfWeekChart({ data = [] }) {
 
   return (
     <Card className="glass-surface" style={{ padding: '24px', height: '100%' }}>
-      <ChartTitle icon={CalendarIcon} title="Best Day to Host" subtitle="Avg. RSVPs by day" />
+      <ChartTitle icon={CalendarIcon} title="Successful Participation" subtitle="Avg. RSVPs by day" />
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '180px', paddingTop: '20px' }}>
         {sampleData.map((d, i) => {
           const isMax = d.value === max;
