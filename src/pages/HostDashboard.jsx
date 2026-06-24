@@ -2064,18 +2064,28 @@ export default function HostDashboard({ onLogout }) {
                       );
                     })()}
                   </div>
-
-                  <RSVPIntentChart
-                    title="RSVP Breakdown"
-                    subtitle="Every response for this event — yes, maybe, no & waitlist"
-                    centerLabel="Total RSVPs"
-                    data={{
-                      going: managedEventRsvps.filter(r => r.status === 'going').length,
-                      maybe: managedEventRsvps.filter(r => r.status === 'maybe').length,
-                      declined: managedEventRsvps.filter(r => r.status === 'declined').length,
-                      waitlist: managedEventRsvps.filter(r => r.status === 'waitlist').length,
-                    }}
-                  />
+                  <Card style={{ padding: '24px', textAlign: 'left', marginTop: '24px' }} className="glass-surface">
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: 800 }}>RSVP Breakdown</h3>
+                    <p className="text-muted" style={{ margin: '0 0 20px 0', fontSize: '0.85rem' }}>Every response for this event — yes, maybe, no & waitlist</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '16px' }}>
+                      <div style={{ background: 'rgba(34,197,94,0.1)', padding: '16px', borderRadius: '12px', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Going</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px' }}>{managedEventRsvps.filter(r => r.status === 'going').length}</div>
+                      </div>
+                      <div style={{ background: 'rgba(245,158,11,0.1)', padding: '16px', borderRadius: '12px', color: '#d97706', border: '1px solid rgba(245,158,11,0.2)' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Maybe</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px' }}>{managedEventRsvps.filter(r => r.status === 'maybe').length}</div>
+                      </div>
+                      <div style={{ background: 'rgba(239,68,68,0.1)', padding: '16px', borderRadius: '12px', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Declined</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px' }}>{managedEventRsvps.filter(r => r.status === 'declined').length}</div>
+                      </div>
+                      <div style={{ background: 'rgba(100,116,139,0.1)', padding: '16px', borderRadius: '12px', color: '#475569', border: '1px solid rgba(100,116,139,0.2)' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Waitlist</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px' }}>{managedEventRsvps.filter(r => r.status === 'waitlist').length}</div>
+                      </div>
+                    </div>
+                  </Card>
                 </div>
               )}
 
