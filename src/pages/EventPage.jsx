@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Users, MessageSquare, ArrowRight, X, CheckCircle, ArrowLeft, Send, Check, Timer, Share2, Mail, Phone, Ticket, Lock, Sparkles } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, MessageSquare, ArrowRight, X, CheckCircle, ArrowLeft, Send, Check, Timer, Share2, Mail, Phone, Ticket, Lock, Sparkles, QrCode, Download } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { getEventCover, getAvatar } from '../utils/images';
 import { meetsAge } from '../utils/age';
@@ -58,6 +58,9 @@ export default function EventPage() {
   // Sharing States
   const [showShareModal, setShowShareModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // Ticket pass modal
+  const [showTicketModal, setShowTicketModal] = useState(false);
 
   // Resend Cooldown Effect
   useEffect(() => {
@@ -655,9 +658,13 @@ export default function EventPage() {
                   <p style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', padding: '10px 12px', borderRadius: '12px', marginBottom: '16px', color: 'var(--color-text-muted)' }}>
                     Show your event ticket pass at the door for entry check-in.
                   </p>
-                  <Link to="/dashboard">
-                    <Button variant="primary" style={{ width: '100%' }}>View Ticket Pass</Button>
-                  </Link>
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowTicketModal(true)}
+                    style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    <QrCode size={16} /> View Ticket Pass
+                  </Button>
                   {/* Add to Calendar buttons */}
                   <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                     <a
@@ -1223,6 +1230,164 @@ export default function EventPage() {
               </Card>
             </div>
           )}
+
+      {/* ================================================================= */}
+      {/* QR TICKET PASS MODAL                                              */}
+      {/* ================================================================= */}
+      {showTicketModal && event && existingRsvp && (
+        <div
+          onClick={() => setShowTicketModal(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(8,8,12,0.65)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="animate-fade-in"
+            style={{ width: '100%', maxWidth: '400px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.4)' }}
+          >
+            {/* Ticket top — event cover + gradient */}
+            <div style={{ position: 'relative', height: '160px' }}>
+              <img src={coverImg} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,12,0.9) 0%, rgba(8,8,12,0.3) 60%, transparent 100%)' }} />
+              <button
+                onClick={() => setShowTicketModal(false)}
+                style={{ position: 'absolute', top: '14px', right: '14px', background: 'rgba(0,0,0,0.4)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+              >
+                <X size={16} />
+              </button>
+              <div style={{ position: 'absolute', bottom: '14px', left: '18px', right: '18px', color: 'white' }}>
+                <div style={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.8, marginBottom: '4px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <Ticket size={11} /> Event Pass
+                </div>
+                <div style={{ fontWeight: 800, fontSize: '1.25rem', lineHeight: 1.15, textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>{event.title}</div>
+              </div>
+            </div>
+
+            {/* Ticket body */}
+            <div style={{ background: 'white' }}>
+              {/* Tear line */}
+              <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', borderTop: '2px dashed #e2e8f0', position: 'relative', margin: '0 -1px' }}>
+                <div style={{ position: 'absolute', left: '-12px', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(8,8,12,0.65)' }} />
+                <div style={{ position: 'absolute', right: '-12px', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(8,8,12,0.65)' }} />
+              </div>
+
+              <div style={{ padding: '20px 24px' }}>
+                {/* Guest name + status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Attendee</div>
+                    <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>{existingRsvp.name || 'Guest'}</div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>{existingRsvp.email}</div>
+                  </div>
+                  <span style={{
+                    background: '#16a34a15', color: '#16a34a',
+                    fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px',
+                    padding: '5px 12px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a' }} />
+                    {existingRsvp.status}
+                  </span>
+                </div>
+
+                {/* Event details grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px', background: '#f8fafc', borderRadius: '12px', padding: '14px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Date</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>
+                      {new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Time</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{event.time || '—'}</div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Venue</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{event.location}</div>
+                  </div>
+                </div>
+
+                {/* QR Code */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                    <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style={{ width: '140px', height: '140px', display: 'block' }}>
+                      {/* Top-left finder */}
+                      <rect x="6" y="6" width="44" height="44" rx="4" fill="#1F3A63"/>
+                      <rect x="12" y="12" width="32" height="32" rx="2" fill="white"/>
+                      <rect x="18" y="18" width="20" height="20" rx="1" fill="#1F3A63"/>
+                      {/* Top-right finder */}
+                      <rect x="110" y="6" width="44" height="44" rx="4" fill="#1F3A63"/>
+                      <rect x="116" y="12" width="32" height="32" rx="2" fill="white"/>
+                      <rect x="122" y="18" width="20" height="20" rx="1" fill="#1F3A63"/>
+                      {/* Bottom-left finder */}
+                      <rect x="6" y="110" width="44" height="44" rx="4" fill="#1F3A63"/>
+                      <rect x="12" y="116" width="32" height="32" rx="2" fill="white"/>
+                      <rect x="18" y="122" width="20" height="20" rx="1" fill="#1F3A63"/>
+                      {/* Data dots (centre region) */}
+                      <rect x="58" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="70" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="82" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="94" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="58" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="82" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="70" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="94" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="58" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="70" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="94" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      {/* Right column data */}
+                      <rect x="112" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="124" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="136" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="112" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="136" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="124" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="112" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="136" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      {/* Bottom-right data */}
+                      <rect x="58" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="70" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="94" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="82" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="58" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="58" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="82" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="94" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="112" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="136" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="124" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="112" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      <rect x="136" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                    </svg>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Show this QR at the door
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: '#cbd5e1', marginTop: '2px', fontFamily: 'monospace' }}>
+                      #{String(existingRsvp.email || 'guest').slice(0, 6).toUpperCase()}-{event.id}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Download button */}
+                <button
+                  type="button"
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '12px',
+                    border: '2px solid #1F3A63', background: 'transparent',
+                    color: '#1F3A63', fontWeight: 700, fontSize: '0.875rem',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    transition: 'all 0.15s',
+                  }}
+                  onClick={() => alert('Pass saved to your device.')}
+                >
+                  <Download size={15} /> Save Pass to Device
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </PageShell>

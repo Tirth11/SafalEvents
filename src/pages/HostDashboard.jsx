@@ -21,6 +21,39 @@ import { mockStore, defaultTemplates } from '../utils/mockStore';
 import { HERO_IMAGES, ALL_COVERS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, formatDob, meetsAge } from '../utils/age';
 
+// Attendee-level check-in helpers (support partial arrivals from the QR scanner).
+// `checkedInCount` is the number of attendees on a pass who've actually arrived;
+// falls back to the legacy binary `checkedIn` flag for older records.
+const getCheckedInCount = (r) => (r.checkedInCount != null ? r.checkedInCount : (r.checkedIn ? (r.guestCount || 1) : 0));
+const getCheckinState = (r) => {
+  const total = r.guestCount || 1;
+  const inCount = getCheckedInCount(r);
+  if (inCount >= total) return { inCount, total, label: total > 1 ? `All ${total} in` : 'Checked in', state: 'complete', color: '#16a34a', bg: 'rgba(22,163,74,0.12)' };
+  if (inCount > 0)       return { inCount, total, label: `${inCount}/${total} arrived`, state: 'partial', color: '#d97706', bg: 'rgba(217,119,6,0.12)' };
+  return                        { inCount, total, label: 'Not arrived', state: 'none', color: 'var(--color-text-muted)', bg: 'var(--color-surface-hover)' };
+};
+
+// Cross-event attendance intelligence for a guest (by email) — used in the
+// per-event check-in panel so the host sees prior reliability before admitting.
+const getGuestHistorySummary = (email) => {
+  let totalRsvpd = 0, totalSeats = 0, totalAttended = 0, noShow = 0, partial = 0;
+  const recent = [];
+  mockStore.getEvents().forEach(e => {
+    const rs = mockStore.getRSVPs(e.id).find(r => r.email === email);
+    if (!rs) return;
+    totalRsvpd++;
+    if (e.status === 'Completed' || e.status === 'Ongoing') {
+      const seats = rs.guestCount || 1;
+      const att = rs.checkedInCount != null ? rs.checkedInCount : (rs.checkedIn ? seats : 0);
+      totalSeats += seats; totalAttended += att;
+      if (att === 0) noShow++; else if (att < seats) partial++;
+      recent.push({ title: e.title, date: e.date, seats, att });
+    }
+  });
+  const accuracy = totalSeats > 0 ? Math.round((totalAttended / totalSeats) * 100) : 100;
+  return { totalRsvpd, accuracy, noShow, partial, recent: recent.slice(-4).reverse() };
+};
+
 export default function HostDashboard({ onLogout }) {
   const navigate = useNavigate();
 
@@ -574,6 +607,46 @@ export default function HostDashboard({ onLogout }) {
     loadDashboardData();
   };
 
+  // Mark every attendee on a pass as arrived (appends the delta to the timeline).
+  const handleCheckInAll = (eventId, rsvpId) => {
+    const r = mockStore.getRSVPs(eventId).find(x => x.id === rsvpId);
+    if (!r) return;
+    const total = r.guestCount || 1;
+    const already = getCheckedInCount(r);
+    const delta = total - already;
+    if (delta <= 0) return;
+    const stamp = new Date();
+    const prevLog = Array.isArray(r.checkInLog) ? r.checkInLog : [];
+    mockStore.updateRSVP(eventId, rsvpId, {
+      checkedIn: true, checkedInCount: total, fullyCheckedIn: true, checkedInAt: stamp.toISOString(),
+      checkInLog: [...prevLog, { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: delta }],
+    }, activeScannerStaff);
+    loadDashboardData();
+  };
+
+  // Check in a single additional attendee on a multi-guest pass.
+  const handleCheckInOne = (eventId, rsvpId) => {
+    const r = mockStore.getRSVPs(eventId).find(x => x.id === rsvpId);
+    if (!r) return;
+    const total = r.guestCount || 1;
+    const already = getCheckedInCount(r);
+    if (already >= total) return;
+    const next = already + 1;
+    const stamp = new Date();
+    const prevLog = Array.isArray(r.checkInLog) ? r.checkInLog : [];
+    mockStore.updateRSVP(eventId, rsvpId, {
+      checkedIn: true, checkedInCount: next, fullyCheckedIn: next >= total, checkedInAt: stamp.toISOString(),
+      checkInLog: [...prevLog, { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: 1 }],
+    }, activeScannerStaff);
+    loadDashboardData();
+  };
+
+  // Undo all check-ins for a pass.
+  const handleResetCheckin = (eventId, rsvpId) => {
+    mockStore.updateRSVP(eventId, rsvpId, { checkedIn: false, checkedInCount: 0, fullyCheckedIn: false, checkedInAt: null, checkInLog: [] });
+    loadDashboardData();
+  };
+
   const handleApproveRSVP = (eventId, rsvpId, approve) => {
     mockStore.updateRSVP(eventId, rsvpId, { status: approve ? 'going' : 'declined' });
     loadDashboardData();
@@ -615,43 +688,36 @@ export default function HostDashboard({ onLogout }) {
     }
   };
 
-  // UC-11: validate a scanned QR / pass ID against the event's APPROVED guest list
+  // UC-11: validate a scanned QR / pass ID against the event's APPROVED guest list.
+  // On a valid pass we surface the full guest profile + live attendance so the host
+  // can admit attendees now and again later if the party arrives in waves.
   const handleVerifyCheckin = (passId) => {
-    const rsvp = managedEventRsvps.find(r => r.id === passId.trim());
+    const id = (passId || '').trim();
+    if (!id) {
+      setCheckinResult({ type: 'error', message: 'Enter or scan a ticket pass ID to verify.' });
+      return;
+    }
+    const rsvp = managedEventRsvps.find(r => r.id === id);
     // Not in this event's list at all → wrong event / invalid token
     if (!rsvp) {
-      setCheckinResult({ type: 'error', message: `Not valid for this event. Pass "${passId}" was not found on the guest list.` });
+      setCheckinResult({ type: 'error', message: `Not valid for this event. Pass "${id}" was not found on the guest list.` });
       return;
     }
     // Only approved guests may enter
     if (rsvp.approvalState === 'REJECTED') {
-      setCheckinResult({ type: 'error', rsvp, message: 'This guest was not approved for the event. Entry denied.' });
+      setCheckinResult({ type: 'denied', rsvpId: rsvp.id, message: 'This guest was not approved for the event. Entry denied.' });
       return;
     }
     if (rsvp.approvalState === 'UNDER_APPROVAL' || rsvp.status === 'waitlist') {
-      setCheckinResult({ type: 'error', rsvp, message: 'This guest is still Under Approval and not yet admitted. Entry denied.' });
+      setCheckinResult({ type: 'denied', rsvpId: rsvp.id, message: 'This guest is still Under Approval and not yet admitted. Entry denied.' });
       return;
     }
     if (rsvp.status !== 'going') {
-      setCheckinResult({ type: 'error', rsvp, message: 'This guest is not confirmed for the event. Entry denied.' });
+      setCheckinResult({ type: 'denied', rsvpId: rsvp.id, message: 'This guest is not confirmed for the event. Entry denied.' });
       return;
     }
-    // Already scanned → warn with the recorded time
-    if (rsvp.checkedIn) {
-      const when = rsvp.checkedInAt ? new Date(rsvp.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'earlier';
-      setCheckinResult({ type: 'warning', rsvp, message: `Already scanned at ${when}. Duplicate entry detected.` });
-      return;
-    }
-
-    // Success — mark arrived
-    const scanner = currentUser?.role === 'staff' ? `${currentUser.name} (Staff)` : activeScannerStaff;
-    mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true, checkedInAt: new Date().toISOString() }, scanner);
-    loadDashboardData();
-    setCheckinResult({
-      type: 'success',
-      rsvp: { ...rsvp, checkedIn: true },
-      message: `Arrived! ${rsvp.name} checked in (${rsvp.guestCount || 1} attendee${(rsvp.guestCount || 1) > 1 ? 's' : ''}) by ${scanner}.`
-    });
+    // Valid pass → open the full guest detail panel (host admits via the controls).
+    setCheckinResult({ type: 'found', rsvpId: rsvp.id });
     setCheckinInput('');
   };
 
@@ -756,8 +822,13 @@ export default function HostDashboard({ onLogout }) {
 
   // Export CSV
   const handleExportCSV = (event, rsvps) => {
-    const headers = 'Name,Email,Phone,Status,Checked-In,Timestamp\n';
-    const rows = rsvps.map(r => `"${r.name}","${r.email}","${r.phone}","${r.status}",${r.checkedIn ? 'Yes' : 'No'},"${r.timestamp}"`).join('\n');
+    const headers = 'Name,Email,Phone,Status,RSVP Count,Checked-In Count,Attendance,Timestamp\n';
+    const rows = rsvps.map(r => {
+      const total = r.guestCount || 1;
+      const inCount = getCheckedInCount(r);
+      const attendance = inCount >= total ? 'Complete' : inCount > 0 ? 'Partial' : 'No Show';
+      return `"${r.name}","${r.email}","${r.phone}","${r.status}",${total},${inCount},"${attendance}","${r.timestamp}"`;
+    }).join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1166,7 +1237,10 @@ export default function HostDashboard({ onLogout }) {
   // Bulk actions handlers
   const handleBulkCheckIn = () => {
     selectedGuestIds.forEach(id => {
-      mockStore.updateRSVP(selectedEventId, id, { checkedIn: true });
+      const r = mockStore.getRSVPs(selectedEventId).find(x => x.id === id);
+      const total = r?.guestCount || 1;
+      const stamp = new Date();
+      mockStore.updateRSVP(selectedEventId, id, { checkedIn: true, checkedInCount: total, fullyCheckedIn: true, checkedInAt: stamp.toISOString(), checkInLog: [{ time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: total }] }, activeScannerStaff);
     });
     setSelectedGuestIds([]);
     loadDashboardData();
@@ -2410,18 +2484,45 @@ export default function HostDashboard({ onLogout }) {
                                 </span>
                               </td>
                               <td>
-                                <div className="flex items-center gap-xs">
-                                  <input
-                                    type="checkbox"
-                                    checked={rsvp.checkedIn}
-                                    disabled={!can('guests_edit')}
-                                    onChange={() => handleToggleCheckin(managedEvent.id, rsvp.id, rsvp.checkedIn)}
-                                    style={{ width: '16px', height: '16px', cursor: can('guests_edit') ? 'pointer' : 'not-allowed' }}
-                                  />
-                                  <span style={{ fontSize: '0.75rem', color: rsvp.checkedIn ? '#16a34a' : 'var(--color-text-muted)' }}>
-                                    {rsvp.checkedIn ? 'Checked in' : 'Not arrived'}
-                                  </span>
-                                </div>
+                                {(() => {
+                                  const ci = getCheckinState(rsvp);
+                                  return (
+                                    <div className="flex items-center gap-xs" style={{ flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: ci.bg, color: ci.color, whiteSpace: 'nowrap' }}>
+                                        {ci.state === 'complete' ? '✓ ' : ci.state === 'partial' ? '◑ ' : ''}{ci.label}
+                                      </span>
+                                      {can('guests_edit') && ci.state !== 'complete' && (
+                                        <>
+                                          {ci.total > 1 && (
+                                            <button
+                                              onClick={() => handleCheckInOne(managedEvent.id, rsvp.id)}
+                                              style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-primary)', cursor: 'pointer', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}
+                                              title="Check in one attendee"
+                                            >
+                                              +1
+                                            </button>
+                                          )}
+                                          <button
+                                            onClick={() => handleCheckInAll(managedEvent.id, rsvp.id)}
+                                            style={{ border: 'none', background: 'rgba(22,163,74,0.12)', color: '#16a34a', cursor: 'pointer', padding: '3px 9px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                                            title={ci.total > 1 ? `Check in all ${ci.total}` : 'Check in'}
+                                          >
+                                            {ci.total > 1 ? `All ${ci.total}` : 'Check in'}
+                                          </button>
+                                        </>
+                                      )}
+                                      {can('guests_edit') && ci.inCount > 0 && (
+                                        <button
+                                          onClick={() => handleResetCheckin(managedEvent.id, rsvp.id)}
+                                          style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '2px 4px', fontSize: '0.85rem', lineHeight: 1 }}
+                                          title="Undo check-in"
+                                        >
+                                          ↺
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </td>
                               {managedEvent.ageRestricted && (
                                 <td>
@@ -3083,77 +3184,239 @@ export default function HostDashboard({ onLogout }) {
                       <Button variant="primary" onClick={() => handleVerifyCheckin(checkinInput)}>Verify</Button>
                     </div>
 
-                    {checkinResult && (
-                      <div style={{
-                        padding: '14px', borderRadius: '8px', 
-                        border: `1.5px solid ${checkinResult.type === 'success' ? '#22c55e' : checkinResult.type === 'warning' ? '#f59e0b' : '#ef4444'}`,
-                        background: checkinResult.type === 'success' ? 'rgba(34,197,94,0.08)' : checkinResult.type === 'warning' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'
-                      }}>
-                        <strong style={{ display: 'block', color: checkinResult.type === 'success' ? '#15803d' : checkinResult.type === 'warning' ? '#b45309' : '#dc2626', marginBottom: '4px' }}>
-                          {checkinResult.type === 'success' ? '✓ ENTRY APPROVED' : checkinResult.type === 'warning' ? '⚠️ DUPLICATE ENTRY' : '✕ ENTRY DENIED'}
-                        </strong>
+                    {/* Plain error (invalid / not on list) */}
+                    {checkinResult && checkinResult.type === 'error' && (
+                      <div style={{ padding: '14px', borderRadius: '8px', border: '1.5px solid #ef4444', background: 'rgba(239,68,68,0.08)' }}>
+                        <strong style={{ display: 'block', color: '#dc2626', marginBottom: '4px' }}>✕ ENTRY DENIED</strong>
                         <p style={{ fontSize: '0.85rem', margin: 0 }}>{checkinResult.message}</p>
-                        {checkinResult.rsvp && (
-                          <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            <div>Guest: <strong>{checkinResult.rsvp.name}</strong></div>
-                            <div>Email: {checkinResult.rsvp.email}</div>
-                            {managedEvent.ageRestricted && (
-                              checkinResult.rsvp.dob ? (
-                                <div style={{ marginTop: '4px', fontWeight: 700, color: meetsAge(checkinResult.rsvp.dob, managedEvent.minimumAge) ? '#15803d' : '#dc2626' }}>
-                                  🔒 Age Verified: {meetsAge(checkinResult.rsvp.dob, managedEvent.minimumAge) ? `${managedEvent.minimumAge}+ ✅ (${calcAge(checkinResult.rsvp.dob)} yrs)` : `❌ Under ${managedEvent.minimumAge}`}
-                                </div>
-                              ) : (
-                                <div style={{ marginTop: '4px', fontWeight: 700, color: '#b45309' }}>⚠️ Age Unverified — check physical ID</div>
-                              )
-                            )}
-                          </div>
-                        )}
                       </div>
                     )}
+
+                    {/* Full guest detail panel for a located pass (found or denied) */}
+                    {checkinResult && (checkinResult.type === 'found' || checkinResult.type === 'denied') && (() => {
+                      const g = managedEventRsvps.find(r => r.id === checkinResult.rsvpId);
+                      if (!g) return null;
+                      const ci = getCheckinState(g);
+                      const denied = checkinResult.type === 'denied';
+                      const pct = ci.total > 0 ? Math.round((ci.inCount / ci.total) * 100) : 0;
+                      const party = g.additionalGuests || [];
+                      const hist = getGuestHistorySummary(g.email);
+                      const headColor = denied ? '#dc2626' : ci.state === 'complete' ? '#15803d' : '#1F3A63';
+                      return (
+                        <div style={{ borderRadius: '12px', border: `1.5px solid ${denied ? '#ef4444' : 'var(--color-border)'}`, overflow: 'hidden' }}>
+                          {/* Banner */}
+                          <div style={{ padding: '10px 14px', background: denied ? 'rgba(239,68,68,0.1)' : ci.state === 'complete' ? 'rgba(34,197,94,0.1)' : 'rgba(31,58,99,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                            <strong style={{ color: headColor, fontSize: '0.85rem' }}>
+                              {denied ? '✕ ENTRY DENIED' : ci.state === 'complete' ? '✓ ALL ATTENDEES IN' : '✓ VALID — READY TO CHECK IN'}
+                            </strong>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: ci.color, background: ci.bg, padding: '3px 10px', borderRadius: '20px' }}>{ci.label}</span>
+                          </div>
+
+                          <div style={{ padding: '14px' }}>
+                            {denied && <p style={{ fontSize: '0.8rem', color: '#dc2626', margin: '0 0 12px' }}>{checkinResult.message}</p>}
+
+                            {/* Guest identity */}
+                            <div className="flex items-center gap-sm" style={{ marginBottom: '12px' }}>
+                              <img src={getAvatar(g.name || g.email)} alt={g.name} className="avatar-img" />
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 800, fontSize: '1rem' }}>{g.name}</div>
+                                <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>{g.email}{g.phone ? ` · ${g.phone}` : ''}</div>
+                              </div>
+                            </div>
+
+                            {/* Age verification */}
+                            {managedEvent.ageRestricted && (
+                              <div style={{ marginBottom: '12px', fontSize: '0.75rem', fontWeight: 700, color: g.dob ? (meetsAge(g.dob, managedEvent.minimumAge) ? '#15803d' : '#dc2626') : '#b45309' }}>
+                                {g.dob
+                                  ? `🔒 ${meetsAge(g.dob, managedEvent.minimumAge) ? `${managedEvent.minimumAge}+ verified (${calcAge(g.dob)} yrs)` : `Under ${managedEvent.minimumAge} — deny entry`}`
+                                  : '⚠️ Age unverified — check physical ID'}
+                              </div>
+                            )}
+
+                            {/* Attendance status numbers */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                              {[
+                                { label: 'RSVP Total', value: ci.total, color: 'var(--color-text)' },
+                                { label: 'Checked In', value: ci.inCount, color: '#16a34a' },
+                                { label: 'Remaining', value: ci.total - ci.inCount, color: (ci.total - ci.inCount) > 0 ? '#d97706' : 'var(--color-text-muted)' },
+                              ].map((s, i) => (
+                                <div key={i} style={{ background: 'var(--color-surface-hover)', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
+                                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                                  <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '3px' }}>{s.label}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ height: '6px', background: 'var(--color-border)', borderRadius: '3px', overflow: 'hidden', marginBottom: '12px' }}>
+                              <div style={{ height: '100%', width: `${pct}%`, background: ci.state === 'complete' ? '#16a34a' : 'var(--color-primary)', transition: 'width 0.4s ease' }} />
+                            </div>
+
+                            {/* Party member names (added during RSVP) */}
+                            {party.length > 0 && (
+                              <div style={{ marginBottom: '12px' }}>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+                                  Party members ({party.length})
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                  <span style={{ fontSize: '0.74rem', fontWeight: 700, padding: '4px 9px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
+                                    {g.name} <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>(primary)</span>
+                                  </span>
+                                  {party.map((m, mi) => (
+                                    <span key={mi} style={{ fontSize: '0.74rem', fontWeight: 700, padding: '4px 9px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
+                                      {m.firstName} {m.lastName}
+                                      {managedEvent.ageRestricted && m.dob && (
+                                        <span style={{ color: meetsAge(m.dob, managedEvent.minimumAge) ? '#16a34a' : '#dc2626', marginLeft: '5px' }}>
+                                          {meetsAge(m.dob, managedEvent.minimumAge) ? '✅' : '❌'}
+                                        </span>
+                                      )}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Check-in controls (supports late / staggered arrivals) */}
+                            {!denied && can('checkin') && (
+                              ci.state === 'complete' ? (
+                                <div className="flex items-center gap-sm" style={{ justifyContent: 'space-between', background: 'rgba(34,197,94,0.08)', borderRadius: '8px', padding: '10px 12px' }}>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#15803d' }}>✓ Complete attendance recorded</span>
+                                  <button onClick={() => handleResetCheckin(selectedEventId, g.id)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '5px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700 }}>↺ Undo</button>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                  {ci.total > 1 && (
+                                    <button onClick={() => handleCheckInOne(selectedEventId, g.id)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-primary)', cursor: 'pointer', padding: '8px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                      + 1 arrived
+                                    </button>
+                                  )}
+                                  <Button variant="primary" onClick={() => handleCheckInAll(selectedEventId, g.id)} style={{ flex: 1, minWidth: '130px', padding: '9px 14px' }}>
+                                    {ci.inCount > 0 ? `Check in remaining ${ci.total - ci.inCount}` : ci.total > 1 ? `Check in all ${ci.total}` : 'Check In'}
+                                  </Button>
+                                  {ci.inCount > 0 && (
+                                    <button onClick={() => handleResetCheckin(selectedEventId, g.id)} title="Undo" style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1rem' }}>↺</button>
+                                  )}
+                                </div>
+                              )
+                            )}
+
+                            {/* Historical attendance intelligence */}
+                            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed var(--color-border)' }}>
+                              <div style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)', marginBottom: '8px' }}>Past attendance behavior</div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: hist.recent.length ? '10px' : 0 }}>
+                                {[
+                                  { label: "Events", value: hist.totalRsvpd, color: 'var(--color-text)' },
+                                  { label: 'Accuracy', value: `${hist.accuracy}%`, color: hist.accuracy >= 80 ? '#16a34a' : hist.accuracy >= 50 ? '#d97706' : '#dc2626' },
+                                  { label: 'No-Shows', value: hist.noShow, color: hist.noShow > 0 ? '#dc2626' : 'var(--color-text)' },
+                                  { label: 'Partial', value: hist.partial, color: hist.partial > 0 ? '#d97706' : 'var(--color-text)' },
+                                ].map((s, i) => (
+                                  <div key={i} style={{ background: 'var(--color-surface-hover)', borderRadius: '8px', padding: '8px 4px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.05rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                                    <div style={{ fontSize: '0.58rem', color: 'var(--color-text-muted)', fontWeight: 700, marginTop: '3px', textTransform: 'uppercase' }}>{s.label}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              {hist.recent.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  {hist.recent.map((h, i) => (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                                      <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{h.title}</span>
+                                      <span>RSVP {h.seats} · Attended <strong style={{ color: h.att === 0 ? '#dc2626' : h.att < h.seats ? '#d97706' : '#16a34a' }}>{h.att}</strong></span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{hist.totalRsvpd > 0 ? 'No completed events yet — accuracy will build after this event.' : 'First-time attendee — no prior history.'}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </Card>
 
                   <Card style={{ padding: '20px', textAlign: 'left' }}>
                     <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Gate Attendance Stats</h4>
-                    <div className="grid-2" style={{ gap: '12px', marginBottom: '16px' }}>
-                      <div style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.1)', padding: '14px', borderRadius: '8px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#16a34a' }}>
-                          {managedEventRsvps.filter(r => r.checkedIn).length}
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600 }}>Checked In</span>
-                      </div>
-                      <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.1)', padding: '14px', borderRadius: '8px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>
-                          {managedEventRsvps.filter(r => (r.status === 'going') && !r.checkedIn).length}
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>Arriving Soon</span>
-                      </div>
-                    </div>
-
-                    <h5 style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px' }}>Pending Guest Arrivals</h5>
-                    <div style={{ overflowY: 'auto', maxHeight: '200px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {managedEventRsvps.filter(r => (r.status === 'going') && !r.checkedIn).map(rsvp => (
-                        <div key={rsvp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '8px 12px', borderRadius: '6px' }}>
-                          <span className="flex items-center gap-sm" style={{ fontWeight: 600, fontSize: '0.8rem' }}>
-                            <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
-                            {rsvp.name}
-                            {managedEvent.ageRestricted && (
-                              rsvp.dob
-                                ? <span title={formatDob(rsvp.dob)} style={{ fontSize: '0.7rem', fontWeight: 700, color: meetsAge(rsvp.dob, managedEvent.minimumAge) ? '#16a34a' : '#dc2626' }}>{meetsAge(rsvp.dob, managedEvent.minimumAge) ? '🔒✅' : '🔒❌'}</span>
-                                : <span title="Age unverified — check ID" style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ca8a04' }}>⚠️ID</span>
+                    {(() => {
+                      const going = managedEventRsvps.filter(r => r.status === 'going' && r.approvalState !== 'REJECTED' && r.approvalState !== 'UNDER_APPROVAL');
+                      const expected = going.reduce((s, r) => s + (r.guestCount || 1), 0);
+                      const arrived = going.reduce((s, r) => s + getCheckedInCount(r), 0);
+                      const remaining = Math.max(0, expected - arrived);
+                      const partialGuests = going.filter(r => { const c = getCheckedInCount(r); return c > 0 && c < (r.guestCount || 1); }).length;
+                      const pct = expected > 0 ? Math.round((arrived / expected) * 100) : 0;
+                      return (
+                        <>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '12px' }}>
+                            <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.12)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#16a34a', lineHeight: 1 }}>{arrived}</div>
+                              <span style={{ fontSize: '0.7rem', color: '#15803d', fontWeight: 600 }}>Attendees In</span>
+                            </div>
+                            <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>{expected}</div>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Expected</span>
+                            </div>
+                            <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.12)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#d97706', lineHeight: 1 }}>{remaining}</div>
+                              <span style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 600 }}>Remaining</span>
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '5px' }}>
+                              <span>Attendance Progress</span><span>{pct}%</span>
+                            </div>
+                            <div style={{ height: '8px', background: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#16a34a' : 'var(--color-primary)', transition: 'width 0.4s ease' }} />
+                            </div>
+                            {partialGuests > 0 && (
+                              <div style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 600, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                ◑ {partialGuests} guest{partialGuests > 1 ? 's' : ''} partially arrived (fewer than RSVP'd)
+                              </div>
                             )}
-                          </span>
-                          <button
-                            onClick={() => {
-                              mockStore.updateRSVP(selectedEventId, rsvp.id, { checkedIn: true }, activeScannerStaff);
-                              loadDashboardData();
-                              setCheckinResult({ type: 'success', rsvp: { ...rsvp, checkedIn: true }, message: `${rsvp.name} checked in successfully.` });
-                            }}
-                            style={{ border: 'none', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}
-                          >
-                            Check-in
-                          </button>
+                          </div>
+                        </>
+                      );
+                    })()}
+
+                    <h5 style={{ fontWeight: 700, fontSize: '0.85rem', margin: '16px 0 8px' }}>Pending &amp; Partial Arrivals</h5>
+                    <div style={{ overflowY: 'auto', maxHeight: '220px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {managedEventRsvps.filter(r => r.status === 'going' && r.approvalState !== 'REJECTED' && r.approvalState !== 'UNDER_APPROVAL' && getCheckedInCount(r) < (r.guestCount || 1)).map(rsvp => {
+                        const ci = getCheckinState(rsvp);
+                        return (
+                          <div key={rsvp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '8px 12px', borderRadius: '6px', gap: '8px' }}>
+                            <span className="flex items-center gap-sm" style={{ fontWeight: 600, fontSize: '0.8rem', minWidth: 0 }}>
+                              <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
+                              <span style={{ minWidth: 0 }}>
+                                {rsvp.name}
+                                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: ci.color, marginLeft: '6px' }}>{ci.label}</span>
+                              </span>
+                              {managedEvent.ageRestricted && (
+                                rsvp.dob
+                                  ? <span title={formatDob(rsvp.dob)} style={{ fontSize: '0.7rem', fontWeight: 700, color: meetsAge(rsvp.dob, managedEvent.minimumAge) ? '#16a34a' : '#dc2626' }}>{meetsAge(rsvp.dob, managedEvent.minimumAge) ? '🔒✅' : '🔒❌'}</span>
+                                  : <span title="Age unverified — check ID" style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ca8a04' }}>⚠️ID</span>
+                              )}
+                            </span>
+                            <div className="flex gap-xs" style={{ flexShrink: 0 }}>
+                              {(rsvp.guestCount || 1) > 1 && (
+                                <button
+                                  onClick={() => { handleCheckInOne(selectedEventId, rsvp.id); setCheckinResult({ type: 'success', rsvp, message: `${rsvp.name}: 1 more attendee checked in.` }); }}
+                                  style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700 }}
+                                >
+                                  +1
+                                </button>
+                              )}
+                              <button
+                                onClick={() => { handleCheckInAll(selectedEventId, rsvp.id); setCheckinResult({ type: 'success', rsvp, message: `${rsvp.name} fully checked in (${rsvp.guestCount || 1} attendee${(rsvp.guestCount || 1) > 1 ? 's' : ''}).` }); }}
+                                style={{ border: 'none', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                              >
+                                {(rsvp.guestCount || 1) > 1 ? `All ${rsvp.guestCount}` : 'Check-in'}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {managedEventRsvps.filter(r => r.status === 'going' && r.approvalState !== 'REJECTED' && r.approvalState !== 'UNDER_APPROVAL' && getCheckedInCount(r) < (r.guestCount || 1)).length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#16a34a', fontSize: '0.82rem', fontWeight: 600 }}>
+                          ✓ All expected attendees have arrived.
                         </div>
-                      ))}
+                      )}
                     </div>
                   </Card>
                 </div>
