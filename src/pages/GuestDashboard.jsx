@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle, Clock, ArrowRight, Download, HelpCircle, Mail, Sparkles, Star, Trash2, CreditCard, MessageSquare, Send } from 'lucide-react';
+import { Calendar, MapPin, QrCode, Search, Settings, LogOut, Ticket, Compass, History, User, Check, X, Edit2, AlertCircle, Clock, ArrowRight, Download, HelpCircle, Mail, Sparkles, Star, Trash2, CreditCard, MessageSquare, Send, Share2 } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { HERO_IMAGES, AVATARS, getEventCover, getAvatar } from '../utils/images';
 import { calcAge, meetsAge } from '../utils/age';
@@ -250,6 +250,16 @@ export default function GuestDashboard({ onLogout }) {
     setShowEditModal(false);
     setSelectedTicket(null);
     loadData();
+  };
+
+  const handleSharePass = () => {
+    if (!selectedTicket) return;
+    const shareUrl = `${window.location.origin}/pass/${selectedTicket.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert(`Pass share link copied to clipboard!\n${shareUrl}`);
+    }).catch(err => {
+      alert(`Could not copy share link: ${err}`);
+    });
   };
 
   // Open the "Message Host" composer for a given RSVP'd event
@@ -1611,11 +1621,29 @@ export default function GuestDashboard({ onLogout }) {
               overflow: 'hidden', boxShadow: 'var(--shadow-lg)', position: 'relative', border: '1px solid var(--color-border)', color: 'var(--color-text)'
             }}>
               <button 
-                onClick={() => setSelectedTicket(null)} 
-                style={{ position: 'absolute', top: '16px', right: '16px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
-              >
-                <X size={20} />
-              </button>
+                 onClick={() => setSelectedTicket(null)} 
+                 style={{ 
+                   position: 'absolute', 
+                   top: '12px', 
+                   right: '12px', 
+                   border: 'none', 
+                   background: 'rgba(15, 23, 42, 0.65)', 
+                   cursor: 'pointer', 
+                   color: '#ffffff',
+                   width: '32px',
+                   height: '32px',
+                   borderRadius: '50%',
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'center',
+                   zIndex: 10,
+                   transition: 'background-color 0.2s ease'
+                 }}
+                 onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.85)'}
+                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.65)'}
+               >
+                 <X size={16} />
+               </button>
 
               {/* Ticket Header */}
               <div style={{ position: 'relative', padding: '28px 16px', color: 'white', textAlign: 'center', overflow: 'hidden' }}>
@@ -1650,38 +1678,153 @@ export default function GuestDashboard({ onLogout }) {
 
                 {/* Age verification badge for age-restricted events (US-EVENT-017) */}
                 {selectedTicket.event.ageRestricted && (
-                  <div style={{ marginBottom: '16px' }}>
+                  <div style={{ marginBottom: '12px' }}>
                     {selectedTicket.dob && meetsAge(selectedTicket.dob, selectedTicket.event.minimumAge) ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,200,83,0.12)', color: '#15803d', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,200,83,0.12)', color: '#15803d', fontWeight: 800, fontSize: '0.78rem', padding: '4px 12px', borderRadius: '999px' }}>
                         🔒 Age Verified: {selectedTicket.event.minimumAge}+
                       </span>
                     ) : selectedTicket.ageVerified ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,200,83,0.12)', color: '#15803d', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,200,83,0.12)', color: '#15803d', fontWeight: 800, fontSize: '0.78rem', padding: '4px 12px', borderRadius: '999px' }}>
                         🔒 Age Verified: {selectedTicket.event.minimumAge}+
                       </span>
                     ) : (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.14)', color: '#b45309', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.14)', color: '#b45309', fontWeight: 800, fontSize: '0.78rem', padding: '4px 12px', borderRadius: '999px' }}>
                         ⚠️ Age Unverified – Check ID
                       </span>
                     )}
                   </div>
                 )}
 
-                <div style={{ background: 'var(--color-bg)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', textAlign: 'left' }}>
+                {/* Checked-In Status Badge */}
+                <div style={{ marginBottom: '16px' }}>
+                  {selectedTicket.checkedIn ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(22,163,74,0.12)', color: '#16a34a', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                      <Check size={14} /> Checked In / Arrived
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(148,163,184,0.12)', color: '#64748b', fontWeight: 800, fontSize: '0.78rem', padding: '6px 14px', borderRadius: '999px' }}>
+                      ⏱ Pending Gate Check-In
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ background: 'var(--color-bg)', padding: '14px', borderRadius: '10px', marginBottom: '16px', fontSize: '0.85rem', textAlign: 'left', border: '1px solid var(--color-border)' }}>
                   <div className="flex justify-between" style={{ marginBottom: '6px' }}>
                     <span className="text-muted">Ticket Holder:</span>
                     <span style={{ fontWeight: 600 }}>{currentUser.name}</span>
                   </div>
-                  <div className="flex justify-between" style={{ marginBottom: '6px' }}>
-                    <span className="text-muted">RSVP Status:</span>
-                    <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{selectedTicket.status.toUpperCase()}</span>
+                  <div className="flex justify-between" style={{ marginBottom: '8px' }}>
+                    <span className="text-muted">Current Status:</span>
+                    <span style={{ fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>{selectedTicket.status}</span>
                   </div>
-                  {Object.keys(selectedTicket.answers || {}).map(q => (
-                    <div key={q} className="flex justify-between" style={{ marginTop: '4px', borderTop: '1px solid var(--color-border)', paddingTop: '4px' }}>
-                      <span className="text-muted" style={{ fontSize: '0.75rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '180px' }}>{q}:</span>
-                      <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>{selectedTicket.answers[q]}</span>
+
+                  {/* Inline RSVP Toggles */}
+                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', display: 'block', marginBottom: '6px' }}>
+                      Change RSVP Status:
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[
+                        { key: 'going', label: 'Yes', color: '#16a34a', bg: 'rgba(22,163,74,0.08)' },
+                        { key: 'maybe', label: 'Maybe', color: '#d97706', bg: 'rgba(217,119,6,0.08)' },
+                        { key: 'declined', label: 'No', color: '#dc2626', bg: 'rgba(220,38,38,0.08)' }
+                      ].map((opt) => {
+                        const isActive = selectedTicket.status === opt.key;
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => {
+                              mockStore.updateRSVP(selectedTicket.eventId, selectedTicket.id, { status: opt.key }, currentUser.name);
+                              setSelectedTicket(prev => ({ ...prev, status: opt.key }));
+                              loadData();
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: '6px 2px',
+                              borderRadius: '6px',
+                              border: isActive ? `1.5px solid ${opt.color}` : '1px solid var(--color-border)',
+                              background: isActive ? opt.bg : 'var(--color-surface)',
+                              color: isActive ? opt.color : 'var(--color-text-muted)',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              outline: 'none'
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Guest Count Edit */}
+                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                      Guests Count {selectedTicket.event.allowSelfEdit ? '(Edit)' : ''}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={selectedTicket.event.maxGuestsPerRsvp || 4}
+                      value={selectedTicket.guestCount || 1}
+                      disabled={!selectedTicket.event.allowSelfEdit}
+                      onChange={(e) => {
+                        const count = Math.max(1, parseInt(e.target.value) || 1);
+                        setSelectedTicket(prev => ({ ...prev, guestCount: count }));
+                        mockStore.updateRSVP(selectedTicket.eventId, selectedTicket.id, { guestCount: count }, currentUser.name);
+                        loadData();
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-border)',
+                        background: selectedTicket.event.allowSelfEdit ? 'var(--color-bg)' : 'var(--color-surface-hover)',
+                        color: 'var(--color-text)',
+                        fontSize: '0.78rem',
+                        boxSizing: 'border-box',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Answers Edit */}
+                  {selectedTicket.event.questions && selectedTicket.event.questions.map(q => {
+                    const currentAns = selectedTicket.answers?.[q] || '';
+                    return (
+                      <div key={q} style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <label style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {q} {selectedTicket.event.allowSelfEdit ? '(Edit)' : ''}
+                        </label>
+                        <input
+                          type="text"
+                          value={currentAns}
+                          disabled={!selectedTicket.event.allowSelfEdit}
+                          onChange={(e) => {
+                            const updatedAnswers = { ...(selectedTicket.answers || {}), [q]: e.target.value };
+                            setSelectedTicket(prev => ({ ...prev, answers: updatedAnswers }));
+                            mockStore.updateRSVP(selectedTicket.eventId, selectedTicket.id, { answers: updatedAnswers }, currentUser.name);
+                            loadData();
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--color-border)',
+                            background: selectedTicket.event.allowSelfEdit ? 'var(--color-bg)' : 'var(--color-surface-hover)',
+                            color: 'var(--color-text)',
+                            fontSize: '0.78rem',
+                            boxSizing: 'border-box',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+
                   {selectedTicket.event.cancellationCutoff > 0 && (
                     <div style={{ fontSize: '0.75rem', color: '#b45309', marginTop: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
                       ⚠️ Cancellations must be made at least {selectedTicket.event.cancellationCutoff} hours prior.
@@ -1699,11 +1842,6 @@ export default function GuestDashboard({ onLogout }) {
                       Cancel RSVP (Locked)
                     </Button>
                   )}
-                  {selectedTicket.event.allowSelfEdit && (
-                    <Button variant="primary" onClick={() => handleOpenEditRsvp(selectedTicket)} style={{ flex: 1 }}>
-                      Change details
-                    </Button>
-                  )}
                 </div>
 
                 {selectedTicket.event?.messagingEnabled && (
@@ -1716,6 +1854,15 @@ export default function GuestDashboard({ onLogout }) {
                     <MessageSquare size={15} /> Message the Host
                   </Button>
                 )}
+
+                <Button
+                  variant="outline"
+                  onClick={handleSharePass}
+                  className="flex items-center justify-center gap-xs"
+                  style={{ width: '100%', marginTop: '10px' }}
+                >
+                  <Share2 size={15} /> Share Pass Link
+                </Button>
 
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                   <a
@@ -1757,17 +1904,29 @@ export default function GuestDashboard({ onLogout }) {
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.85rem' }}>Your Attendance</label>
                 <div className="flex gap-sm">
-                  <button 
-                    type="button" 
-                    onClick={() => setEditRsvpStatus('going')}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: '8px', border: editRsvpStatus === 'going' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                      background: editRsvpStatus === 'going' ? 'rgba(31, 58, 99, 0.08)' : 'var(--color-surface-hover)', cursor: 'pointer', fontWeight: 700, color: 'var(--color-text)'
-                    }}
-                  >
-                    Going
-                  </button>
-                  
+                  {[
+                    { key: 'going', label: 'Going', activeColor: 'var(--color-primary)', activeBg: 'rgba(31, 58, 99, 0.08)' },
+                    { key: 'maybe', label: 'Maybe', activeColor: '#d97706', activeBg: '#d9770612' },
+                    { key: 'declined', label: 'Not Going', activeColor: '#dc2626', activeBg: '#dc262612' }
+                  ].map(opt => {
+                    const isActive = editRsvpStatus === opt.key;
+                    return (
+                      <button 
+                        key={opt.key}
+                        type="button" 
+                        onClick={() => setEditRsvpStatus(opt.key)}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: '8px',
+                          border: isActive ? `2px solid ${opt.activeColor}` : '1px solid var(--color-border)',
+                          background: isActive ? opt.activeBg : 'var(--color-surface)',
+                          color: isActive ? opt.activeColor : 'var(--color-text-muted)',
+                          cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s'
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

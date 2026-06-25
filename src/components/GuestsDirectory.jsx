@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Card from './Card';
 import Button from './Button';
 import {
@@ -141,6 +142,17 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
   const [selectedGuest, setSelectedGuest]         = useState(null);
   const [filterReliability, setFilterReliability] = useState('All');
   const [filterPattern, setFilterPattern]         = useState('All');
+  const [selectedEvents, setSelectedEvents]       = useState([]);
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+
+  const allEvents = useMemo(() => {
+    try {
+      return mockStore.getEvents() || [];
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }, []);
 
   const GUESTS_DATA = useMemo(() => {
     if (!eventId) return MOCK_GUESTS;
@@ -188,6 +200,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
   const [bSubject, setBSubject]           = useState('');
   const [bMessage, setBMessage]           = useState('');
   const [bSent, setBSent]                 = useState(false);
+  const [showAllHistory, setShowAllHistory]       = useState(false);
 
   const stats = useMemo(() => ({
     total:     GUESTS_DATA.length,
@@ -209,12 +222,36 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
           (filterPattern === 'OverRsvp'   && g.pattern === 'Over-RSVP Pattern');
         if (!match) return false;
       }
+      if (selectedEvents.length > 0) {
+        let matchesSelectedEvent = false;
+        for (const evtId of selectedEvents) {
+          // Check if guest has RSVP in this event
+          const rsvps = mockStore.getRSVPs(evtId) || [];
+          if (rsvps.some(r => r.email.toLowerCase() === g.email.toLowerCase() && r.status === 'going')) {
+            matchesSelectedEvent = true;
+            break;
+          }
+          // Also check fuzzy history
+          const targetEvt = allEvents.find(e => e.id === evtId);
+          if (targetEvt && g.history) {
+            const titleNorm = targetEvt.title.toLowerCase();
+            if (g.history.some(h => {
+              const histNorm = h.event.toLowerCase();
+              return titleNorm.includes(histNorm) || histNorm.includes(titleNorm);
+            })) {
+              matchesSelectedEvent = true;
+              break;
+            }
+          }
+        }
+        if (!matchesSelectedEvent) return false;
+      }
       return true;
     });
-  }, [searchTerm, filterReliability, filterPattern]);
+  }, [searchTerm, filterReliability, filterPattern, selectedEvents, GUESTS_DATA, allEvents]);
 
-  const hasActiveFilters = searchTerm || filterReliability !== 'All' || filterPattern !== 'All';
-  const resetFilters = () => { setSearchTerm(''); setFilterReliability('All'); setFilterPattern('All'); };
+  const hasActiveFilters = searchTerm || filterReliability !== 'All' || filterPattern !== 'All' || selectedEvents.length > 0;
+  const resetFilters = () => { setSearchTerm(''); setFilterReliability('All'); setFilterPattern('All'); setSelectedEvents([]); };
 
   const handleSendBroadcast = () => {
     setBSent(true);
@@ -314,6 +351,117 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
           <option value="NoShow">Frequent No-Show</option>
           <option value="OverRsvp">Over-RSVP</option>
         </select>
+        {/* Multi-select Event Filter */}
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
+            style={{
+              padding: '9px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-bg)',
+              color: 'var(--color-text)',
+              fontSize: '0.84rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              minWidth: '150px',
+              justifyContent: 'space-between',
+              outline: 'none'
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>
+              <CalendarDays size={14} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+              {selectedEvents.length === 0
+                ? 'Events: All'
+                : `Events: ${selectedEvents.length} selected`}
+            </span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{isEventDropdownOpen ? '▲' : '▼'}</span>
+          </button>
+          {isEventDropdownOpen && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setIsEventDropdownOpen(false)} />
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '10px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                  padding: '8px',
+                  zIndex: 999,
+                  minWidth: '220px',
+                  maxHeight: '220px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
+                }}
+              >
+                {allEvents.map(evt => {
+                  const isChecked = selectedEvents.includes(evt.id);
+                  return (
+                    <label
+                      key={evt.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.82rem',
+                        color: 'var(--color-text)',
+                        background: isChecked ? 'rgba(31,58,99,0.08)' : 'transparent',
+                        userSelect: 'none',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = isChecked ? 'rgba(31,58,99,0.12)' : 'var(--color-surface-hover)'}
+                      onMouseLeave={e => e.currentTarget.style.background = isChecked ? 'rgba(31,58,99,0.08)' : 'transparent'}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            setSelectedEvents(selectedEvents.filter(id => id !== evt.id));
+                          } else {
+                            setSelectedEvents([...selectedEvents, evt.id]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                      />
+                      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{evt.title}</span>
+                    </label>
+                  );
+                })}
+                {selectedEvents.length > 0 && (
+                  <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '4px', paddingTop: '4px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEvents([])}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-primary)',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        padding: '2px 6px'
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
         {hasActiveFilters && (
           <button type="button" onClick={resetFilters} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '9px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface-hover)', color: 'var(--color-text-muted)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
             <X size={13} /> Reset
@@ -430,7 +578,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                       </>
                     )}
                     <td style={{ padding: '14px 16px' }}>
-                      <button type="button" onClick={() => { setSelectedGuest(guest); setShowCheckinPanel(false); setCheckinState({}); setArrivingNow(1); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <button type="button" onClick={() => { setSelectedGuest(guest); setShowCheckinPanel(false); setCheckinState({}); setArrivingNow(1); setShowAllHistory(false); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         <Eye size={13} /> View
                       </button>
                     </td>
@@ -445,10 +593,10 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
       {/* ========================================================================= */}
       {/* BROADCAST MODAL                                                           */}
       {/* ========================================================================= */}
-      {showBroadcast && (
+      {showBroadcast && createPortal(
         <>
-          <div onClick={() => !bSent && setShowBroadcast(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(8,8,12,0.55)', backdropFilter: 'blur(6px)', zIndex: 300 }} />
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '500px', maxWidth: 'calc(100vw - 32px)', maxHeight: '90vh', background: 'var(--color-surface)', borderRadius: '20px', boxShadow: '0 32px 80px rgba(0,0,0,0.25)', zIndex: 301, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div onClick={() => !bSent && setShowBroadcast(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(8,8,12,0.55)', backdropFilter: 'blur(6px)', zIndex: 1000 }} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '500px', maxWidth: 'calc(100vw - 32px)', maxHeight: '90vh', background: 'var(--color-surface)', borderRadius: '20px', boxShadow: '0 32px 80px rgba(0,0,0,0.25)', zIndex: 1001, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, var(--color-primary) 0%, #2d5a9e 100%)' }}>
               <div>
                 <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>Broadcast to Guests</h3>
@@ -500,16 +648,17 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
               )}
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* GUEST DETAIL DRAWER                                                       */}
       {/* ========================================================================= */}
-      {selectedGuest && insight && (
+      {selectedGuest && insight && createPortal(
         <>
-          <div onClick={() => setSelectedGuest(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', zIndex: 200 }} />
-          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '480px', maxWidth: '100%', background: 'var(--color-surface)', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', zIndex: 201, display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.28s ease-out' }}>
+          <div onClick={() => setSelectedGuest(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', zIndex: 1000 }} />
+          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '480px', maxWidth: '100%', background: 'var(--color-surface)', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', zIndex: 1001, display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.28s ease-out' }}>
 
             {/* Drawer header */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
@@ -612,11 +761,11 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedGuest.history.map((h, i) => {
+                      {(showAllHistory ? selectedGuest.history : selectedGuest.history.slice(0, 3)).map((h, i, arr) => {
                         const diff = h.actual - h.rsvpCount;
                         const st = getEventStatus(h.rsvpCount, h.actual);
                         return (
-                          <tr key={i} style={{ borderBottom: i < selectedGuest.history.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
+                          <tr key={i} style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
                             <td style={{ padding: '10px', fontWeight: 600 }}>{h.event}</td>
                             <td style={{ padding: '10px', textAlign: 'center' }}>{h.rsvpCount}</td>
                             <td style={{ padding: '10px', textAlign: 'center' }}>{h.actual}</td>
@@ -637,10 +786,10 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                 <SectionLabel icon={<CalendarDays size={13} />}>Recent Activity</SectionLabel>
                 <div style={{ position: 'relative', paddingLeft: '20px' }}>
                   <div style={{ position: 'absolute', left: '5px', top: '6px', bottom: '6px', width: '2px', background: 'var(--color-border)' }} />
-                  {selectedGuest.history.map((h, i) => {
+                  {(showAllHistory ? selectedGuest.history : selectedGuest.history.slice(0, 3)).map((h, i, arr) => {
                     const st = getEventStatus(h.rsvpCount, h.actual);
                     return (
-                      <div key={i} style={{ position: 'relative', paddingBottom: i < selectedGuest.history.length - 1 ? '16px' : 0 }}>
+                      <div key={i} style={{ position: 'relative', paddingBottom: i < arr.length - 1 ? '16px' : 0 }}>
                         <div style={{ position: 'absolute', left: '-19px', top: '3px', width: '12px', height: '12px', borderRadius: '50%', background: st.color, border: '2px solid var(--color-surface)' }} />
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{h.date}</div>
                         <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text)' }}>{h.event}</div>
@@ -651,6 +800,19 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                     );
                   })}
                 </div>
+                {selectedGuest.history.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllHistory(!showAllHistory)}
+                    style={{
+                      background: 'none', border: 'none', color: 'var(--color-primary)',
+                      fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', marginTop: '12px',
+                      padding: 0, display: 'flex', alignItems: 'center', gap: '4px'
+                    }}
+                  >
+                    {showAllHistory ? 'Show Less' : `Show All History (${selectedGuest.history.length} events)`}
+                  </button>
+                )}
               </div>
 
               {/* ─────────── COMMUNICATION HISTORY ─────────── */}
@@ -661,7 +823,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                     No reminders or messages sent yet.
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '6px' }}>
                     {selectedGuest.communications.map((c, i) => {
                       const delivered = c.status === 'Delivered';
                       const opened = c.status === 'Opened';
@@ -749,54 +911,64 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, marginBottom: '5px' }}>
                               <span>{checked} of {total} attendees</span><span>{pct}%</span>
                             </div>
-                            <div style={{ height: '7px', background: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${pct}%`, background: checked >= total ? '#16a34a' : 'var(--color-primary)', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                            <div style={{ height: '6px', background: 'var(--color-border)', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${pct}%`, background: checked >= total ? '#16a34a' : 'var(--color-primary)', borderRadius: '3px', transition: 'width 0.3s ease' }}></div>
                             </div>
                           </div>
 
-                          {/* Party members */}
-                          <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.4px', marginBottom: '8px' }}>PARTY MEMBERS</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              {members.map((m, mi) => {
-                                const isIn = mi < checked;
+                          {/* Party members scanner list */}
+                          {total > 1 && (
+                            <div style={{ background: 'var(--color-bg)', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>Party Members</div>
+                              {members.map((m, mIdx) => {
+                                const isArrived = mIdx < checked;
                                 return (
-                                  <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px', background: isIn ? '#16a34a08' : 'var(--color-surface-hover)', border: `1px solid ${isIn ? '#16a34a25' : 'var(--color-border)'}` }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isIn ? '#16a34a18' : 'var(--color-border)', color: isIn ? '#16a34a' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                      {isIn ? <CheckCircle size={14} /> : <Users size={14} />}
+                                  <div key={mIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: isArrived ? '#16a34a15' : 'var(--color-surface-hover)', color: isArrived ? '#16a34a' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700 }}>
+                                        {isArrived ? <CheckCircle size={12} /> : mIdx + 1}
+                                      </div>
+                                      <span style={{ fontSize: '0.8rem', color: isArrived ? 'var(--color-text)' : 'var(--color-text-muted)', fontWeight: isArrived ? 600 : 500 }}>{m}</span>
                                     </div>
-                                    <div style={{ flex: 1, fontSize: '0.82rem', fontWeight: 600, color: isIn ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{m}</div>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isIn ? '#16a34a' : 'var(--color-text-muted)' }}>{isIn ? 'IN' : 'PENDING'}</span>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isArrived ? '#16a34a' : 'var(--color-text-muted)' }}>{isArrived ? 'Arrived' : 'Absent'}</span>
                                   </div>
                                 );
                               })}
                             </div>
-                          </div>
-
-                          {/* Check-in controls */}
-                          {remaining > 0 ? (
-                            <div style={{ background: 'var(--color-surface-hover)', borderRadius: '10px', padding: '12px' }}>
-                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--color-surface)' }}>
-                                  <button onClick={() => setArrivingNow(Math.max(1, arrivingNow - 1))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text)' }}><Minus size={14} /></button>
-                                  <span style={{ minWidth: '28px', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>{Math.min(arrivingNow, remaining)}</span>
-                                  <button onClick={() => setArrivingNow(Math.min(remaining, arrivingNow + 1))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text)' }}><Plus size={14} /></button>
-                                </div>
-                                <Button variant="primary" onClick={() => { setCheckinState(prev => ({ ...prev, [idx]: checked + Math.min(arrivingNow, remaining) })); setArrivingNow(1); }} style={{ flex: 1, minWidth: '120px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 14px', fontSize: '0.82rem' }}>
-                                  <CheckCircle size={14} /> Check In {Math.min(arrivingNow, remaining)}
-                                </Button>
-                                {remaining > 1 && (
-                                  <Button variant="outline" onClick={() => setCheckinState(prev => ({ ...prev, [idx]: total }))} style={{ whiteSpace: 'nowrap', fontSize: '0.78rem', padding: '9px 12px' }}>
-                                    All {remaining}
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div style={{ background: '#16a34a0a', border: '1px solid #16a34a25', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#16a34a', fontWeight: 700, fontSize: '0.82rem' }}>
-                              <CheckCircle size={16} /> All {total} attendees checked in
-                            </div>
                           )}
+
+                          {/* Quick manual adjust slider */}
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+                              <button
+                                type="button"
+                                disabled={checked <= 0}
+                                onClick={() => setCheckinState(prev => ({ ...prev, [idx]: checked - 1 }))}
+                                style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: checked <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={checked >= total}
+                                onClick={() => setCheckinState(prev => ({ ...prev, [idx]: checked + 1 }))}
+                                style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: checked >= total ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                            {remaining > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setCheckinState(prev => ({ ...prev, [idx]: checked + arrivingNow }))}
+                                style={{ flex: 2, padding: '7px 12px', background: 'var(--color-primary)', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                              >
+                                <CheckCircle size={13} /> Check In {Math.min(arrivingNow, remaining)}
+                              </button>
+                            ) : (
+                              <div style={{ flex: 2, padding: '7px 12px', background: '#16a34a10', border: '1px solid #16a34a20', borderRadius: '8px', color: '#16a34a', fontWeight: 700, fontSize: '0.78rem', textAlign: 'center' }}>Checked In</div>
+                            )}
+                          </div>
                         </Card>
                       );
                     })}
@@ -827,8 +999,8 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
           {/* ─────────── HISTORY SUB-MODALS ─────────── */}
           {historyModal && (
             <>
-              <div onClick={() => setHistoryModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(8,8,12,0.6)', backdropFilter: 'blur(6px)', zIndex: 400 }} />
-              <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '560px', maxWidth: 'calc(100vw - 32px)', maxHeight: '88vh', background: 'var(--color-surface)', borderRadius: '18px', boxShadow: '0 32px 80px rgba(0,0,0,0.3)', zIndex: 401, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div onClick={() => setHistoryModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(8,8,12,0.6)', backdropFilter: 'blur(6px)', zIndex: 1100 }} />
+              <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '560px', maxWidth: 'calc(100vw - 32px)', maxHeight: '88vh', background: 'var(--color-surface)', borderRadius: '18px', boxShadow: '0 32px 80px rgba(0,0,0,0.3)', zIndex: 1101, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 {/* header */}
                 <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
@@ -919,7 +1091,8 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
               to   { transform: translateX(0);    opacity: 1; }
             }
           `}</style>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
