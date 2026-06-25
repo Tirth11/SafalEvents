@@ -392,7 +392,7 @@ a {
   color: var(--color-text-muted);
   border-bottom: 1px solid var(--color-border);
   font-size: 0.875rem;
-  text-transform: uppercase;
+  
   letter-spacing: 0.5px;
 }
 
@@ -698,7 +698,7 @@ textarea:focus {
 .nav-section-label {
   font-size: 0.62rem;
   font-weight: 800;
-  text-transform: uppercase;
+  
   letter-spacing: 0.07em;
   color: var(--color-text-muted);
   padding: 0 10px;
@@ -1378,7 +1378,7 @@ button.text-link:hover {
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 8px;
-  text-transform: uppercase;
+  
   letter-spacing: 0.5px;
   z-index: 5;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -1665,7 +1665,7 @@ button.text-link:hover {
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
+  
   color: var(--color-primary);
 }
 
@@ -2131,7 +2131,7 @@ h1, h2, h3 {
   font-weight: 700;
   font-size: 0.8rem;
   color: var(--color-text-muted);
-  text-transform: uppercase;
+  
   letter-spacing: 0.5px;
 }
 

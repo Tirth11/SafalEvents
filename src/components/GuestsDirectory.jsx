@@ -119,7 +119,7 @@ const TrustBar = ({ score, color }) => (
 
 // Small section heading
 const SectionLabel = ({ icon, children }) => (
-  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)',  letterSpacing: '0.5px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
     {icon} {children}
   </div>
 );
@@ -288,7 +288,7 @@ export default function GuestsDirectory() {
             <thead>
               <tr style={{ background: 'var(--color-surface-hover)', borderBottom: '2px solid var(--color-border)' }}>
                 {['Guest', 'Contact', 'Events', 'Trust Score', 'Pattern', ''].map((h, i) => (
-                  <th key={i} style={{ padding: '12px 16px', color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.6px', textAlign: i === 2 ? 'center' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={i} style={{ padding: '12px 16px', color: 'var(--color-text-muted)', fontSize: '0.72rem',  fontWeight: 700, letterSpacing: '0.6px', textAlign: i === 2 ? 'center' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -384,7 +384,7 @@ export default function GuestsDirectory() {
               ) : (
                 <>
                   <div>
-                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '10px' }}>Channel</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)',  letterSpacing: '0.5px', display: 'block', marginBottom: '10px' }}>Channel</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {channels.map(ch => (
                         <button key={ch.value} type="button" onClick={() => setBChannel(ch.value)} style={{ flex: 1, padding: '10px 6px', borderRadius: '10px', cursor: 'pointer', border: bChannel === ch.value ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: bChannel === ch.value ? 'rgba(31,58,99,0.07)' : 'var(--color-surface)', color: bChannel === ch.value ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>{ch.icon} {ch.label}</button>
@@ -392,7 +392,7 @@ export default function GuestsDirectory() {
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Recipients</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)',  letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Recipients</label>
                     <select value={bTarget} onChange={e => setBTarget(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)', fontSize: '0.875rem' }}>
                       <option value="all">All Guests ({MOCK_GUESTS.length})</option>
                       <option value="high_trust">High Trust Guests ({stats.highTrust})</option>
@@ -401,12 +401,12 @@ export default function GuestsDirectory() {
                   </div>
                   {(bChannel === 'email' || bChannel === 'both') && (
                     <div>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Subject</label>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)',  letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Subject</label>
                       <input type="text" placeholder="e.g. New event just announced — grab your spot!" value={bSubject} onChange={e => setBSubject(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)', fontSize: '0.875rem', boxSizing: 'border-box' }} />
                     </div>
                   )}
                   <div>
-                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Message</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)',  letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Message</label>
                     <textarea placeholder="Write your announcement, event details, or update here…" value={bMessage} onChange={e => setBMessage(e.target.value.slice(0, 500))} rows={4} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)', fontSize: '0.875rem', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}><span style={{ fontSize: '0.72rem', color: bMessage.length > 450 ? '#ef4444' : 'var(--color-text-muted)' }}>{bMessage.length}/500</span></div>
                   </div>
@@ -525,7 +525,7 @@ export default function GuestsDirectory() {
                     <thead>
                       <tr style={{ background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)' }}>
                         {['Event', 'RSVP', 'Actual', 'Δ', 'Status'].map((h, i) => (
-                          <th key={i} style={{ padding: '9px 10px', color: 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase', textAlign: i === 0 ? 'left' : i === 4 ? 'right' : 'center' }}>{h}</th>
+                          <th key={i} style={{ padding: '9px 10px', color: 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.68rem',  textAlign: i === 0 ? 'left' : i === 4 ? 'right' : 'center' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -675,7 +675,7 @@ export default function GuestsDirectory() {
                           <thead>
                             <tr style={{ background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)' }}>
                               {['Event', 'RSVP Date', 'RSVP Count', 'Status'].map((h, i) => (
-                                <th key={i} style={{ padding: '10px 12px', textAlign: i >= 2 ? 'center' : 'left', color: 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase' }}>{h}</th>
+                                <th key={i} style={{ padding: '10px 12px', textAlign: i >= 2 ? 'center' : 'left', color: 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.68rem', }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -704,7 +704,7 @@ export default function GuestsDirectory() {
                           <thead>
                             <tr style={{ background: 'var(--color-surface-hover)', borderBottom: '1px solid var(--color-border)' }}>
                               {['Event', 'RSVP', 'Checked-In', 'Attendance %'].map((h, i) => (
-                                <th key={i} style={{ padding: '10px 12px', textAlign: i === 0 ? 'left' : 'center', color: 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase' }}>{h}</th>
+                                <th key={i} style={{ padding: '10px 12px', textAlign: i === 0 ? 'left' : 'center', color: 'var(--color-text-muted)', fontWeight: 700, fontSize: '0.68rem', }}>{h}</th>
                               ))}
                             </tr>
                           </thead>

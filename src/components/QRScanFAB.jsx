@@ -162,7 +162,7 @@ export default function QRScanFAB({ currentUser }) {
         onClick={() => { setIsOpen(true); setScanResult(null); setScanInput(''); setArrivingNow(1); }}
         style={{
           position: 'fixed',
-          bottom: '24px',
+          bottom: '90px',
           right: '24px',
           background: 'var(--color-primary)',
           color: 'white',
@@ -242,7 +242,7 @@ export default function QRScanFAB({ currentUser }) {
                   <Card style={{ padding: '20px', background: 'linear-gradient(to right, rgba(31,58,99,0.06), rgba(31,58,99,0.02))' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                       <div>
-                        <h4 style={{ margin: '0 0 2px', fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Guest</h4>
+                        <h4 style={{ margin: '0 0 2px', fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 800,  letterSpacing: '0.5px' }}>Guest</h4>
                         <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{r.name}</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '6px' }}>
                           <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}><Mail size={12} /> {r.email}</span>
@@ -250,7 +250,7 @@ export default function QRScanFAB({ currentUser }) {
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <h4 style={{ margin: '0 0 2px', fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Event</h4>
+                        <h4 style={{ margin: '0 0 2px', fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 800,  letterSpacing: '0.5px' }}>Event</h4>
                         <div style={{ fontSize: '1.05rem', fontWeight: 800 }}>{scanResult.event.title}</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end', marginTop: '4px' }}>
                           <Calendar size={12} /> {scanResult.event.date} · {scanResult.event.time}
@@ -362,7 +362,7 @@ export default function QRScanFAB({ currentUser }) {
                           <div key={i} style={{ background: 'var(--color-surface-hover)', borderRadius: '10px', padding: '12px 10px', textAlign: 'center' }}>
                             <div style={{ color: s.color, opacity: 0.85, display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{s.icon}</div>
                             <div style={{ fontSize: '1.3rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-                            <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{s.label}</div>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '4px',  letterSpacing: '0.3px' }}>{s.label}</div>
                           </div>
                         ))}
                       </div>
@@ -373,10 +373,10 @@ export default function QRScanFAB({ currentUser }) {
                           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
                             <thead style={{ background: 'var(--color-surface-hover)' }}>
                               <tr>
-                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>Event</th>
-                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', textAlign: 'center' }}>RSVP</th>
-                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', textAlign: 'center' }}>Actual</th>
-                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', textAlign: 'center' }}>Δ</th>
+                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem',  color: 'var(--color-text-muted)' }}>Event</th>
+                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem',  color: 'var(--color-text-muted)', textAlign: 'center' }}>RSVP</th>
+                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem',  color: 'var(--color-text-muted)', textAlign: 'center' }}>Actual</th>
+                                <th style={{ padding: '9px 12px', fontWeight: 700, fontSize: '0.7rem',  color: 'var(--color-text-muted)', textAlign: 'center' }}>Δ</th>
                               </tr>
                             </thead>
                             <tbody>
