@@ -197,6 +197,44 @@ const defaultEvents = [
     distance: 0.8,
     rating: 4.7,
     reviewsCount: 204
+  },
+  {
+    id: '6',
+    title: 'Design Systems Workshop',
+    date: '2026-10-05',
+    time: '10:00',
+    location: 'Design Studio 4, Downtown',
+    city: 'Seattle',
+    state: 'WA',
+    description: 'A deep dive into creating robust, scalable design systems. Created by a staff member and awaiting your approval to publish.',
+    status: 'Under Approval',
+    approvalState: 'UNDER_APPROVAL',
+    capacity: 40,
+    cover: '',
+    theme: 'mesh-gradient-ocean',
+    approvalRequired: false,
+    questions: [],
+    eventType: 'Workshop',
+    privacy: 'Public',
+    rsvpStatus: 'Open',
+    showGuestList: true,
+    maxGuestsPerRsvp: 1,
+    rsvpDeadline: '2026-10-04T23:59',
+    allowSelfEdit: true,
+    allowSelfCancellation: true,
+    cancellationCutoff: 48,
+    requireCancellationReason: false,
+    allowComments: true,
+    allowPhotoUploads: false,
+    guestConfirmation: true,
+    reminderSchedule: '24h',
+    hostAlerts: true,
+    enablePayments: false,
+    hostName: 'Design Team',
+    hostEmail: 'design@example.com',
+    distance: 1.5,
+    rating: 0,
+    reviewsCount: 0
   }
 ];
 
@@ -427,17 +465,20 @@ const defaultUsers = [
 // Permission keys map to tabs/actions in the host portal. Default-deny:
 // anything not present (or false) is hidden in the UI and blocked in the store.
 export const PERMISSION_KEYS = [
-  'guests_view',      // see the guest list & RSVP details
-  'guests_approve',   // approve / reject / reopen RSVPs
-  'guests_edit',      // edit guests, manual add
-  'guests_export',    // export the guest list
-  'checkin',          // gate check-in via QR scanner (UC-11)
-  'messaging_view',   // read guest <-> host conversations
-  'messaging_reply',  // reply to guests
-  'history_view',     // view activity / audit history
-  'settings_view',    // view event settings & notifications
-  'settings_edit',    // edit event settings
-  'staff_manage'      // invite/manage staff & roles
+  // Event Permissions
+  'event_create', 'event_edit', 'event_delete', 'event_duplicate', 'event_publish', 'event_unpublish', 'event_cancel', 'event_archive', 'event_approve', 'event_reject',
+  // Guest Permissions
+  'guests_view_directory', 'guests_view_profile', 'guests_view_rsvp', 'guests_view_checkin', 'guests_view_intel', 'guests_add_internal_notes', 'guests_export', 'guests_import',
+  // Check-In Permissions
+  'checkin_scan', 'checkin_search', 'checkin_partial', 'checkin_full', 'checkin_manual', 'checkin_undo', 'checkin_view_history', 'checkin_view_intel',
+  // Communication Permissions
+  'comm_send_reminder', 'comm_send_message', 'comm_send_email', 'comm_send_sms', 'comm_send_push', 'comm_create_template', 'comm_view_history',
+  // Analytics Permissions
+  'analytics_view_dashboard', 'analytics_view_rsvp', 'analytics_view_attendance', 'analytics_view_guest', 'analytics_export',
+  // Staff Management Permissions
+  'staff_view', 'staff_create', 'staff_edit', 'staff_delete', 'roles_create', 'roles_edit', 'roles_delete',
+  // Organization Permissions
+  'org_manage_settings', 'org_manage_integrations', 'org_manage_subscription', 'org_view_audit'
 ];
 
 const ALL_PERMS = PERMISSION_KEYS.reduce((acc, k) => ({ ...acc, [k]: true }), {});
@@ -483,9 +524,13 @@ const defaultRoles = [
 const defaultStaff = [
   {
     id: 'st_1',
-    eventId: '2',
+    accessScope: 'SELECTED',
+    eventIds: ['1', '2'],
     name: 'Sam Carter',
     email: 'sam@safalevent.com',
+    phone: '+1 (555) 444-3333',
+    designation: 'Event Manager',
+    department: 'Operations',
     roleId: 'role_coordinator',
     inviteId: 'INV-SAM-2026',
     status: 'ACTIVE',
@@ -914,6 +959,28 @@ const defaultTransactions = [
   }
 ];
 
+// --- Default Message Templates ---
+const defaultMessageTemplates = [
+  { id: 'tpl_1', name: 'Registration Confirmation', category: 'Email', trigger: 'Guest Registered', content: 'Hi {{GuestName}},\n\nThanks for registering for {{EventName}}! We are excited to see you on {{EventDate}} at {{EventTime}}.\n\nVenue: {{Venue}}\n\nCheers,\n{{HostName}}', status: 'Active', isSystem: true },
+  { id: 'tpl_2', name: 'Waitlist Notification', category: 'Email', trigger: 'Waitlisted', content: 'Hi {{GuestName}},\n\nYou are on the waitlist for {{EventName}}. We will notify you if a spot opens up.\n\nCheers,\n{{HostName}}', status: 'Active', isSystem: true },
+  { id: 'tpl_3', name: 'RSVP Confirmation', category: 'Email', trigger: 'RSVP Confirmed', content: 'Hi {{GuestName}},\n\nYour RSVP for {{EventName}} is confirmed. See you soon!\n\nCheers,\n{{HostName}}', status: 'Active', isSystem: true },
+  { id: 'tpl_4', name: 'Event Reminder (24h)', category: 'SMS', trigger: '24 Hours Before Event', content: 'Reminder: {{EventName}} is tomorrow at {{EventTime}}. See you there!', status: 'Active', isSystem: true },
+  { id: 'tpl_5', name: 'Feedback Request', category: 'Email', trigger: 'Event Completed', content: 'Hi {{GuestName}},\n\nThanks for attending {{EventName}}. Please let us know how we did by leaving some feedback!\n\nCheers,\n{{HostName}}', status: 'Active', isSystem: true }
+];
+
+// --- Default Automation Rules ---
+const defaultAutomationRules = [
+  { id: 'rule_1', name: 'Send Registration Email', description: 'Automatically sends the Registration Confirmation template to newly registered guests.', scope: 'All Events', trigger: 'Guest Registered', conditions: [], actions: ['Send Email: Registration Confirmation'], status: 'Active' },
+  { id: 'rule_2', name: 'Send RSVP Confirmation', description: 'Automatically sends an RSVP confirmation when guests RSVP as going.', scope: 'All Events', trigger: 'RSVP Submitted', conditions: ['If Status is Going'], actions: ['Send Email: RSVP Confirmation'], status: 'Active' },
+  { id: 'rule_3', name: 'Send 24h Reminder', description: 'Sends an SMS reminder 24 hours before the event starts.', scope: 'All Events', trigger: '24 Hours Before Event', conditions: [], actions: ['Send SMS: Event Reminder (24h)'], status: 'Active' },
+  { id: 'rule_4', name: 'Send Feedback Request', description: 'Sends a feedback request email after the event completes.', scope: 'All Events', trigger: 'Event Completed', conditions: [], actions: ['Send Email: Feedback Request'], status: 'Active' }
+];
+
+// --- Default Audit Logs ---
+const defaultAuditLogs = [
+  { id: 'al_1', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), eventName: 'System', userName: 'Alex Rivera', role: 'Host Admin', action: 'Event Created', previousValue: 'None', newValue: 'Design Systems Workshop', status: 'Success', ip: '192.168.1.5' }
+];
+
 // Initialize DB if not present
 const getDB = () => {
   const data = localStorage.getItem(STORE_KEY);
@@ -985,9 +1052,16 @@ const getDB = () => {
   if (!db.conversations) {
     db.conversations = defaultConversations;
   }
+  // Backfill pending event 6
+  if (!db.events.some(e => e.id === '6')) {
+    db.events.push(defaultEvents.find(e => e.id === '6'));
+  }
   // Staff & Roles (UC-06/07/08)
   if (!db.roles) {
     db.roles = defaultRoles;
+  }
+  if (!db.orgSettings) {
+    db.orgSettings = { eventCreationRequiresApproval: false };
   }
   if (!db.staff) {
     db.staff = defaultStaff;
@@ -1024,6 +1098,10 @@ const getDB = () => {
     }
     return r;
   });
+  if (!db.automationRules) db.automationRules = defaultAutomationRules;
+  if (!db.messageTemplates) db.messageTemplates = defaultMessageTemplates;
+  if (!db.auditLogs) db.auditLogs = defaultAuditLogs;
+
   if (!db.hostNotifications) {
     db.hostNotifications = [
       {
@@ -1175,6 +1253,36 @@ export const mockStore = {
     return db.events;
   },
 
+  getOrgSettings: () => {
+    const db = getDB();
+    return db.orgSettings || { eventCreationRequiresApproval: false };
+  },
+
+  updateOrgSettings: (settings) => {
+    const db = getDB();
+    db.orgSettings = { ...db.orgSettings, ...settings };
+    saveDB(db);
+    return db.orgSettings;
+  },
+
+  submitEventForApproval: (eventId) => {
+    const db = getDB();
+    db.events = db.events.map(e => e.id === eventId ? { ...e, approvalState: 'PENDING_APPROVAL' } : e);
+    saveDB(db);
+  },
+
+  approveEvent: (eventId) => {
+    const db = getDB();
+    db.events = db.events.map(e => e.id === eventId ? { ...e, approvalState: 'APPROVED', status: 'Published' } : e);
+    saveDB(db);
+  },
+
+  rejectEvent: (eventId, reason) => {
+    const db = getDB();
+    db.events = db.events.map(e => e.id === eventId ? { ...e, approvalState: 'REJECTED', approvalComments: reason } : e);
+    saveDB(db);
+  },
+
   getEventById: (id) => {
     const db = getDB();
     return db.events.find(e => e.id === id);
@@ -1182,9 +1290,11 @@ export const mockStore = {
 
   createEvent: (eventData) => {
     const db = getDB();
+    const orgSettings = mockStore.getOrgSettings();
     const newEvent = {
       id: String(db.events.length + 1),
-      status: 'Published',
+      status: orgSettings.eventCreationRequiresApproval ? 'Draft' : 'Published',
+      approvalState: orgSettings.eventCreationRequiresApproval ? 'DRAFT' : 'APPROVED',
       theme: 'mesh-gradient-sunset',
       capacity: 100,
       approvalRequired: false,
@@ -2734,7 +2844,7 @@ export const mockStore = {
   // Staff assigned to a given event
   getStaff: (eventId) => {
     const db = getDB();
-    return (db.staff || []).filter(s => s.eventId === eventId && s.status !== 'REMOVED');
+    return (db.staff || []).filter(s => s.status !== 'REMOVED' && (s.accessScope === 'ALL' || (s.eventIds && s.eventIds.includes(eventId))));
   },
 
   // All events a person (by email) is active staff on
@@ -2742,6 +2852,69 @@ export const mockStore = {
     if (!email) return [];
     const db = getDB();
     return (db.staff || []).filter(s => s.email === email && s.status !== 'REMOVED');
+  },
+
+  getAllStaff: () => {
+    const db = getDB();
+    return (db.staff || []).filter(s => s.status !== 'REMOVED');
+  },
+
+  addStaff: (staffData) => {
+    const db = getDB();
+    if (!db.staff) db.staff = [];
+    const role = (db.roles || []).find(r => r.id === staffData.roleId);
+
+    // If the email is not yet a user, create a pending staff user account
+    if (staffData.email && !db.users.some(u => u.email === staffData.email)) {
+      db.users.push({
+        id: 'u_' + Math.random().toString(36).substr(2, 9),
+        role: 'staff',
+        name: staffData.name || staffData.email,
+        email: staffData.email,
+        phone: staffData.phone || '',
+        password: 'password123',
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    const newStaff = {
+      id: 'st_' + Math.random().toString(36).substr(2, 9),
+      name: staffData.name || staffData.email,
+      email: staffData.email,
+      phone: staffData.phone || '',
+      designation: staffData.designation || '',
+      department: staffData.department || '',
+      roleId: staffData.roleId || null,
+      accessScope: staffData.accessScope || 'ALL',
+      eventIds: staffData.eventIds || [],
+      inviteId: 'INV-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+      status: 'INVITED',
+      invitedAt: new Date().toISOString()
+    };
+    db.staff.push(newStaff);
+    saveDB(db);
+
+    mockStore.addAuditLog('Host', `Invited ${newStaff.name} as ${role ? role.name : 'staff'}`, null);
+    return newStaff;
+  },
+
+  updateStaff: (staffId, data) => {
+    const db = getDB();
+    db.staff = (db.staff || []).map(s => s.id === staffId ? { ...s, ...data } : s);
+    saveDB(db);
+    const updated = (db.staff || []).find(s => s.id === staffId);
+    if (updated) mockStore.addAuditLog('Host', `Updated staff member "${updated.name}"`, null);
+    return updated || null;
+  },
+
+  removeStaff: (staffId) => {
+    const db = getDB();
+    const staff = (db.staff || []).find(s => s.id === staffId);
+    db.staff = (db.staff || []).map(s => s.id === staffId ? { ...s, status: 'REMOVED' } : s);
+    saveDB(db);
+    if (staff) mockStore.addAuditLog('Host', `Removed staff member "${staff.name}"`, null);
+    return true;
   },
 
   // UC-13: "Login as Staff" — validate an Invite ID against the email/phone it
@@ -2782,70 +2955,6 @@ export const mockStore = {
     };
   },
 
-  inviteStaff: (eventId, { name, email, roleId }) => {
-    const db = getDB();
-    if (!db.staff) db.staff = [];
-    const event = db.events.find(e => e.id === eventId);
-    const role = (db.roles || []).find(r => r.id === roleId);
-
-    // If the email is not yet a user, create a pending staff user account
-    if (email && !db.users.some(u => u.email === email)) {
-      db.users.push({
-        id: 'u_' + Math.random().toString(36).substr(2, 9),
-        role: 'staff',
-        name: name || email,
-        email,
-        phone: '',
-        password: 'password123',
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    const newStaff = {
-      id: 'st_' + Math.random().toString(36).substr(2, 9),
-      eventId,
-      name: name || email,
-      email,
-      roleId: roleId || null,
-      // UC-13: shareable Invite ID the staff member uses to log in
-      inviteId: 'INV-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-      status: 'INVITED',
-      invitedAt: new Date().toISOString()
-    };
-    db.staff.push(newStaff);
-    saveDB(db);
-
-    mockStore.addAuditLog('Host', `Invited ${newStaff.name} as ${role ? role.name : 'staff'} (Invite ID ${newStaff.inviteId})`, eventId);
-    mockStore.addHostNotification('rsvp', 'Staff Invited', `${newStaff.name} was invited to help run ${event ? event.title : 'the event'}.`, eventId);
-
-    // UC-03/06: send the invite email (recorded in the outbox)
-    if (event) {
-      const templates = event.templates || defaultTemplates;
-      mockStore.addNotificationLog(eventId, {
-        rsvpId: null,
-        guestEmail: email,
-        type: 'broadcast',
-        channel: 'Email',
-        subject: mockStore.renderTemplate(templates.staff_invite?.subject || defaultTemplates.staff_invite.subject, event, { name }),
-        body: mockStore.renderTemplate(
-          templates.staff_invite?.body || defaultTemplates.staff_invite.body,
-          event, { name },
-          { '{{staff_name}}': name || email, '{{staff_role}}': role ? role.name : 'Team member' }
-        ),
-        status: 'Delivered'
-      });
-    }
-    return newStaff;
-  },
-
-  updateStaff: (staffId, data) => {
-    const db = getDB();
-    db.staff = (db.staff || []).map(s => s.id === staffId ? { ...s, ...data } : s);
-    saveDB(db);
-    return (db.staff || []).find(s => s.id === staffId) || null;
-  },
-
   acceptStaffInvite: (email) => {
     const db = getDB();
     let changed = false;
@@ -2858,15 +2967,6 @@ export const mockStore = {
     });
     if (changed) saveDB(db);
     return changed;
-  },
-
-  removeStaff: (staffId) => {
-    const db = getDB();
-    const staff = (db.staff || []).find(s => s.id === staffId);
-    db.staff = (db.staff || []).map(s => s.id === staffId ? { ...s, status: 'REMOVED' } : s);
-    saveDB(db);
-    if (staff) mockStore.addAuditLog('Host', `Removed staff member ${staff.name}`, staff.eventId);
-    return true;
   },
 
   // Resolve the effective permission set for a viewer on a specific event.
@@ -3069,11 +3169,53 @@ export const mockStore = {
     return (db.topUpBalances || []).filter(b => b.hostEmail === hostEmail && b.remaining > 0);
   },
 
-  // --- Transactions (UC-14) ---
   getTransactions: (hostEmail) => {
     const db = getDB();
-    if (!hostEmail) return db.transactions;
-    return db.transactions.filter(t => t.hostEmail === hostEmail);
+    return (db.transactions || []).filter(t => !hostEmail || t.hostEmail === hostEmail).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+  
+  // --- Automation & Security Methods ---
+  getAutomationRules: () => getDB().automationRules || [],
+  addAutomationRule: (rule) => {
+    const db = getDB();
+    db.automationRules.push(rule);
+    saveDB(db);
+  },
+  updateAutomationRule: (id, updates) => {
+    const db = getDB();
+    db.automationRules = db.automationRules.map(r => r.id === id ? { ...r, ...updates } : r);
+    saveDB(db);
+  },
+  deleteAutomationRule: (id) => {
+    const db = getDB();
+    db.automationRules = db.automationRules.filter(r => r.id !== id);
+    saveDB(db);
+  },
+  getMessageTemplates: () => getDB().messageTemplates || [],
+  addMessageTemplate: (template) => {
+    const db = getDB();
+    db.messageTemplates.push(template);
+    saveDB(db);
+  },
+  updateMessageTemplate: (id, updates) => {
+    const db = getDB();
+    db.messageTemplates = db.messageTemplates.map(t => t.id === id ? { ...t, ...updates } : t);
+    saveDB(db);
+  },
+  deleteMessageTemplate: (id) => {
+    const db = getDB();
+    db.messageTemplates = db.messageTemplates.filter(t => t.id !== id);
+    saveDB(db);
+  },
+  getAuditLogs: () => {
+    const db = getDB();
+    return (db.auditLogs || []).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+  },
+  addAuditLog: (log) => {
+    const db = getDB();
+    if (!db.auditLogs) db.auditLogs = [];
+    db.auditLogs.push(log);
+    saveDB(db);
   },
 
   // --- Usage & Limits (UC-14) ---

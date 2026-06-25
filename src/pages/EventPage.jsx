@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Users, MessageSquare, ArrowRight, X, CheckCircle, ArrowLeft, Send, Check, Timer, Share2, Mail, Phone, Ticket, Lock, Sparkles, QrCode, Download } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, MessageSquare, ArrowRight, X, CheckCircle, ArrowLeft, Send, Check, Timer, Share2, Mail, Phone, Ticket, Lock, Sparkles, QrCode, Download, Eye } from 'lucide-react';
 import { mockStore } from '../utils/mockStore';
 import { getEventCover, getAvatar } from '../utils/images';
 import { meetsAge } from '../utils/age';
@@ -139,6 +139,7 @@ export default function EventPage() {
   const totalAttending = goingGuests.length + maybeGuests.length;
   const deadlinePassed = event.rsvpDeadline ? new Date() > new Date(event.rsvpDeadline) : false;
   const isRsvpClosed = event.rsvpStatus === 'Closed' || deadlinePassed;
+  const isPreviewMode = window.location.search.includes('preview=true') || event.status === 'Under Approval';
 
   // Presentation-only derived values
   const coverImg = getEventCover(event);
@@ -492,7 +493,7 @@ export default function EventPage() {
                 About
               </button>
               
-              {event.enablePhotoAlbum && (event.privacy === 'Public' || existingRsvp || (currentUser && currentUser.email === event.hostEmail)) && (
+              {!isPreviewMode && event.enablePhotoAlbum && (event.privacy === 'Public' || existingRsvp || (currentUser && currentUser.email === event.hostEmail)) && (
                 <button
                   onClick={() => setActiveTab('photos')}
                   style={{
@@ -604,7 +605,18 @@ export default function EventPage() {
                 </span>
               </div>
               <div style={{ padding: 'var(--spacing-md)', borderTop: '2px dashed var(--color-border)' }}>
-              {existingRsvp && existingRsvp.status === 'waitlist' && existingRsvp.approvalState !== 'REJECTED' ? (
+              {isPreviewMode ? (
+                <div className="text-center" style={{ padding: '20px 0' }}>
+                  <Eye size={40} style={{ color: 'var(--color-primary)', margin: '0 auto var(--spacing-sm) auto' }} />
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>Event Preview</h3>
+                  <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
+                    This is a preview of the event page. RSVPs are disabled in preview mode.
+                  </p>
+                  <Button variant="outline" disabled style={{ width: '100%', padding: '12px 0' }}>
+                    RSVPs Disabled
+                  </Button>
+                </div>
+              ) : existingRsvp && existingRsvp.status === 'waitlist' && existingRsvp.approvalState !== 'REJECTED' ? (
                 <div className="text-center">
                   <Clock size={40} style={{ color: '#ca8a04', margin: '0 auto var(--spacing-sm) auto' }} />
                   <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>You're on the waitlist</h3>

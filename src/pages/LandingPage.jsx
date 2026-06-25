@@ -1,9 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight, Sparkles, Calendar, Ticket, Send, QrCode, BarChart3, Webhook,
-  Users, Link2, Repeat, Check, MapPin, Heart, Star, Clock
-} from 'lucide-react';
+import { Ticket, Link as LinkIcon, QrCode, ArrowRight, Check, Users, Sparkles, BarChart3, Mail, Calendar, MapPin, Search, Send, Webhook, Heart, Repeat, Clock } from 'lucide-react';
+import EventPassVisual from '../components/EventPassVisual';
 import Button from '../components/Button';
 import PageShell from '../components/PageShell';
 import { AVATARS, EVENT_COVERS, HERO_IMAGES, FALLBACK_COVER, getAvatar, getEventCover } from '../utils/images';
@@ -148,7 +146,7 @@ export default function LandingPage() {
             </div>
 
             {/* Hero showcase — real product UI: guest RSVP history & attendance reliability */}
-            <div className="animate-fade-in animate-delay-1" style={{ width: '100%', maxWidth: '1000px', marginTop: '4px' }}>
+            <div className="animate-fade-in animate-delay-1" style={{ width: '100%', maxWidth: '1000px', marginTop: '4px', display: 'grid', gridTemplateColumns: 'auto 280px', gap: '32px', alignItems: 'center' }}>
               <div style={{
                 background: 'white', borderRadius: '20px', border: '1px solid var(--color-border)',
                 boxShadow: 'var(--shadow-lg)', overflow: 'hidden', textAlign: 'left',
@@ -237,6 +235,11 @@ export default function LandingPage() {
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* Event Pass Mockup */}
+              <div style={{ transform: 'rotate(2deg) translateY(-10px)' }}>
+                <EventPassVisual />
               </div>
             </div>
           </div>
@@ -390,134 +393,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ───────── QR CHECK-IN SHOWCASE ───────── */}
-        <section style={{ padding: 'var(--spacing-xl) 0', background: 'linear-gradient(160deg, #1F3A63 0%, #16305a 100%)', overflow: 'hidden', position: 'relative' }}>
-          {/* subtle decorative blobs */}
-          <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '380px', height: '380px', borderRadius: '50%', background: 'rgba(194,140,50,0.12)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '-60px', left: '-40px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
 
-          <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '48px', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-
-            {/* Text column */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '7px', width: 'fit-content',
-                background: 'rgba(194,140,50,0.18)', color: '#C28C32',
-                fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                padding: '5px 14px', borderRadius: '20px',
-              }}>
-                <QrCode size={13} /> QR Check-in
-              </span>
-
-              <h2 style={{ fontSize: 'clamp(1.7rem, 3.4vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.03em', color: 'white', margin: 0, lineHeight: 1.1 }}>
-                Instant entry.<br />No lists. No chaos.
-              </h2>
-
-              <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.72)', margin: 0, lineHeight: 1.65, maxWidth: '440px' }}>
-                Every RSVP generates a unique QR pass. Guests show it at the door — you scan, they're in. Real-time attendance, zero friction.
-              </p>
-
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {[
-                  'QR ticket issued automatically on RSVP',
-                  'One-tap scan — works on any device',
-                  'Live check-in count as guests arrive',
-                  'Waitlist promoted instantly when spots open',
-                ].map((item, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', fontWeight: 500 }}>
-                    <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(194,140,50,0.25)', color: '#C28C32', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Check size={12} />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-
-              <Link to="/login?signup=true" style={{ width: 'fit-content' }}>
-                <Button
-                  variant="primary"
-                  style={{ padding: '13px 24px', fontSize: '0.9rem', borderRadius: 'var(--radius-full)', display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#C28C32', border: 'none' }}
-                >
-                  Try QR Check-in <ArrowRight size={16} />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Visual column — ticket mockup */}
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ width: '280px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.45)', transform: 'rotate(-2deg)' }}>
-                {/* Ticket cover */}
-                <div style={{ height: '110px', background: 'linear-gradient(135deg, #1a2744 0%, #2d4a80 100%)', display: 'flex', alignItems: 'flex-end', padding: '14px', position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', borderRadius: '0 0 0 100%', background: 'rgba(194,140,50,0.2)' }} />
-                  <div>
-                    <div style={{ fontSize: '0.58rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', color: '#C28C32', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Ticket size={10} /> Event Pass
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: 'white', lineHeight: 1.2 }}>Startup Mixer Night</div>
-                  </div>
-                </div>
-
-                {/* Tear line */}
-                <div style={{ borderTop: '2px dashed rgba(255,255,255,0.2)', background: 'white', position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: '-12px', left: '-8px', width: '20px', height: '20px', borderRadius: '50%', background: '#16305a' }} />
-                  <div style={{ position: 'absolute', top: '-12px', right: '-8px', width: '20px', height: '20px', borderRadius: '50%', background: '#16305a' }} />
-                </div>
-
-                {/* Ticket body */}
-                <div style={{ background: 'white', padding: '16px 18px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                    <div>
-                      <div style={{ fontSize: '0.58rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>Attendee</div>
-                      <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>Alex Rivera</div>
-                      <div style={{ fontSize: '0.7rem', color: '#64748b' }}>alex@example.com</div>
-                    </div>
-                    <span style={{ background: '#16a34a15', color: '#16a34a', fontSize: '0.62rem', fontWeight: 800, padding: '3px 8px', borderRadius: '20px', textTransform: 'uppercase' }}>● Going</span>
-                  </div>
-
-                  {/* Miniature QR */}
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-                    <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px', border: '1px solid #e2e8f0' }}>
-                      <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style={{ width: '80px', height: '80px', display: 'block' }}>
-                        <rect x="3" y="3" width="22" height="22" rx="2" fill="#1F3A63"/>
-                        <rect x="6" y="6" width="16" height="16" rx="1" fill="white"/>
-                        <rect x="9" y="9" width="10" height="10" rx="1" fill="#1F3A63"/>
-                        <rect x="55" y="3" width="22" height="22" rx="2" fill="#1F3A63"/>
-                        <rect x="58" y="6" width="16" height="16" rx="1" fill="white"/>
-                        <rect x="61" y="9" width="10" height="10" rx="1" fill="#1F3A63"/>
-                        <rect x="3" y="55" width="22" height="22" rx="2" fill="#1F3A63"/>
-                        <rect x="6" y="58" width="16" height="16" rx="1" fill="white"/>
-                        <rect x="9" y="61" width="10" height="10" rx="1" fill="#1F3A63"/>
-                        <rect x="29" y="29" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="36" y="29" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="43" y="29" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="29" y="36" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="43" y="36" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="36" y="43" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="29" y="43" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="55" y="29" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="62" y="29" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="55" y="36" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="68" y="36" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="62" y="43" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="29" y="55" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="36" y="55" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="43" y="62" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="29" y="62" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="36" y="68" width="5" height="5" rx="1" fill="#1F3A63"/>
-                        <rect x="43" y="55" width="5" height="5" rx="1" fill="#1F3A63"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'center', fontSize: '0.62rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Show at door · #{String('alex').toUpperCase()}-001
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
 
         {/* ───────── EXPLORE EVENTS ───────── */}
         <section style={{ padding: 'var(--spacing-xl) 0', background: 'transparent' }}>
@@ -658,24 +534,7 @@ export default function LandingPage() {
           <PricingSection />
         </div>
 
-        {/* ───────── TRUST STATS STRIP ───────── */}
-        <section style={{ padding: '40px 0', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
-          <div className="container">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', justifyContent: 'center', alignItems: 'center' }}>
-              {[
-                { num: '2,400+', label: 'Events hosted' },
-                { num: '58k+',   label: 'Guests managed' },
-                { num: '99.9%',  label: 'Uptime SLA' },
-                { num: '4.9 ★',  label: 'Host rating' },
-              ].map((s, i) => (
-                <div key={i} style={{ textAlign: 'center', minWidth: '120px' }}>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)', letterSpacing: '-0.03em' }}>{s.num}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '3px' }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+
 
         {/* ───────── CLOSING CTA ───────── */}
         <section style={{ padding: '0 0 var(--spacing-xl)', background: 'transparent' }}>
@@ -753,17 +612,7 @@ export default function LandingPage() {
                   </Link>
                 </div>
 
-                {/* Social proof */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                  <div className="avatar-stack">
-                    {[0,1,2].map(i => (
-                      <img key={i} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=host${i}`} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)', background: 'white' }} />
-                    ))}
-                  </div>
-                  <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-                    Joined by 2,400+ hosts worldwide
-                  </span>
-                </div>
+
               </div>
             </div>
           </div>

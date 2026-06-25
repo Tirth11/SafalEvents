@@ -13,7 +13,11 @@ import PageShell from '../components/PageShell';
 import HostPhotosAdmin from '../components/HostPhotosAdmin';
 import BillingPanel from '../components/BillingPanel';
 import DashboardTopBar from '../components/DashboardTopBar';
-import GuestsDirectory from '../components/GuestsDirectory';
+import GuestsDirectory, { MOCK_GUESTS } from '../components/GuestsDirectory';
+import RoleManagement from '../components/RoleManagement';
+import StaffManagement from '../components/StaffManagement';
+import EventApprovalQueue from '../components/EventApprovalQueue';
+import AutomationSecuritySettings from '../components/AutomationSecuritySettings';
 import { GuestGeographyChart, EarningsGrowthChart, EventsStackedBarChart, TopPerformingEventsChart, ConversionFunnelChart, DayOfWeekChart, AttendanceGapLeaderboard } from '../components/DashboardCharts';
 import EventCalendarView from '../components/EventCalendarView';
 import QRScanFAB from '../components/QRScanFAB';
@@ -84,6 +88,7 @@ export default function HostDashboard({ onLogout }) {
 
   // Navigation: dashboard, events, earnings, messages, audience, settings
   const [activeSidebar, setActiveSidebar] = useState(currentUser?.role === 'staff' ? 'events' : 'dashboard');
+  const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   // Help / Quick Resources flyout (opened from the sidebar Help button)
   const [showHelpModal, setShowHelpModal] = useState(false);
   // Collapsible (hamburger) sidebar
@@ -120,6 +125,8 @@ export default function HostDashboard({ onLogout }) {
   const [analyticsSearch, setAnalyticsSearch] = useState('');
   const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState('all'); // all | upcoming | past | draft
   const [analyticsSort, setAnalyticsSort] = useState('date'); // date | revenue | guests | fill
+  const [analyticsTab, setAnalyticsTab] = useState('overview');
+  const [staffSearch, setStaffSearch] = useState('');
   const [expandedReportId, setExpandedReportId] = useState(null); // which report row has its recent activity expanded
 
   // Messages → optional filter to a single event's conversations (set from an event's Overview)
@@ -156,6 +163,7 @@ export default function HostDashboard({ onLogout }) {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(null); // Managed event ID
   const [selectedEventTab, setSelectedEventTab] = useState('overview'); // overview, guests, polls, comments, edit, notifications, invitations, checkin, payments, staff
+  const [guestSubTab, setGuestSubTab] = useState('confirmed'); // confirmed, pending, waitlisted, all
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('rsvp'); // rsvp, reminder, feedback
   const [previewMode, setPreviewMode] = useState('email'); // email or sms
   const [viewLogDetail, setViewLogDetail] = useState(null);
@@ -1410,6 +1418,7 @@ export default function HostDashboard({ onLogout }) {
             </div>
           )}
 
+
           {/* ========================================================================= */}
           {/* SECTION 1 - 3 & 6: DASHBOARD HOME PAGE                                    */}
           {/* ========================================================================= */}
@@ -1465,21 +1474,19 @@ export default function HostDashboard({ onLogout }) {
               <div style={{ marginBottom: '16px' }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: '0 0 20px 0', textAlign: 'left', letterSpacing: '-0.02em', color: 'var(--color-text)' }}>Quick Stats</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                  {/* Card 1: Total Events Organized */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
-                      <div className="stat-icon-tile stat-icon-orange"><Calendar size={22} /></div>
+                      <div className="stat-icon-tile stat-icon-green"><Calendar size={22} /></div>
                     </div>
-                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Events Organized</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{totalEvents}</p>
+                    <h3 className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px 0', fontWeight: 600 }}>Total Events Organised</h3>
+                    <p style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 12px 0', lineHeight: 1 }}>{events.length}</p>
                     <button 
                       onClick={() => setActiveSidebar('events')}
                       style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
                     >
-                      View events &rarr;
+                      View all &rarr;
                     </button>
                   </Card>
-
                   {/* Card 2: Total Unread Messages */}
                   <Card style={{ padding: '20px', textAlign: 'left', position: 'relative' }} className="card-hover-lift glass-surface">
                     <div className="flex justify-between items-start" style={{ marginBottom: '12px' }}>
@@ -1569,18 +1576,32 @@ export default function HostDashboard({ onLogout }) {
           {activeSidebar === 'analytics' && (
             <div className="animate-fade-in text-left flex flex-col" style={{ gap: '32px' }}>
               <div style={{ textAlign: 'left' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.035em' }}>Analytics</h1>
-                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Everything happening across your events — performance, guests, and a full report history.</p>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.035em' }}>Analytics & Reports</h1>
+                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Everything happening across your events, staff assignments, and security logs.</p>
               </div>
 
-              {/* Report history — per event, with filters */}
+              <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '4px' }}>
+                {[
+                  { key: 'overview', label: '📊 Event Report' },
+                  { key: 'staff', label: '👥 Staff Report' }
+                ].map(t => (
+                  <button
+                    key={t.key}
+                    onClick={() => setAnalyticsTab(t.key)}
+                    style={{
+                      background: 'none', border: 'none', padding: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+                      color: analyticsTab === t.key ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      borderBottom: analyticsTab === t.key ? '2px solid var(--color-primary)' : '2px solid transparent',
+                      marginBottom: '-1px'
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {analyticsTab === 'overview' && (
               <div>
-                <div className="flex justify-between items-center" style={{ flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-                  <div>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: 'var(--color-text)' }}>Report History</h2>
-                    <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.85rem' }}>Every event you've organised, with its guests, revenue and attendance.</p>
-                  </div>
-                </div>
 
                 {/* Filter toolbar */}
                 <div className="flex" style={{ gap: '10px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1690,6 +1711,66 @@ export default function HostDashboard({ onLogout }) {
                   </div>
                 )}
               </div>
+              )}
+
+              {analyticsTab === 'staff' && (
+                <div>
+                  <div className="flex justify-between items-center" style={{ flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                    <div>
+                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: 'var(--color-text)' }}>Staff Report</h2>
+                      <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.85rem' }}>Overview of all staff members and their access levels.</p>
+                    </div>
+                  </div>
+                  <div style={{ position: 'relative', minWidth: '200px', marginBottom: '16px', maxWidth: '300px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                    <input
+                      type="text"
+                      placeholder="Search staff members..."
+                      value={staffSearch}
+                      onChange={(e) => setStaffSearch(e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: '10px', border: '1px solid var(--color-border)', fontSize: '0.88rem', outline: 'none', background: 'var(--color-surface)', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-surface)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--color-surface-hover)' }}>
+                          <th style={{ padding: '12px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Name</th>
+                          <th style={{ padding: '12px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Contact</th>
+                          <th style={{ padding: '12px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Scope</th>
+                          <th style={{ padding: '12px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Role Assigned</th>
+                          <th style={{ padding: '12px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Assigned On</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mockStore.getAllStaff().filter(s => s.name.toLowerCase().includes(staffSearch.toLowerCase()) || s.email.toLowerCase().includes(staffSearch.toLowerCase())).map(s => {
+                          const numEvents = s.accessScope === 'ALL' ? 'All Events' : (s.eventIds ? s.eventIds.length : (s.eventId ? 1 : 0)) + ' Events';
+                          const roleName = mockStore.getRoles().find(r => r.id === s.roleId)?.name || 'Custom Role';
+                          return (
+                          <tr key={s.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <td style={{ padding: '12px 16px', fontSize: '0.9rem', fontWeight: 700 }}>
+                                <div className="flex items-center gap-sm">
+                                  <img src={getAvatar(s.name)} alt={s.name} className="avatar-img avatar-sm" />
+                                  {s.name}
+                                </div>
+                            </td>
+                            <td style={{ padding: '12px 16px' }}>
+                                <div style={{ fontSize: '0.85rem' }}>{s.email}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{s.phone || '—'}</div>
+                            </td>
+                            <td style={{ padding: '12px 16px', fontSize: '0.85rem', fontWeight: 600 }}>{numEvents}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
+                                <span style={{ padding: '2px 8px', background: 'var(--color-surface-hover)', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>{roleName}</span>
+                            </td>
+                            <td style={{ padding: '12px 16px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{s.invitedAt ? new Date(s.invitedAt).toLocaleDateString() : '—'}</td>
+                          </tr>
+                        )})}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
@@ -1715,6 +1796,7 @@ export default function HostDashboard({ onLogout }) {
               {/* Sub-Tabs Selector */}
               <div className="flex gap-md" style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '20px' }}>
                 {[
+                  ...(!isStaffViewer ? [{ key: 'approvals', label: '🛑 Approvals' }] : []),
                   { key: 'live', label: '🔴 Live Now' },
                   { key: 'today', label: '📅 Today' },
                   { key: 'thisWeek', label: '⏳ This Week' },
@@ -1722,8 +1804,12 @@ export default function HostDashboard({ onLogout }) {
                   { key: 'past', label: '✅ Past' },
                   { key: 'drafts', label: '📝 Drafts' }
                 ].map(t => {
-                  const evList = getEventsForTab(t.key);
-                  const count = evList.length;
+                  let count = 0;
+                  if (t.key === 'approvals') {
+                    count = mockStore.getEvents().filter(e => e.approvalState === 'UNDER_APPROVAL' || e.status === 'Under Approval').length;
+                  } else {
+                    count = getEventsForTab(t.key).length;
+                  }
                   return (
                     <button 
                       key={t.key}
@@ -1760,8 +1846,12 @@ export default function HostDashboard({ onLogout }) {
                 })}
               </div>
 
-              {/* Search + Filter toolbar */}
-              <div className="flex" style={{ gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {activeEventTab === 'approvals' && !isStaffViewer ? (
+                <EventApprovalQueue />
+              ) : (
+                <>
+                  {/* Search + Filter toolbar */}
+                  <div className="flex" style={{ gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: '1 1 260px', minWidth: '220px' }}>
                   <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                   <input
@@ -1877,6 +1967,11 @@ export default function HostDashboard({ onLogout }) {
                                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Code: {event.id}</span>
                               </div>
                               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 6px 0' }}>{event.title}</h3>
+                              {event.hostName && event.hostName !== (currentUser?.name || 'Demo Host') && (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <UserCheck size={14} /> Organized by {event.hostName}
+                                </div>
+                              )}
                               <p className="text-muted" style={{ margin: 0, fontSize: '0.85rem' }}>
                                 🗓️ {event.date} • 🕒 {event.time} • 📍 {event.location}
                               </p>
@@ -1987,6 +2082,8 @@ export default function HostDashboard({ onLogout }) {
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
           )}
 
@@ -2168,8 +2265,63 @@ export default function HostDashboard({ onLogout }) {
               {selectedEventTab === 'guests' && (
                 <div className="flex flex-col gap-lg">
 
+                  {/* Sub-tabs header */}
+                  <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', overflowX: 'auto' }}>
+                    {[
+                      { id: 'confirmed', label: 'Confirmed Guests', count: managedEventRsvps.filter(r => r.status === 'going' && r.approvalState !== 'REJECTED').length },
+                      { id: 'pending', label: 'RSVP Pending Approval', count: pendingApprovalRsvps.length },
+                      { id: 'waitlisted', label: 'Waitlisted', count: managedEventRsvps.filter(r => r.status === 'waitlist').length },
+                      { id: 'all', label: 'All', count: managedEventRsvps.length },
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setGuestSubTab(tab.id)}
+                        style={{
+                          background: guestSubTab === tab.id ? 'var(--color-primary)' : 'var(--color-surface)',
+                          color: guestSubTab === tab.id ? 'white' : 'var(--color-text)',
+                          border: guestSubTab === tab.id ? 'none' : '1px solid var(--color-border)',
+                          padding: '8px 16px',
+                          borderRadius: '20px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {tab.label}
+                        <span style={{ 
+                          background: guestSubTab === tab.id ? 'rgba(255,255,255,0.2)' : 'var(--color-surface-hover)', 
+                          padding: '2px 6px', 
+                          borderRadius: '10px', 
+                          fontSize: '0.7rem' 
+                        }}>
+                          {tab.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Filter / Search Bar for Guests (Only show if not in Confirmed tab, because GuestsDirectory handles its own search) */}
+                  {guestSubTab !== 'confirmed' && guestSubTab !== 'all' && (
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+                      <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '400px', minWidth: '200px' }}>
+                        <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                        <input
+                          type="text"
+                          placeholder="Search guests by name, email, phone..."
+                          value={guestSearch}
+                          onChange={(e) => setGuestSearch(e.target.value)}
+                          style={{ width: '100%', padding: '8px 10px 8px 34px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', background: 'var(--color-surface)', fontFamily: 'inherit' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* UC-02: Pending Approval queue */}
-                  {pendingApprovalRsvps.length > 0 && (
+                  {(guestSubTab === 'pending' || guestSubTab === 'all') && pendingApprovalRsvps.length > 0 && (
                     <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
                       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                         <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2193,14 +2345,20 @@ export default function HostDashboard({ onLogout }) {
                             <tr>
                               <th>Name</th>
                               <th>Contact</th>
+                              <th>History & Trust</th>
                               <th>Response</th>
-                              <th>Requested</th>
                               <th>Answers</th>
                               <th>Decision</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {pendingApprovalRsvps.map(rsvp => (
+                            {pendingApprovalRsvps.filter(r => {
+                              const q = guestSearch.trim().toLowerCase();
+                              if (!q) return true;
+                              return (r.name && r.name.toLowerCase().includes(q)) ||
+                                     (r.email && r.email.toLowerCase().includes(q)) ||
+                                     (r.phone && r.phone.toLowerCase().includes(q));
+                            }).map(rsvp => (
                               <tr key={rsvp.id}>
                                 <td style={{ fontWeight: 600 }}>
                                   <div className="flex items-center gap-sm">
@@ -2212,8 +2370,22 @@ export default function HostDashboard({ onLogout }) {
                                   <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
                                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
                                 </td>
-                                <td style={{ textTransform: 'capitalize' }}>{rsvp.status} · {rsvp.guestCount || 1} guest(s)</td>
-                                <td>{new Date(rsvp.timestamp).toLocaleDateString()}</td>
+                                <td>
+                                  {(() => {
+                                    const mGuest = MOCK_GUESTS.find(g => g.email === rsvp.email);
+                                    if (!mGuest) return <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>First-time guest</span>;
+                                    return (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: mGuest.trustScore >= 80 ? 'rgba(34,197,94,0.1)' : mGuest.trustScore >= 50 ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: mGuest.trustScore >= 80 ? '#16a34a' : mGuest.trustScore >= 50 ? '#ca8a04' : '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{mGuest.trustScore}</div>
+                                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{mGuest.pattern}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Attended {mGuest.actualAttendees} of {mGuest.totalAttendees} RSVPs</div>
+                                      </div>
+                                    );
+                                  })()}
+                                </td>
+                                <td style={{ textTransform: 'capitalize' }}>{rsvp.status} · {rsvp.guestCount || 1} guest(s)<br/><span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'none' }}>Req: {new Date(rsvp.timestamp).toLocaleDateString()}</span></td>
                                 <td>
                                   {Object.keys(rsvp.answers || {}).length > 0 ? (
                                     <div style={{ fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -2254,7 +2426,7 @@ export default function HostDashboard({ onLogout }) {
                   )}
 
                   {/* Rejected requests (UC-02: can be re-opened) */}
-                  {managedEventRsvps.filter(r => r.approvalState === 'REJECTED').length > 0 && (
+                  {(guestSubTab === 'pending' || guestSubTab === 'all') && managedEventRsvps.filter(r => r.approvalState === 'REJECTED').length > 0 && (
                     <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
                       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--color-border)' }}>
                         <h4 style={{ fontSize: '0.98rem', fontWeight: 700, margin: 0, color: '#dc2626' }}>Rejected requests</h4>
@@ -2287,7 +2459,7 @@ export default function HostDashboard({ onLogout }) {
                   )}
 
                   {/* Waitlist (FIFO) */}
-                  {(() => {
+                  {(guestSubTab === 'waitlisted' || guestSubTab === 'all') && (() => {
                     const waitlisted = managedEventRsvps.filter(r => r.status === 'waitlist')
                                                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                     if (waitlisted.length === 0) return null;
@@ -2311,13 +2483,19 @@ export default function HostDashboard({ onLogout }) {
                                 <th>Position</th>
                                 <th>Name</th>
                                 <th>Contact</th>
-                                <th>Joined</th>
+                                <th>History & Trust</th>
                                 <th>Size</th>
                                 <th>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {waitlisted.map((rsvp, index) => (
+                              {waitlisted.filter(r => {
+                                const q = guestSearch.trim().toLowerCase();
+                                if (!q) return true;
+                                return (r.name && r.name.toLowerCase().includes(q)) ||
+                                       (r.email && r.email.toLowerCase().includes(q)) ||
+                                       (r.phone && r.phone.toLowerCase().includes(q));
+                              }).map((rsvp, index) => (
                                 <tr key={rsvp.id}>
                                   <td style={{ fontWeight: 800, color: 'var(--color-primary)' }}>#{index + 1}</td>
                                   <td style={{ fontWeight: 600 }}>
@@ -2330,7 +2508,21 @@ export default function HostDashboard({ onLogout }) {
                                     <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
                                   </td>
-                                  <td>{new Date(rsvp.timestamp).toLocaleDateString()}</td>
+                                  <td>
+                                    {(() => {
+                                      const mGuest = MOCK_GUESTS.find(g => g.email === rsvp.email);
+                                      if (!mGuest) return <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>First-time guest</span>;
+                                      return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: mGuest.trustScore >= 80 ? 'rgba(34,197,94,0.1)' : mGuest.trustScore >= 50 ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: mGuest.trustScore >= 80 ? '#16a34a' : mGuest.trustScore >= 50 ? '#ca8a04' : '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>{mGuest.trustScore}</div>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{mGuest.pattern}</span>
+                                          </div>
+                                          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Attended {mGuest.actualAttendees} of {mGuest.totalAttendees} RSVPs</div>
+                                        </div>
+                                      );
+                                    })()}
+                                  </td>
                                   <td>{rsvp.guestCount || 1}</td>
                                   <td>
                                     {can('guests_approve') ? (
@@ -2362,240 +2554,11 @@ export default function HostDashboard({ onLogout }) {
                   })()}
 
                   {/* Confirmed list */}
-                  <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
-                        👥 Registered Attendees
-                      </h4>
-
-                      <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: '300px', minWidth: '180px' }}>
-                        <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
-                        <input
-                          type="text"
-                          placeholder="Search guests by name, email, phone..."
-                          value={guestSearch}
-                          onChange={(e) => setGuestSearch(e.target.value)}
-                          style={{ width: '100%', padding: '8px 10px 8px 34px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.82rem', outline: 'none', background: 'var(--color-surface)', fontFamily: 'inherit' }}
-                        />
-                      </div>
-
-                      {/* Bulk actions tool bar */}
-                      {selectedGuestIds.length > 0 && (
-                        <div style={{ display: 'flex', gap: '8px', background: 'var(--color-surface-hover)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{selectedGuestIds.length} Selected:</span>
-                          {can('guests_edit') && <button onClick={handleBulkCheckIn} style={{ border: 'none', background: 'rgba(34,197,94,0.1)', color: '#16a34a', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Check-in</button>}
-                          {can('messaging_reply') && <button onClick={handleBulkMessage} style={{ border: 'none', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Message</button>}
-                          {can('guests_export') && <button onClick={handleBulkExport} style={{ border: 'none', background: 'rgba(71,85,105,0.1)', color: '#475569', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Export</button>}
-                          <button onClick={() => setSelectedGuestIds([])} style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
-                        </div>
-                      )}
+                  {(guestSubTab === 'confirmed' || guestSubTab === 'all') && (
+                    <div style={{ marginTop: '24px' }}>
+                      <GuestsDirectory eventId={managedEvent.id} hideHeader={true} />
                     </div>
-
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="premium-table">
-                        <thead>
-                          <tr>
-                            <th style={{ width: '40px', textAlign: 'center' }}>
-                              <input 
-                                type="checkbox"
-                                checked={selectedGuestIds.length === managedEventRsvps.filter(r => r.status !== 'waitlist').length && selectedGuestIds.length > 0}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedGuestIds(managedEventRsvps.filter(r => r.status !== 'waitlist').map(r => r.id));
-                                  } else {
-                                    setSelectedGuestIds([]);
-                                  }
-                                }}
-                              />
-                            </th>
-                            <th>Name</th>
-                            <th>Contact Details</th>
-                            <th>Status</th>
-                            <th>Check-in Status</th>
-                            {managedEvent.ageRestricted && <th>Age Verified</th>}
-                            <th>Custom Answers</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {managedEventRsvps.filter(r => {
-                            if (r.status !== 'going') return false;
-                            // Pending/rejected requests live in their own sections above
-                            if (r.approvalState === 'UNDER_APPROVAL' || r.approvalState === 'REJECTED') return false;
-                            const q = guestSearch.trim().toLowerCase();
-                            if (!q) return true;
-                            return (r.name && r.name.toLowerCase().includes(q)) ||
-                                   (r.email && r.email.toLowerCase().includes(q)) ||
-                                   (r.phone && r.phone.toLowerCase().includes(q));
-                          }).map(rsvp => {
-                            const partyCount = rsvp.additionalGuests?.length || 0;
-                            const isExpanded = expandedGuestId === rsvp.id;
-                            const guestColSpan = managedEvent.ageRestricted ? 8 : 7;
-                            return (
-                            <React.Fragment key={rsvp.id}>
-                            <tr>
-                              <td style={{ textAlign: 'center' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedGuestIds.includes(rsvp.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedGuestIds([...selectedGuestIds, rsvp.id]);
-                                    } else {
-                                      setSelectedGuestIds(selectedGuestIds.filter(id => id !== rsvp.id));
-                                    }
-                                  }}
-                                />
-                              </td>
-                              <td style={{ fontWeight: 600 }}>
-                                <div className="flex items-center gap-sm">
-                                  <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img" />
-                                  <span>
-                                    {rsvp.name}
-                                    {rsvp.answers?.['Any food allergies?'] && rsvp.answers['Any food allergies?'] !== 'None' && (
-                                      <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#b91c1c', padding: '1px 5px', borderRadius: '3px', marginLeft: '6px', fontWeight: 700 }} title={rsvp.answers['Any food allergies?']}>
-                                        ⚠️ DIET
-                                      </span>
-                                    )}
-                                    {partyCount > 0 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setExpandedGuestId(isExpanded ? null : rsvp.id)}
-                                        style={{ fontSize: '0.65rem', background: 'rgba(31, 58, 99,0.1)', color: 'var(--color-primary)', padding: '1px 7px', borderRadius: '999px', marginLeft: '6px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                                        title="Show party members"
-                                      >
-                                        +{partyCount} {isExpanded ? '▲' : '▼'}
-                                      </button>
-                                    )}
-                                  </span>
-                                </div>
-                              </td>
-                              <td>
-                                <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
-                              </td>
-                              <td>
-                                <span style={{
-                                  fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', textTransform: 'capitalize',
-                                  background: rsvp.status === 'going' ? 'rgba(0,200,83,0.12)' : false ? 'rgba(239,68,68,0.12)' : 'rgba(31, 58, 99,0.12)',
-                                  color: rsvp.status === 'going' ? '#00963f' : false ? '#ef4444' : '#936a1d'
-                                }}>
-                                  {'● Registered'}
-                                </span>
-                              </td>
-                              <td>
-                                {(() => {
-                                  const ci = getCheckinState(rsvp);
-                                  return (
-                                    <div className="flex items-center gap-xs" style={{ flexWrap: 'wrap' }}>
-                                      <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: ci.bg, color: ci.color, whiteSpace: 'nowrap' }}>
-                                        {ci.state === 'complete' ? '✓ ' : ci.state === 'partial' ? '◑ ' : ''}{ci.label}
-                                      </span>
-                                      {can('guests_edit') && ci.state !== 'complete' && (
-                                        <>
-                                          {ci.total > 1 && (
-                                            <button
-                                              onClick={() => handleCheckInOne(managedEvent.id, rsvp.id)}
-                                              style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-primary)', cursor: 'pointer', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}
-                                              title="Check in one attendee"
-                                            >
-                                              +1
-                                            </button>
-                                          )}
-                                          <button
-                                            onClick={() => handleCheckInAll(managedEvent.id, rsvp.id)}
-                                            style={{ border: 'none', background: 'rgba(22,163,74,0.12)', color: '#16a34a', cursor: 'pointer', padding: '3px 9px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap' }}
-                                            title={ci.total > 1 ? `Check in all ${ci.total}` : 'Check in'}
-                                          >
-                                            {ci.total > 1 ? `All ${ci.total}` : 'Check in'}
-                                          </button>
-                                        </>
-                                      )}
-                                      {can('guests_edit') && ci.inCount > 0 && (
-                                        <button
-                                          onClick={() => handleResetCheckin(managedEvent.id, rsvp.id)}
-                                          style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '2px 4px', fontSize: '0.85rem', lineHeight: 1 }}
-                                          title="Undo check-in"
-                                        >
-                                          ↺
-                                        </button>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-                              </td>
-                              {managedEvent.ageRestricted && (
-                                <td>
-                                  {rsvp.dob ? (
-                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: meetsAge(rsvp.dob, managedEvent.minimumAge) ? 'rgba(0,200,83,0.12)' : 'rgba(239,68,68,0.12)', color: meetsAge(rsvp.dob, managedEvent.minimumAge) ? '#00963f' : '#dc2626' }} title={formatDob(rsvp.dob)}>
-                                      {meetsAge(rsvp.dob, managedEvent.minimumAge) ? '✅' : '❌'} {calcAge(rsvp.dob)} yrs
-                                    </span>
-                                  ) : rsvp.ageVerified ? (
-                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: 'rgba(0,200,83,0.12)', color: '#00963f' }}>✅ Verified</span>
-                                  ) : (
-                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: 'rgba(245,158,11,0.14)', color: '#ca8a04' }} title="No date of birth on file — check ID at the door">⚠️ Check ID</span>
-                                  )}
-                                </td>
-                              )}
-                              <td>
-                                {Object.keys(rsvp.answers || {}).length > 0 ? (
-                                  <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    {Object.entries(rsvp.answers).map(([q, ans]) => (
-                                      <div key={q}><strong>{q}:</strong> {ans}</div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>None</span>
-                                )}
-                              </td>
-                              <td>
-                                {can('guests_edit') ? (
-                                  <button
-                                    onClick={() => handleDeleteRSVP(managedEvent.id, rsvp.id)}
-                                    style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px' }}
-                                    title="Remove Guest"
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                ) : (
-                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>—</span>
-                                )}
-                              </td>
-                            </tr>
-                            {isExpanded && partyCount > 0 && (
-                              <tr>
-                                <td colSpan={guestColSpan} style={{ background: 'var(--color-surface-hover)', padding: '12px 16px' }}>
-                                  <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-                                    Party members ({partyCount}) — added by {rsvp.name}
-                                  </div>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                    {rsvp.additionalGuests.map((g, gi) => {
-                                      const gAge = calcAge(g.dob);
-                                      const gOk = g.dob ? meetsAge(g.dob, managedEvent.minimumAge) : null;
-                                      return (
-                                        <div key={gi} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', fontSize: '0.78rem' }}>
-                                          <span style={{ fontWeight: 600 }}>{g.firstName} {g.lastName}</span>
-                                          {managedEvent.ageRestricted && (
-                                            g.dob ? (
-                                              <span style={{ fontWeight: 700, color: gOk ? '#16a34a' : '#dc2626' }}>{gOk ? '✅' : '❌'} {gAge} yrs</span>
-                                            ) : (
-                                              <span style={{ fontWeight: 700, color: '#ca8a04' }}>⚠️ No DOB</span>
-                                            )
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                            </React.Fragment>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </Card>
+                  )}
                 </div>
               )}
 
@@ -3835,229 +3798,14 @@ export default function HostDashboard({ onLogout }) {
           {/* ========================================================================= */}
           {activeSidebar === 'staff' && (
             <div>
-              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Staff, Roles & Event Security</h1>
-                <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>Manage team members, roles, auto-replies, and view audit logs.</p>
+              <div style={{ marginBottom: '40px' }}>
+                <StaffManagement />
               </div>
-              <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-                <label style={{ fontWeight: 600, fontSize: '0.85rem', marginRight: '10px' }}>Select Event Context:</label>
-                <select value={selectedEventId || ''} onChange={(e) => setSelectedEventId(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
-                  {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
-                </select>
+              <div style={{ marginBottom: '40px', borderTop: '1px solid var(--color-border)', paddingTop: '40px' }}>
+                <RoleManagement />
               </div>
-                <div className="flex flex-col gap-lg">
-                  <div className="grid-2" style={{ gap: '20px' }}>
-                    {/* Team members for this event */}
-                    <Card style={{ padding: '20px', textAlign: 'left' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '4px' }}>Team members</h4>
-                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>Invite people to help run this event. Each member only sees and does what their role permits.</p>
-                      <form onSubmit={handleInviteStaffSubmit} className="flex flex-col gap-sm" style={{ marginBottom: '16px', background: 'var(--color-surface-hover)', padding: '12px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Invite a team member</span>
-                        <div className="grid-2" style={{ gap: '6px' }}>
-                          <input required placeholder="Name" value={inviteStaffForm.name} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, name: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
-                          <input required type="email" placeholder="Email" value={inviteStaffForm.email} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, email: e.target.value })} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }} />
-                        </div>
-                        <div className="flex gap-sm">
-                          <select value={inviteStaffForm.roleId} onChange={(e) => setInviteStaffForm({ ...inviteStaffForm, roleId: e.target.value })} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.8rem' }}>
-                            {mockStore.getRoles().map(r => (
-                              <option key={r.id} value={r.id}>{r.name}</option>
-                            ))}
-                          </select>
-                          <Button type="submit" variant="primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>Send Invite</Button>
-                        </div>
-                      </form>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {/* Owner row (implicit full access) */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
-                          <div className="flex items-center gap-sm">
-                            <img src={getAvatar(managedEvent.hostEmail)} alt={managedEvent.hostName} className="avatar-img avatar-sm" />
-                            <div>
-                              <strong style={{ fontSize: '0.85rem' }}>{managedEvent.hostName} <span style={{ fontSize: '0.7rem' }}>👑</span></strong>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Host (owner) • Full access</div>
-                            </div>
-                          </div>
-                          <span className="admin-badge admin-badge-active">Owner</span>
-                        </div>
 
-                        {mockStore.getStaff(selectedEventId).map(s => {
-                          const role = mockStore.getRoleById(s.roleId);
-                          return (
-                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
-                              <div className="flex items-center gap-sm">
-                                <img src={getAvatar(s.email)} alt={s.name} className="avatar-img avatar-sm" />
-                                <div>
-                                  <strong style={{ fontSize: '0.85rem' }}>{s.name}</strong>
-                                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{role ? role.name : 'No role'} • {s.email}</div>
-                                  {s.inviteId && (
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                                      Invite ID: <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{s.inviteId}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-sm">
-                                <span className={`admin-badge ${s.status === 'ACTIVE' ? 'admin-badge-active' : 'admin-badge-pending'}`}>
-                                  {s.status === 'ACTIVE' ? 'Active' : 'Invited'}
-                                </span>
-                                {s.status === 'INVITED' && (
-                                  <button onClick={() => handleAcceptStaff(s.id)} title="Mark invite as accepted" style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Accept</button>
-                                )}
-                                <button onClick={() => handleRemoveStaff(s.id)} title="Remove" style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={16} /></button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {mockStore.getStaff(selectedEventId).length === 0 && (
-                          <p className="text-muted" style={{ fontSize: '0.78rem', margin: '4px 0 0 0' }}>No team members yet. Invite someone above.</p>
-                        )}
-                      </div>
-                    </Card>
-
-                    {/* Roles & permissions */}
-                    <Card style={{ padding: '20px', textAlign: 'left' }}>
-                      <div className="flex justify-between items-center" style={{ marginBottom: '4px' }}>
-                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Roles &amp; permissions</h4>
-                        <Button type="button" variant="outline" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={() => handleOpenRoleBuilder(null)}>
-                          <Plus size={13} style={{ verticalAlign: '-2px' }} /> New role
-                        </Button>
-                      </div>
-                      <p className="text-muted" style={{ fontSize: '0.78rem', margin: '0 0 12px 0' }}>A role is a named set of permissions. Default-deny: anything not granted is hidden and blocked.</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {mockStore.getRoles().map(role => {
-                          const grantedCount = Object.values(role.permissions || {}).filter(Boolean).length;
-                          return (
-                            <div key={role.id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px' }}>
-                              <div className="flex justify-between items-center">
-                                <div>
-                                  <strong style={{ fontSize: '0.88rem' }}>{role.name}{role.builtIn && <span style={{ fontSize: '0.65rem', marginLeft: '6px', color: 'var(--color-text-muted)' }}>built-in</span>}</strong>
-                                  <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>{role.description}</div>
-                                </div>
-                                <div className="flex items-center gap-sm">
-                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{grantedCount} perms</span>
-                                  <button onClick={() => handleOpenRoleBuilder(role)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', cursor: 'pointer', padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 600 }}>Edit</button>
-                                  {!role.builtIn && (
-                                    <button onClick={() => handleDeleteRole(role.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Role builder (create / edit) */}
-                  {showRoleBuilder && (
-                    <Card style={{ padding: '20px', textAlign: 'left' }} className="glass-surface">
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>{roleBuilder.id ? 'Edit role' : 'Create role'}</h4>
-                      <form onSubmit={handleSaveRole} className="flex flex-col gap-md">
-                        <div className="grid-2" style={{ gap: '12px' }}>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Role name *</label>
-                            <input required value={roleBuilder.name} onChange={(e) => setRoleBuilder({ ...roleBuilder, name: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
-                          </div>
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px' }}>Description</label>
-                            <input value={roleBuilder.description} onChange={(e) => setRoleBuilder({ ...roleBuilder, description: e.target.value })} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }} />
-                          </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
-                          {[
-                            { key: 'guests_view', label: 'View guest list' },
-                            { key: 'guests_approve', label: 'Approve / reject RSVPs' },
-                            { key: 'guests_edit', label: 'Edit guests & manual add' },
-                            { key: 'guests_export', label: 'Export guest list' },
-                            { key: 'checkin', label: 'Gate check-in (QR scan)' },
-                            { key: 'messaging_view', label: 'View messages' },
-                            { key: 'messaging_reply', label: 'Reply to guests' },
-                            { key: 'history_view', label: 'View history' },
-                            { key: 'settings_view', label: 'View settings' },
-                            { key: 'settings_edit', label: 'Edit settings' },
-                            { key: 'staff_manage', label: 'Manage staff & roles' }
-                          ].map(p => (
-                            <label key={p.key} className="flex items-center gap-xs" style={{ fontSize: '0.8rem', background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer' }}>
-                              <input
-                                type="checkbox"
-                                checked={!!roleBuilder.permissions[p.key]}
-                                onChange={(e) => setRoleBuilder({ ...roleBuilder, permissions: { ...roleBuilder.permissions, [p.key]: e.target.checked } })}
-                              />
-                              {p.label}
-                            </label>
-                          ))}
-                        </div>
-                        <div className="flex gap-sm">
-                          <Button type="submit" variant="primary">{roleBuilder.id ? 'Save role' : 'Create role'}</Button>
-                          <Button type="button" variant="ghost" onClick={() => { setShowRoleBuilder(false); setRoleBuilder(emptyRoleBuilder); }}>Cancel</Button>
-                        </div>
-                      </form>
-                    </Card>
-                  )}
-
-                  <div>
-                    <Card style={{ padding: '20px', textAlign: 'left' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '12px' }}>Auto-Reply Notification Rules</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                        {autoReplyRules.map(r => (
-                          <div key={r.id} style={{ padding: '10px 12px', background: 'var(--color-surface-hover)', borderRadius: '8px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <strong style={{ fontSize: '0.85rem' }}>Trigger: {r.trigger}</strong>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Condition: {r.condition} &rarr; Action: {r.action}</div>
-                            </div>
-                            <button onClick={() => handleDeleteRule(r.id)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <form onSubmit={handleAddRule} className="flex flex-col gap-sm" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Create auto-rule trigger</span>
-                        <div className="grid-3" style={{ gap: '6px' }}>
-                          <select value={newRule.trigger} onChange={(e) => setNewRule({ ...newRule, trigger: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
-                            <option value="On Guest RSVP">On Guest RSVP</option>
-                            <option value="On QR Check-in">On QR Check-in</option>
-                          </select>
-                          <select value={newRule.condition} onChange={(e) => setNewRule({ ...newRule, condition: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
-                            <option value="If Status is Going">If Status is Going</option>
-                            <option value="If Status is Waitlist">If Status is Waitlist</option>
-                          </select>
-                          <select value={newRule.action} onChange={(e) => setNewRule({ ...newRule, action: e.target.value })} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
-                            <option value="Send Confirmation email (rsvp)">Send Confirmation (Email)</option>
-                            <option value="Send Welcoming text alert">Send Alert (SMS)</option>
-                          </select>
-                        </div>
-                        <Button type="submit" variant="outline" style={{ padding: '6px 12px', fontSize: '0.8rem', alignSelf: 'end' }}>Add Auto-rule</Button>
-                      </form>
-                    </Card>
-                  </div>
-
-                  {/* Audit Logs security table */}
-                  <Card style={{ padding: 0, textAlign: 'left' }} className="glass-surface">
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Security Audit Trail Logs</h4>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="premium-table">
-                        <thead>
-                          <tr>
-                            <th>Timestamp</th>
-                            <th>Operator</th>
-                            <th>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mockStore.getAuditTrail().filter(l => l.eventId === selectedEventId).map(l => (
-                            <tr key={l.id}>
-                              <td style={{ fontSize: '0.8rem' }}>{new Date(l.timestamp).toLocaleString()}</td>
-                              <td style={{ fontWeight: 600 }}>{l.actor}</td>
-                              <td>{l.action}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </Card>
-                </div>
               </div>
           )}
 
@@ -4070,7 +3818,35 @@ export default function HostDashboard({ onLogout }) {
                 <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>{isStaffViewer ? 'Profile Settings' : 'Organizer Settings'}</h1>
                 <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>{isStaffViewer ? 'Update your profile photo and contact details.' : 'Configure default host profile settings and brand styles.'}</p>
               </div>
-              
+
+              {/* Settings Tabs Navigation */}
+              <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--color-border)', paddingBottom: '8px', marginBottom: '24px' }}>
+                <button
+                  onClick={() => setActiveSettingsTab('general')}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '8px 16px', fontSize: '1rem', fontWeight: 700,
+                    color: activeSettingsTab === 'general' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    borderBottom: activeSettingsTab === 'general' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  General Settings
+                </button>
+                <button
+                  onClick={() => setActiveSettingsTab('automation')}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '8px 16px', fontSize: '1rem', fontWeight: 700,
+                    color: activeSettingsTab === 'automation' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    borderBottom: activeSettingsTab === 'automation' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Automation & Security
+                </button>
+              </div>
+
+              {activeSettingsTab === 'general' ? (
+                <>
               <Card style={{ maxWidth: '600px', padding: '24px', textAlign: 'left' }} className="glass-surface">
                 <div className="flex items-center gap-md" style={{ marginBottom: '24px', flexWrap: 'wrap' }}>
                   {profileAvatar ? (
@@ -4280,6 +4056,10 @@ export default function HostDashboard({ onLogout }) {
                   </p>
                 </Card>
               )}
+              </>
+              ) : activeSettingsTab === 'automation' ? (
+                <AutomationSecuritySettings isStaffViewer={isStaffViewer} />
+              ) : null}
             </div>
           )}
 

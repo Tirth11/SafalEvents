@@ -119,6 +119,20 @@ export default function CreateEvent() {
     } else {
       const today = new Date().toISOString().split('T')[0];
       const cleanQuestions = formData.questions.filter(q => q.trim() !== '');
+      
+      const isStaffViewer = _currentUser?.role === 'staff';
+      let hasPublish = true;
+      if (isStaffViewer) {
+        const staffRecords = mockStore.getStaffForEmail(_currentUser?.email);
+        hasPublish = staffRecords.some(s => {
+          const role = mockStore.getRoleById(s.roleId);
+          return role && role.permissions && role.permissions['event_publish'];
+        });
+      }
+      
+      const finalStatus = (isStaffViewer && !hasPublish) ? 'Under Approval' : 'Published';
+      const finalApprovalState = (isStaffViewer && !hasPublish) ? 'UNDER_APPROVAL' : 'APPROVED';
+
       const newEvent = mockStore.createEvent({
         ...formData,
         title: formData.title.trim() || 'My Event',
@@ -126,7 +140,9 @@ export default function CreateEvent() {
         time: formData.time || '18:00',
         location: formData.location.trim() || 'To be announced',
         description: formData.description.trim() || 'Join us for a great gathering!',
-        questions: cleanQuestions
+        questions: cleanQuestions,
+        status: finalStatus,
+        approvalState: finalApprovalState
       });
       // Redirect to the event details page
       navigate(`/e/${newEvent.id}`);
@@ -907,9 +923,21 @@ export default function CreateEvent() {
             <Button variant="primary" type="submit" className="flex items-center gap-xs">
               {step < 4 ? (
                 <>Next Step <ArrowRight size={18} /></>
-              ) : (
-                <>Publish Event <Save size={18} /></>
-              )}
+              ) : (() => {
+                const isStaffViewer = _currentUser?.role === 'staff';
+                let hasPublish = true;
+                if (isStaffViewer) {
+                  const staffRecords = mockStore.getStaffForEmail(_currentUser?.email);
+                  hasPublish = staffRecords.some(s => {
+                    const role = mockStore.getRoleById(s.roleId);
+                    return role && role.permissions && role.permissions['event_publish'];
+                  });
+                }
+                if (isStaffViewer && !hasPublish) {
+                  return <>Submit for Approval <Save size={18} /></>;
+                }
+                return <>Publish Event <Save size={18} /></>;
+              })()}
             </Button>
           </div>
         </form>

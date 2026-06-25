@@ -164,21 +164,23 @@ export default function QRScanFAB({ currentUser }) {
           position: 'fixed',
           bottom: '90px',
           right: '24px',
-          background: 'var(--color-primary)',
+          background: 'linear-gradient(135deg, var(--color-primary) 0%, #2d5a9e 100%)',
           color: 'white',
           border: 'none',
           borderRadius: '50px',
-          padding: '12px 18px',
-          fontSize: '0.9rem',
+          padding: '14px 22px',
+          fontSize: '0.88rem',
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          boxShadow: '0 6px 16px rgba(31,58,99,0.3)',
+          boxShadow: '0 8px 24px rgba(31,58,99,0.35), 0 2px 8px rgba(0,0,0,0.1)',
           cursor: 'pointer',
-          zIndex: 999
+          zIndex: 999,
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         }}
-        className="hover-lift"
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(31,58,99,0.45), 0 4px 12px rgba(0,0,0,0.15)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(31,58,99,0.35), 0 2px 8px rgba(0,0,0,0.1)'; }}
       >
         <QrCode size={18} />
         Scan QR

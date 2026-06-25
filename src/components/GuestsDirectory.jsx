@@ -4,14 +4,16 @@ import Button from './Button';
 import {
   Search, X, Mail, MessageSquare, AlertTriangle, Eye, Users, Bell,
   FileText, Send, Phone, CheckCircle, ShieldCheck, Activity, Clock,
-  TrendingUp, CalendarDays, StickyNote, History, QrCode, UserCheck, Calendar
+  TrendingUp, CalendarDays, StickyNote, History, QrCode, UserCheck, Calendar,
+  Plus, Minus, Camera
 } from 'lucide-react';
 import { getAvatar } from '../utils/images';
+import { mockStore } from '../utils/mockStore';
 
 // ----------------------------------------------------------------------------
 // Mock Data — each guest carries full RSVP / attendance history
 // ----------------------------------------------------------------------------
-const MOCK_GUESTS = [
+export const MOCK_GUESTS = [
   {
     id: 1, name: 'Alice Vance', email: 'alice@example.com', phone: '+1 555-0101',
     eventsRsvpd: 8, totalAttendees: 10, actualAttendees: 10, trustScore: 92,
@@ -104,6 +106,13 @@ const getPatternBadge = (pattern) => {
   }
 };
 
+const PARTY_NAMES = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie', 'Quinn', 'Avery', 'Skyler'];
+const getPartyMembers = (guestName, count) => {
+  if (count <= 1) return [guestName];
+  const lastName = guestName.split(' ').pop();
+  return [guestName, ...Array.from({ length: count - 1 }, (_, i) => `${PARTY_NAMES[i % PARTY_NAMES.length]} ${lastName} (+1)`)];
+};
+
 // Per-event attendance status
 const getEventStatus = (rsvpCount, actual) => {
   if (actual === 0)            return { label: 'No Show',         icon: '✕', color: '#ef4444', bg: '#ef444412' };
@@ -127,16 +136,50 @@ const SectionLabel = ({ icon, children }) => (
 // ----------------------------------------------------------------------------
 // Main Component
 // ----------------------------------------------------------------------------
-export default function GuestsDirectory() {
+export default function GuestsDirectory({ eventId, hideHeader }) {
   const [searchTerm, setSearchTerm]               = useState('');
   const [selectedGuest, setSelectedGuest]         = useState(null);
   const [filterReliability, setFilterReliability] = useState('All');
   const [filterPattern, setFilterPattern]         = useState('All');
 
+  const GUESTS_DATA = useMemo(() => {
+    if (!eventId) return MOCK_GUESTS;
+
+    const rsvps = mockStore.getRSVPs(eventId);
+    return rsvps.filter(r => r.status === 'going' && r.approvalState !== 'REJECTED').map(rsvp => {
+      const existing = MOCK_GUESTS.find(g => g.email === rsvp.email);
+      return {
+        id: rsvp.id,
+        name: rsvp.name,
+        email: rsvp.email,
+        phone: rsvp.phone,
+        eventsRsvpd: existing ? existing.eventsRsvpd : 1,
+        totalAttendees: existing ? existing.totalAttendees : (rsvp.guestCount || 1),
+        actualAttendees: existing ? existing.actualAttendees : (rsvp.checkedIn ? 1 : 0),
+        trustScore: existing ? existing.trustScore : 85,
+        pattern: existing ? existing.pattern : 'New Attendee',
+        remindersSent: 0,
+        firstRsvp: existing ? existing.firstRsvp : new Date(rsvp.timestamp).toLocaleDateString(),
+        notes: existing ? existing.notes : '',
+        history: existing ? existing.history : [],
+        communications: existing ? existing.communications : [],
+        
+        // RSVP specifics
+        answers: rsvp.answers,
+        checkedIn: rsvp.checkedIn,
+        guestCount: rsvp.guestCount || 1,
+      };
+    });
+  }, [eventId]);
+
   // History sub-modal: null | 'rsvp' | 'checkin'
   const [historyModal, setHistoryModal]           = useState(null);
   // Editable host notes, keyed by guest id
   const [notesMap, setNotesMap]                   = useState({});
+  // Check-in panel inside drawer
+  const [showCheckinPanel, setShowCheckinPanel]   = useState(false);
+  const [checkinState, setCheckinState]           = useState({});  // { eventIdx: checkedInCount }
+  const [arrivingNow, setArrivingNow]             = useState(1);
 
   // Broadcast modal
   const [showBroadcast, setShowBroadcast] = useState(false);
@@ -147,15 +190,15 @@ export default function GuestsDirectory() {
   const [bSent, setBSent]                 = useState(false);
 
   const stats = useMemo(() => ({
-    total:     MOCK_GUESTS.length,
-    highTrust: MOCK_GUESTS.filter(g => g.trustScore >= 70).length,
-    atRisk:    MOCK_GUESTS.filter(g => g.trustScore < 50).length,
-    reminded:  MOCK_GUESTS.filter(g => g.remindersSent > 0).length,
-  }), []);
+    total:     GUESTS_DATA.length,
+    highTrust: GUESTS_DATA.filter(g => g.trustScore >= 70).length,
+    atRisk:    GUESTS_DATA.filter(g => g.trustScore < 50).length,
+    reminded:  GUESTS_DATA.filter(g => g.remindersSent > 0).length,
+  }), [GUESTS_DATA]);
 
   const filteredGuests = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
-    return MOCK_GUESTS.filter(g => {
+    return GUESTS_DATA.filter(g => {
       if (q && !g.name.toLowerCase().includes(q) && !g.email.toLowerCase().includes(q) && !g.phone.includes(q)) return false;
       if (filterReliability !== 'All' && getTrustBadge(g.trustScore).text !== filterReliability) return false;
       if (filterPattern !== 'All') {
@@ -213,17 +256,19 @@ export default function GuestsDirectory() {
     <div className="animate-fade-in" style={{ position: 'relative' }}>
 
       {/* ── Page Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Guest Directory</h1>
-          <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
-            Audience intelligence — track habits, reliability, and engagement.
-          </p>
+      {!hideHeader && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>Guest Directory</h1>
+            <p className="text-muted" style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+              Audience intelligence — track habits, reliability, and engagement.
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => setShowBroadcast(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px' }}>
+            <Send size={15} /> Broadcast
+          </Button>
         </div>
-        <Button variant="primary" onClick={() => setShowBroadcast(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px' }}>
-          <Send size={15} /> Broadcast
-        </Button>
-      </div>
+      )}
 
       {/* ── Summary Stats ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
@@ -277,7 +322,7 @@ export default function GuestsDirectory() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{filteredGuests.length} of {MOCK_GUESTS.length} guests</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{filteredGuests.length} of {GUESTS_DATA.length} guests</span>
         {hasActiveFilters && <span style={{ fontSize: '0.72rem', background: 'rgba(31,58,99,0.08)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '20px', fontWeight: 700 }}>Filtered</span>}
       </div>
 
@@ -287,9 +332,15 @@ export default function GuestsDirectory() {
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '680px' }}>
             <thead>
               <tr style={{ background: 'var(--color-surface-hover)', borderBottom: '2px solid var(--color-border)' }}>
-                {['Guest', 'Contact', 'Events', 'Trust Score', 'Pattern', ''].map((h, i) => (
-                  <th key={i} style={{ padding: '12px 16px', color: 'var(--color-text-muted)', fontSize: '0.72rem',  fontWeight: 700, letterSpacing: '0.6px', textAlign: i === 2 ? 'center' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
+                {eventId ? (
+                  ['Guest', 'Contact', 'Trust & Pattern', 'Check-in Status', 'Custom Answers', ''].map((h, i) => (
+                    <th key={i} style={{ padding: '12px 16px', color: 'var(--color-text-muted)', fontSize: '0.72rem',  fontWeight: 700, letterSpacing: '0.6px', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))
+                ) : (
+                  ['Guest', 'Contact', 'Events', 'Trust Score', 'Pattern', ''].map((h, i) => (
+                    <th key={i} style={{ padding: '12px 16px', color: 'var(--color-text-muted)', fontSize: '0.72rem',  fontWeight: 700, letterSpacing: '0.6px', textAlign: i === 2 ? 'center' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))
+                )}
               </tr>
             </thead>
             <tbody>
@@ -327,28 +378,59 @@ export default function GuestsDirectory() {
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{guest.phone}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-text)' }}>{guest.eventsRsvpd}</div>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>RSVPs</div>
-                    </td>
+                    {eventId ? (
+                      <>
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: trust.bg, color: trust.color, padding: '2px 8px', borderRadius: '20px', fontSize: '0.68rem', fontWeight: 700, width: 'fit-content' }}>
+                              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: trust.color }} />{trust.text}
+                            </div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: pattern.bg, color: pattern.color, padding: '2px 8px', borderRadius: '20px', fontSize: '0.68rem', fontWeight: 700, width: 'fit-content' }}>
+                              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: pattern.color, flexShrink: 0 }} />{guest.pattern}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 9px', borderRadius: '12px', background: guest.checkedIn ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.1)', color: guest.checkedIn ? '#16a34a' : '#64748b' }}>
+                            {guest.checkedIn ? '✓ Checked in' : 'Pending'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {guest.answers && Object.keys(guest.answers).length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '0.75rem' }}>
+                              {Object.entries(guest.answers).map(([q, a]) => (
+                                <div key={q}><span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{q.substring(0,18)}...:</span> {a}</div>
+                              ))}
+                            </div>
+                          ) : <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>None</span>}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-text)' }}>{guest.eventsRsvpd}</div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>RSVPs</div>
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: '5px', minWidth: '110px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <TrustBar score={guest.trustScore} color={trust.color} />
+                              <span style={{ fontWeight: 800, fontSize: '0.85rem', color: trust.color }}>{guest.trustScore}%</span>
+                            </div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: trust.bg, color: trust.color, padding: '2px 8px', borderRadius: '20px', fontSize: '0.68rem', fontWeight: 700, width: 'fit-content' }}>
+                              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: trust.color }} />{trust.text}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: pattern.bg, color: pattern.color, padding: '5px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700 }}>
+                            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: pattern.color, flexShrink: 0 }} />{guest.pattern}
+                          </div>
+                        </td>
+                      </>
+                    )}
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: '5px', minWidth: '110px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <TrustBar score={guest.trustScore} color={trust.color} />
-                          <span style={{ fontWeight: 800, fontSize: '0.85rem', color: trust.color }}>{guest.trustScore}%</span>
-                        </div>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: trust.bg, color: trust.color, padding: '2px 8px', borderRadius: '20px', fontSize: '0.68rem', fontWeight: 700, width: 'fit-content' }}>
-                          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: trust.color }} />{trust.text}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: pattern.bg, color: pattern.color, padding: '5px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700 }}>
-                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: pattern.color, flexShrink: 0 }} />{guest.pattern}
-                      </div>
-                    </td>
-                    <td style={{ padding: '14px 16px' }}>
-                      <button type="button" onClick={() => setSelectedGuest(guest)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <button type="button" onClick={() => { setSelectedGuest(guest); setShowCheckinPanel(false); setCheckinState({}); setArrivingNow(1); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         <Eye size={13} /> View
                       </button>
                     </td>
@@ -379,7 +461,7 @@ export default function GuestsDirectory() {
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#16a34a15', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 0 8px #16a34a10' }}><CheckCircle size={30} /></div>
                   <h4 style={{ fontWeight: 800, fontSize: '1.15rem', margin: '0 0 8px', color: 'var(--color-text)' }}>Broadcast Sent!</h4>
-                  <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '0.875rem' }}>Your message is on its way to {bTarget === 'all' ? MOCK_GUESTS.length : bTarget === 'high_trust' ? stats.highTrust : stats.atRisk} guests.</p>
+                  <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '0.875rem' }}>Your message is on its way to {bTarget === 'all' ? GUESTS_DATA.length : bTarget === 'high_trust' ? stats.highTrust : stats.atRisk} guests.</p>
                 </div>
               ) : (
                 <>
@@ -394,7 +476,7 @@ export default function GuestsDirectory() {
                   <div>
                     <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)',  letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Recipients</label>
                     <select value={bTarget} onChange={e => setBTarget(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)', fontSize: '0.875rem' }}>
-                      <option value="all">All Guests ({MOCK_GUESTS.length})</option>
+                      <option value="all">All Guests ({GUESTS_DATA.length})</option>
                       <option value="high_trust">High Trust Guests ({stats.highTrust})</option>
                       <option value="at_risk">At-Risk Guests ({stats.atRisk})</option>
                     </select>
@@ -635,17 +717,105 @@ export default function GuestsDirectory() {
                 <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>Notes are private to your team.</div>
               </div>
 
+              {/* ─────────── CHECK-IN PANEL ─────────── */}
+              {showCheckinPanel && (
+                <div>
+                  <SectionLabel icon={<QrCode size={13} />}>Event Check-In</SectionLabel>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {selectedGuest.history.map((h, idx) => {
+                      const total = h.rsvpCount;
+                      const checked = checkinState[idx] != null ? checkinState[idx] : h.actual;
+                      const remaining = total - checked;
+                      const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+                      const members = getPartyMembers(selectedGuest.name, total);
+                      const evSt = checked >= total
+                        ? { label: 'All Checked In', color: '#16a34a', bg: '#16a34a12' }
+                        : checked > 0
+                        ? { label: `${checked}/${total} Arrived`, color: '#d97706', bg: '#d9770612' }
+                        : { label: 'Not Checked In', color: 'var(--color-text-muted)', bg: 'var(--color-surface-hover)' };
+
+                      return (
+                        <Card key={idx} style={{ padding: '16px', border: '1px solid var(--color-border)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                            <div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 800 }}>{h.event}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>{h.date}</div>
+                            </div>
+                            <span style={{ background: evSt.bg, color: evSt.color, padding: '4px 12px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 800 }}>{evSt.label}</span>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, marginBottom: '5px' }}>
+                              <span>{checked} of {total} attendees</span><span>{pct}%</span>
+                            </div>
+                            <div style={{ height: '7px', background: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${pct}%`, background: checked >= total ? '#16a34a' : 'var(--color-primary)', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                            </div>
+                          </div>
+
+                          {/* Party members */}
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.4px', marginBottom: '8px' }}>PARTY MEMBERS</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {members.map((m, mi) => {
+                                const isIn = mi < checked;
+                                return (
+                                  <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px', background: isIn ? '#16a34a08' : 'var(--color-surface-hover)', border: `1px solid ${isIn ? '#16a34a25' : 'var(--color-border)'}` }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isIn ? '#16a34a18' : 'var(--color-border)', color: isIn ? '#16a34a' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                      {isIn ? <CheckCircle size={14} /> : <Users size={14} />}
+                                    </div>
+                                    <div style={{ flex: 1, fontSize: '0.82rem', fontWeight: 600, color: isIn ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{m}</div>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isIn ? '#16a34a' : 'var(--color-text-muted)' }}>{isIn ? 'IN' : 'PENDING'}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Check-in controls */}
+                          {remaining > 0 ? (
+                            <div style={{ background: 'var(--color-surface-hover)', borderRadius: '10px', padding: '12px' }}>
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--color-surface)' }}>
+                                  <button onClick={() => setArrivingNow(Math.max(1, arrivingNow - 1))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text)' }}><Minus size={14} /></button>
+                                  <span style={{ minWidth: '28px', textAlign: 'center', fontWeight: 800, fontSize: '0.95rem' }}>{Math.min(arrivingNow, remaining)}</span>
+                                  <button onClick={() => setArrivingNow(Math.min(remaining, arrivingNow + 1))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text)' }}><Plus size={14} /></button>
+                                </div>
+                                <Button variant="primary" onClick={() => { setCheckinState(prev => ({ ...prev, [idx]: checked + Math.min(arrivingNow, remaining) })); setArrivingNow(1); }} style={{ flex: 1, minWidth: '120px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 14px', fontSize: '0.82rem' }}>
+                                  <CheckCircle size={14} /> Check In {Math.min(arrivingNow, remaining)}
+                                </Button>
+                                {remaining > 1 && (
+                                  <Button variant="outline" onClick={() => setCheckinState(prev => ({ ...prev, [idx]: total }))} style={{ whiteSpace: 'nowrap', fontSize: '0.78rem', padding: '9px 12px' }}>
+                                    All {remaining}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ background: '#16a34a0a', border: '1px solid #16a34a25', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#16a34a', fontWeight: 700, fontSize: '0.82rem' }}>
+                              <CheckCircle size={16} /> All {total} attendees checked in
+                            </div>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* ─────────── QUICK ACTIONS ─────────── */}
               <div>
                 <SectionLabel icon={<Send size={13} />}>Quick Actions</SectionLabel>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {[
-                    { icon: <Bell size={15} />,         label: 'Send Reminder',         onClick: () => {} },
+                    { icon: <QrCode size={15} />,        label: showCheckinPanel ? 'Hide Check-In Panel' : 'Check-In Scanner', onClick: () => { setShowCheckinPanel(!showCheckinPanel); setCheckinState({}); setArrivingNow(1); }, highlight: true },
+                    { icon: <Bell size={15} />,          label: 'Send Reminder',         onClick: () => {} },
                     { icon: <MessageSquare size={15} />, label: 'Send Message',          onClick: () => {} },
                     { icon: <FileText size={15} />,      label: 'View Full RSVP History', onClick: () => setHistoryModal('rsvp') },
                     { icon: <Users size={15} />,         label: 'View Check-In History',  onClick: () => setHistoryModal('checkin') },
                   ].map((a, i) => (
-                    <button key={i} type="button" onClick={a.onClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', textAlign: 'left' }}>
+                    <button key={i} type="button" onClick={a.onClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: a.highlight ? '1px solid var(--color-primary)' : '1px solid var(--color-border)', background: a.highlight ? 'rgba(31,58,99,0.06)' : 'var(--color-surface)', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', textAlign: 'left' }}>
                       <span style={{ color: 'var(--color-primary)' }}>{a.icon}</span>{a.label}
                     </button>
                   ))}

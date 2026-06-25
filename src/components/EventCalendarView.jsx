@@ -16,7 +16,6 @@ const STATUS_COLORS = {
 // ----------------------------------------------------------------------------
 function CalendarKPICards() {
   const metrics = [
-    { title: 'Total Events', value: '124', icon: CalendarDays },
     { title: 'Upcoming Events', value: '32', icon: Clock },
     { title: 'Ongoing Events', value: '5', icon: Activity },
     { title: 'Completed Events', value: '87', icon: CheckCircle2 }
