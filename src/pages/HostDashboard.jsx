@@ -175,6 +175,7 @@ export default function HostDashboard({ onLogout }) {
   const [broadcastSubject, setBroadcastSubject] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastSent, setBroadcastSent] = useState(false);
+  const [arrivingNowMap, setArrivingNowMap] = useState({});
 
   // New Poll form state
   const [newPollQuestion, setNewPollQuestion] = useState('');
@@ -3244,21 +3245,37 @@ export default function HostDashboard({ onLogout }) {
                                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#15803d' }}>✓ Complete attendance recorded</span>
                                   <button onClick={() => handleResetCheckin(selectedEventId, g.id)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '5px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700 }}>↺ Undo</button>
                                 </div>
-                              ) : (
-                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                  {ci.total > 1 && (
-                                    <button onClick={() => handleCheckInOne(selectedEventId, g.id)} style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-primary)', cursor: 'pointer', padding: '8px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
-                                      + 1 arrived
-                                    </button>
-                                  )}
-                                  <Button variant="primary" onClick={() => handleCheckInAll(selectedEventId, g.id)} style={{ flex: 1, minWidth: '130px', padding: '9px 14px' }}>
-                                    {ci.inCount > 0 ? `Check in remaining ${ci.total - ci.inCount}` : ci.total > 1 ? `Check in all ${ci.total}` : 'Check In'}
-                                  </Button>
-                                  {ci.inCount > 0 && (
-                                    <button onClick={() => handleResetCheckin(selectedEventId, g.id)} title="Undo" style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1rem' }}>↺</button>
-                                  )}
-                                </div>
-                              )
+                              ) : (() => {
+                                const remaining = ci.total - ci.inCount;
+                                const arrivingNow = arrivingNowMap[g.id] !== undefined ? arrivingNowMap[g.id] : remaining;
+                                return (
+                                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    {ci.total > 1 && (
+                                      <div style={{ display: 'flex', gap: '0', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)', overflow: 'hidden' }}>
+                                        <button onClick={() => setArrivingNowMap(p => ({ ...p, [g.id]: Math.max(1, arrivingNow - 1) }))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text-muted)' }}><Minus size={14} /></button>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '24px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{Math.min(arrivingNow, remaining)}</div>
+                                        <button onClick={() => setArrivingNowMap(p => ({ ...p, [g.id]: Math.min(remaining, arrivingNow + 1) }))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text-muted)' }}><Plus size={14} /></button>
+                                      </div>
+                                    )}
+                                    <Button variant="primary" onClick={() => {
+                                      const next = ci.inCount + Math.min(arrivingNow, remaining);
+                                      const stamp = new Date();
+                                      const prevLog = Array.isArray(g.checkInLog) ? g.checkInLog : [];
+                                      mockStore.updateRSVP(selectedEventId, g.id, {
+                                        checkedIn: true, checkedInCount: next, fullyCheckedIn: next >= ci.total, checkedInAt: stamp.toISOString(),
+                                        checkInLog: [...prevLog, { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: Math.min(arrivingNow, remaining) }],
+                                      }, activeScannerStaff);
+                                      setArrivingNowMap(p => ({ ...p, [g.id]: undefined }));
+                                      loadDashboardData();
+                                    }} style={{ flex: 1, minWidth: '130px', padding: '9px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                      <CheckCircle size={14} /> Check In {ci.total > 1 ? (arrivingNow >= remaining ? `All ${remaining}` : arrivingNow) : ''}
+                                    </Button>
+                                    {ci.inCount > 0 && (
+                                      <button onClick={() => handleResetCheckin(selectedEventId, g.id)} title="Undo" style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1rem' }}>↺</button>
+                                    )}
+                                  </div>
+                                );
+                              })()
                             )}
 
                             {/* Historical attendance intelligence */}

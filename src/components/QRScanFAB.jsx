@@ -108,7 +108,7 @@ export default function QRScanFAB({ currentUser }) {
       history: calculateHistory(foundRsvp.email),
     });
     setScanInput('');
-    setArrivingNow(1);
+    setArrivingNow(total - checkedInCount);
   };
 
   // ----- Record a batch of arriving attendees -----
@@ -124,7 +124,7 @@ export default function QRScanFAB({ currentUser }) {
     const newLog = [...(scanResult.checkInLog || []), entry];
 
     setScanResult({ ...scanResult, checkedInCount: next, checkInLog: newLog });
-    setArrivingNow(1);
+    setArrivingNow(Math.max(1, total - next));
 
     if (!scanResult.demo) {
       const scanner = currentUser?.role === 'staff' ? `${currentUser.name} (Staff)` : (currentUser?.name || 'Host');
@@ -305,13 +305,8 @@ export default function QRScanFAB({ currentUser }) {
                             <button onClick={() => setArrivingNow(Math.min(remaining, arrivingNow + 1))} style={{ border: 'none', background: 'none', padding: '10px 14px', cursor: 'pointer', color: 'var(--color-text)' }}><Plus size={16} /></button>
                           </div>
                           <Button variant="primary" onClick={() => recordArrival(Math.min(arrivingNow, remaining))} style={{ flex: 1, minWidth: '140px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <CheckCircle size={16} /> Check In {Math.min(arrivingNow, remaining)}
+                            <CheckCircle size={16} /> Check In {arrivingNow >= remaining ? `All ${remaining}` : arrivingNow}
                           </Button>
-                          {remaining > 1 && (
-                            <Button variant="outline" onClick={() => recordArrival(remaining)} style={{ whiteSpace: 'nowrap' }}>
-                              Check in all {remaining}
-                            </Button>
-                          )}
                         </div>
                       </div>
                     ) : (

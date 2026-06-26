@@ -191,7 +191,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
   // Check-in panel inside drawer
   const [showCheckinPanel, setShowCheckinPanel]   = useState(false);
   const [checkinState, setCheckinState]           = useState({});  // { eventIdx: checkedInCount }
-  const [arrivingNow, setArrivingNow]             = useState(1);
+  const [arrivingNowMap, setArrivingNowMap]       = useState({});
 
   // Broadcast modal
   const [showBroadcast, setShowBroadcast] = useState(false);
@@ -578,7 +578,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                       </>
                     )}
                     <td style={{ padding: '14px 16px' }}>
-                      <button type="button" onClick={() => { setSelectedGuest(guest); setShowCheckinPanel(false); setCheckinState({}); setArrivingNow(1); setShowAllHistory(false); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <button type="button" onClick={() => { setSelectedGuest(guest); setShowCheckinPanel(false); setCheckinState({}); setArrivingNowMap({}); setShowAllHistory(false); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         <Eye size={13} /> View
                       </button>
                     </td>
@@ -888,6 +888,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                       const total = h.rsvpCount;
                       const checked = checkinState[idx] != null ? checkinState[idx] : h.actual;
                       const remaining = total - checked;
+                      const arrivingNow = arrivingNowMap[idx] !== undefined ? arrivingNowMap[idx] : remaining;
                       const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
                       const members = getPartyMembers(selectedGuest.name, total);
                       const evSt = checked >= total
@@ -937,22 +938,23 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                             </div>
                           )}
 
-                          {/* Quick manual adjust slider */}
+                          {/* Stepper & Check In */}
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+                            <div style={{ display: 'flex', gap: '0', flex: 1, border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)', overflow: 'hidden' }}>
                               <button
                                 type="button"
-                                disabled={checked <= 0}
-                                onClick={() => setCheckinState(prev => ({ ...prev, [idx]: checked - 1 }))}
-                                style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: checked <= 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
+                                onClick={() => setArrivingNowMap(prev => ({ ...prev, [idx]: Math.max(1, arrivingNow - 1) }))}
+                                style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
                               >
                                 <Minus size={14} />
                               </button>
+                              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                {Math.min(arrivingNow, remaining)}
+                              </div>
                               <button
                                 type="button"
-                                disabled={checked >= total}
-                                onClick={() => setCheckinState(prev => ({ ...prev, [idx]: checked + 1 }))}
-                                style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: checked >= total ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
+                                onClick={() => setArrivingNowMap(prev => ({ ...prev, [idx]: Math.min(remaining, arrivingNow + 1) }))}
+                                style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
                               >
                                 <Plus size={14} />
                               </button>
@@ -960,10 +962,10 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                             {remaining > 0 ? (
                               <button
                                 type="button"
-                                onClick={() => setCheckinState(prev => ({ ...prev, [idx]: checked + arrivingNow }))}
+                                onClick={() => { setCheckinState(prev => ({ ...prev, [idx]: checked + Math.min(arrivingNow, remaining) })); setArrivingNowMap(p => ({ ...p, [idx]: undefined })); }}
                                 style={{ flex: 2, padding: '7px 12px', background: 'var(--color-primary)', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                               >
-                                <CheckCircle size={13} /> Check In {Math.min(arrivingNow, remaining)}
+                                <CheckCircle size={13} /> Check In {arrivingNow >= remaining ? `All ${remaining}` : arrivingNow}
                               </button>
                             ) : (
                               <div style={{ flex: 2, padding: '7px 12px', background: '#16a34a10', border: '1px solid #16a34a20', borderRadius: '8px', color: '#16a34a', fontWeight: 700, fontSize: '0.78rem', textAlign: 'center' }}>Checked In</div>
@@ -981,7 +983,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                 <SectionLabel icon={<Send size={13} />}>Quick Actions</SectionLabel>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {[
-                    { icon: <QrCode size={15} />,        label: showCheckinPanel ? 'Hide Check-In Panel' : 'Check-In Scanner', onClick: () => { setShowCheckinPanel(!showCheckinPanel); setCheckinState({}); setArrivingNow(1); }, highlight: true },
+                    { icon: <QrCode size={15} />,        label: showCheckinPanel ? 'Hide Check-In Panel' : 'Check-In Scanner', onClick: () => { setShowCheckinPanel(!showCheckinPanel); setCheckinState({}); setArrivingNowMap({}); }, highlight: true },
                     { icon: <Bell size={15} />,          label: 'Send Reminder',         onClick: () => {} },
                     { icon: <MessageSquare size={15} />, label: 'Send Message',          onClick: () => {} },
                     { icon: <FileText size={15} />,      label: 'View Full RSVP History', onClick: () => setHistoryModal('rsvp') },
