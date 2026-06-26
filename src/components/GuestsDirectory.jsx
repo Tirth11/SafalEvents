@@ -917,26 +917,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
                             </div>
                           </div>
 
-                          {/* Party members scanner list */}
-                          {total > 1 && (
-                            <div style={{ background: 'var(--color-bg)', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>Party Members</div>
-                              {members.map((m, mIdx) => {
-                                const isArrived = mIdx < checked;
-                                return (
-                                  <div key={mIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: isArrived ? '#16a34a15' : 'var(--color-surface-hover)', color: isArrived ? '#16a34a' : 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700 }}>
-                                        {isArrived ? <CheckCircle size={12} /> : mIdx + 1}
-                                      </div>
-                                      <span style={{ fontSize: '0.8rem', color: isArrived ? 'var(--color-text)' : 'var(--color-text-muted)', fontWeight: isArrived ? 600 : 500 }}>{m}</span>
-                                    </div>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isArrived ? '#16a34a' : 'var(--color-text-muted)' }}>{isArrived ? 'Arrived' : 'Absent'}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
+
 
                           {/* Stepper & Check In */}
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
