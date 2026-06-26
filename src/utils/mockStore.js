@@ -241,8 +241,8 @@ const defaultEvents = [
 const defaultRSVPs = [
   // RSVPs for Event 1
   { id: 'r1', eventId: '1', name: 'Alice Vance', email: 'alice@example.com', phone: '+1 (555) 123-4567', status: 'going', checkedIn: true, timestamp: '2026-06-01T12:00:00.000Z', answers: { 'Any food allergies?': 'None', 'What song do you want the DJ to play?': 'Levitating - Dua Lipa' } },
-  { id: 'r2', eventId: '1', name: 'Bob Smith', email: 'bob@example.com', phone: '+1 (555) 234-5678', status: 'going', checkedIn: false, timestamp: '2026-06-02T14:30:00.000Z', answers: { 'Any food allergies?': 'Gluten-free', 'What song do you want the DJ to play?': 'Blinding Lights - The Weeknd' } },
-  { id: 'r3', eventId: '1', name: 'Charlie Brown', email: 'charlie@example.com', phone: '+1 (555) 345-6789', status: 'maybe', checkedIn: false, timestamp: '2026-06-03T09:15:00.000Z', answers: { 'Any food allergies?': 'Peanut allergy', 'What song do you want the DJ to play?': 'Stayin Alive' } },
+  { id: 'r2', eventId: '1', name: 'Bob Smith', email: 'bob@example.com', phone: '+1 (555) 234-5678', status: 'going', checkedIn: false, guestCount: 4, timestamp: '2026-06-02T14:30:00.000Z', answers: { 'Any food allergies?': 'Gluten-free', 'What song do you want the DJ to play?': 'Blinding Lights - The Weeknd' } },
+  { id: 'r3', eventId: '1', name: 'Charlie Brown', email: 'charlie@example.com', phone: '+1 (555) 345-6789', status: 'going', checkedIn: false, guestCount: 3, timestamp: '2026-06-03T09:15:00.000Z', answers: { 'Any food allergies?': 'Peanut allergy', 'What song do you want the DJ to play?': 'Stayin Alive' } },
   { id: 'r4', eventId: '1', name: 'Diana Prince', email: 'diana@example.com', phone: '+1 (555) 456-7890', status: 'declined', checkedIn: false, timestamp: '2026-06-04T18:45:00.000Z', answers: {} },
   { id: 'r5', eventId: '1', name: 'Ethan Hunt', email: 'ethan@example.com', phone: '+1 (555) 567-8901', status: 'going', checkedIn: true, timestamp: '2026-06-05T10:10:00.000Z', answers: { 'Any food allergies?': 'None', 'What song do you want the DJ to play?': 'Mission Impossible Theme' } },
 
