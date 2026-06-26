@@ -55,6 +55,7 @@ const defaultEvents = [
     cover: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
     theme: 'mesh-gradient-ocean',
     approvalRequired: true,
+    autoCheckIn: false,
     messagingEnabled: true,
     questions: ['What startup are you building or working at?', 'Are you looking for funding?'],
     eventType: 'Meetup',
@@ -1298,6 +1299,7 @@ export const mockStore = {
       theme: 'mesh-gradient-sunset',
       capacity: 100,
       approvalRequired: false,
+      autoCheckIn: false,
       questions: [],
       eventType: 'Party',
       privacy: 'Public',
@@ -1432,6 +1434,24 @@ export const mockStore = {
     const db = getDB();
     db.photos = db.photos.filter(p => p.id !== photoId);
     saveDB(db);
+  },
+
+  getEventCapacityStatus: (eventId) => {
+    const db = getDB();
+    const event = db.events.find(e => e.id === eventId);
+    if (!event) return { capacity: 0, currentGoing: 0, remaining: 0, full: false };
+    
+    const currentGoingCount = db.rsvps
+      .filter(r => r.eventId === eventId && r.status === 'going' && r.approvalState !== 'REJECTED')
+      .reduce((sum, r) => sum + (r.guestCount || 1), 0);
+      
+    const capacity = event.capacity || 100;
+    return {
+      capacity,
+      currentGoing: currentGoingCount,
+      remaining: Math.max(0, capacity - currentGoingCount),
+      full: currentGoingCount >= capacity
+    };
   },
 
   // --- RSVPs ---
@@ -1808,9 +1828,14 @@ export const mockStore = {
     }
     mockStore.addAuditLog(actor, auditAction, eventId);
 
-    // Host Notification on check-in
-    if (updatedData.checkedIn && !oldRsvp.checkedIn) {
-      mockStore.addHostNotification('checkin', 'Guest Checked In', `${newRsvp.name} checked in to ${eventTitle}.`, eventId);
+    const prevInCount = oldRsvp.checkedInCount != null ? oldRsvp.checkedInCount : (oldRsvp.checkedIn ? (oldRsvp.guestCount || 1) : 0);
+    const newInCount = newRsvp.checkedInCount != null ? newRsvp.checkedInCount : (newRsvp.checkedIn ? (newRsvp.guestCount || 1) : 0);
+
+    // Notifications on check-in
+    if (newInCount > prevInCount) {
+      const total = newRsvp.guestCount || 1;
+      const isComplete = newInCount >= total;
+      mockStore.addHostNotification('checkin', 'Guest Checked In', `${newRsvp.name} (${newInCount}/${total}) checked in to ${eventTitle}.`, eventId);
       
       // Dispatch checking notice to outbox logs
       if (event && event.sendRsvpConfirmationEmail) {
@@ -1819,8 +1844,10 @@ export const mockStore = {
           guestEmail: newRsvp.email,
           type: 'checkin',
           channel: 'Email',
-          subject: `Welcome: You checked in to ${eventTitle}`,
-          body: `Hi ${newRsvp.name},\n\nWe have recorded your check-in for the event "${eventTitle}" via QR scanner.\n\nEnjoy the event!`,
+          subject: isComplete ? `Welcome: Check-in completed for ${eventTitle}` : `Update: Partial Check-in for ${eventTitle}`,
+          body: isComplete 
+            ? `Hi ${newRsvp.name},\n\nYour check-in for "${eventTitle}" has been successfully completed.\n\nGuests Checked In: ${newInCount} of ${total}\n\nEnjoy the event!`
+            : `Hi ${newRsvp.name},\n\nYour check-in for "${eventTitle}" has been recorded.\n\nGuests Checked In: ${newInCount} of ${total}\n\nThe remaining guests in your RSVP can still check in using the same QR code.\n\nEnjoy the event!`,
           status: 'Delivered'
         });
       }
@@ -1855,6 +1882,75 @@ export const mockStore = {
     if (spotOpened) {
       mockStore.promoteWaitlistedGuestsIfPossible(eventId, db);
       saveDB(db);
+    }
+
+    return newRsvp;
+  },
+
+  addWalkinGuests: (eventId, rsvpId, count, scannerName = 'Host') => {
+    const db = getDB();
+    const rsvp = db.rsvps.find((r) => r.id === rsvpId);
+    if (!rsvp || count < 1) return null;
+    const stamp = new Date();
+    const entry = {
+      time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      iso: stamp.toISOString(),
+      count,
+      by: scannerName,
+      walkin: true,
+    };
+    rsvp.walkinCount = (rsvp.walkinCount || 0) + count;
+    rsvp.checkedInCount = (rsvp.checkedInCount || 0) + count;
+    rsvp.checkedIn = true;
+    rsvp.checkInLog = [...(rsvp.checkInLog || []), entry];
+    saveDB(db);
+    return rsvp;
+  },
+
+  waitlistWalkins: (eventId, primaryRsvpId, walkinCount, actor = 'Staff') => {
+    const db = getDB();
+    const primaryRsvp = db.rsvps.find(r => r.id === primaryRsvpId);
+    if (!primaryRsvp) return null;
+    const event = db.events.find(e => e.id === eventId);
+    if (!event) return null;
+
+    const newRsvp = {
+      id: 'r_' + Math.random().toString(36).substr(2, 9),
+      eventId,
+      name: `Walk-ins (${primaryRsvp.name})`,
+      email: primaryRsvp.email,
+      phone: primaryRsvp.phone,
+      linkedTo: primaryRsvpId,
+      checkedIn: false,
+      timestamp: new Date().toISOString(),
+      answers: {},
+      guestCount: walkinCount,
+      preferredChannel: primaryRsvp.preferredChannel || 'Email',
+      status: 'waitlist',
+      approvalState: 'UNDER_APPROVAL'
+    };
+    db.rsvps.push(newRsvp);
+    saveDB(db);
+
+    // Host notification
+    mockStore.addHostNotification(
+      'rsvp', 
+      'New Walk-In Approval Request', 
+      `Event: ${event.title}\nPrimary Guest: ${primaryRsvp.name}\nAdditional Guests Requested: ${walkinCount}\nRequested By: ${actor}\nAction Required: Approve or Reject`, 
+      eventId
+    );
+
+    // Guest notification
+    if (event.sendRsvpConfirmationEmail) {
+      mockStore.addNotificationLog(eventId, {
+        rsvpId: primaryRsvp.id,
+        guestEmail: primaryRsvp.email,
+        type: 'waitlist',
+        channel: 'Email',
+        subject: `Update: Walk-ins waitlisted for ${event.title}`,
+        body: `Hi ${primaryRsvp.name},\n\nYour check-in for "${event.title}" has been completed.\n\n${walkinCount} additional guest(s) could not be checked in because the event has reached capacity.\n\nThey have been added to the event waitlist and are awaiting host approval.\n\nYou will be notified once a decision has been made.`,
+        status: 'Delivered'
+      });
     }
 
     return newRsvp;

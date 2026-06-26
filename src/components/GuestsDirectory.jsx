@@ -192,6 +192,7 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
   const [showCheckinPanel, setShowCheckinPanel]   = useState(false);
   const [checkinState, setCheckinState]           = useState({});  // { eventIdx: checkedInCount }
   const [arrivingNowMap, setArrivingNowMap]       = useState({});
+  const [waitlistPrompt, setWaitlistPrompt]       = useState(null);
 
   // Broadcast modal
   const [showBroadcast, setShowBroadcast] = useState(false);
@@ -920,38 +921,56 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
 
 
                           {/* Stepper & Check In */}
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', gap: '0', flex: 1, border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)', overflow: 'hidden' }}>
-                              <button
-                                type="button"
-                                onClick={() => setArrivingNowMap(prev => ({ ...prev, [idx]: Math.max(1, arrivingNow - 1) }))}
-                                style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
-                              >
-                                <Minus size={14} />
-                              </button>
-                              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                                {Math.min(arrivingNow, remaining)}
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', gap: '0', flex: 1, border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)', overflow: 'hidden' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setArrivingNowMap(prev => ({ ...prev, [idx]: Math.max(1, arrivingNow - 1) }))}
+                                  style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                  {arrivingNow}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setArrivingNowMap(prev => ({ ...prev, [idx]: arrivingNow + 1 }))}
+                                  style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
+                                >
+                                  <Plus size={14} />
+                                </button>
                               </div>
                               <button
                                 type="button"
-                                onClick={() => setArrivingNowMap(prev => ({ ...prev, [idx]: Math.min(remaining, arrivingNow + 1) }))}
-                                style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}
-                              >
-                                <Plus size={14} />
-                              </button>
-                            </div>
-                            {remaining > 0 ? (
-                              <button
-                                type="button"
-                                onClick={() => { setCheckinState(prev => ({ ...prev, [idx]: checked + Math.min(arrivingNow, remaining) })); setArrivingNowMap(p => ({ ...p, [idx]: undefined })); }}
+                                onClick={() => {
+                                  const venueCap = mockStore.getEventCapacityStatus(selectedEventId);
+                                  const excessWalkins = Math.max(0, arrivingNow - remaining);
+
+                                  if (excessWalkins > venueCap.remaining) {
+                                    setWaitlistPrompt({ idx, checked, arrivingNow, remaining });
+                                  } else {
+                                    if (remaining > 0) {
+                                      const rsvpCheckin = Math.min(arrivingNow, remaining);
+                                      setCheckinState(prev => ({ ...prev, [idx]: checked + rsvpCheckin }));
+                                    }
+                                    if (excessWalkins > 0) {
+                                      mockStore.addWalkinGuests(selectedEventId, idx, excessWalkins, currentUser.name);
+                                      // Force re-render of walkins by reloading dashboard data or relying on next sync
+                                      if (typeof loadDashboardData === 'function') loadDashboardData();
+                                    }
+                                    setArrivingNowMap(p => ({ ...p, [idx]: undefined }));
+                                  }
+                                }}
                                 style={{ flex: 2, padding: '7px 12px', background: 'var(--color-primary)', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                               >
-                                <CheckCircle size={13} /> Check In {arrivingNow >= remaining ? `All ${remaining}` : arrivingNow}
+                                {remaining <= 0 ? (
+                                  <><UserPlus size={13} /> Add {arrivingNow} Walk-in{arrivingNow > 1 ? 's' : ''}</>
+                                ) : (
+                                  <><CheckCircle size={13} /> {arrivingNow > remaining ? `Check In All ${remaining} + ${arrivingNow - remaining} Walk-in${arrivingNow - remaining > 1 ? 's' : ''}` : `Check In ${arrivingNow >= remaining && total > 1 ? `All ${remaining}` : arrivingNow}`}</>
+                                )}
                               </button>
-                            ) : (
-                              <div style={{ flex: 2, padding: '7px 12px', background: '#16a34a10', border: '1px solid #16a34a20', borderRadius: '8px', color: '#16a34a', fontWeight: 700, fontSize: '0.78rem', textAlign: 'center' }}>Checked In</div>
-                            )}
-                          </div>
+                            </div>
                         </Card>
                       );
                     })}
@@ -1076,6 +1095,53 @@ export default function GuestsDirectory({ eventId, hideHeader }) {
           `}</style>
         </>,
         document.body
+      )}
+
+      {/* Waitlist Prompt Modal */}
+      {waitlistPrompt && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }} onClick={() => setWaitlistPrompt(null)} />
+          <div style={{ position: 'relative', background: 'var(--color-surface)', width: '100%', maxWidth: '400px', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '28px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <AlertCircle size={28} />
+              </div>
+              <h3 style={{ margin: '0 0 12px', fontSize: '1.2rem', fontWeight: 800 }}>Event Capacity Reached</h3>
+              <p style={{ margin: '0 0 24px', fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                The additional guest(s) cannot be checked in because the event has reached its maximum capacity.
+                <br/><br/>
+                Would you like to place them on the waitlist?
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setWaitlistPrompt(null)}
+                  style={{ flex: 1, padding: '12px', background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '8px', color: 'var(--color-text)', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const { idx, checked, arrivingNow, remaining } = waitlistPrompt;
+                    const rsvp = managedEventRsvps.find((r) => r.id === idx);
+                    if (remaining > 0) {
+                       setCheckinState(prev => ({ ...prev, [idx]: checked + remaining }));
+                    }
+                    if (arrivingNow > remaining) {
+                       mockStore.waitlistWalkins(selectedEventId, idx, arrivingNow - remaining, 'Host');
+                    }
+                    setArrivingNowMap(p => ({ ...p, [idx]: undefined }));
+                    setWaitlistPrompt(null);
+                  }}
+                  style={{ flex: 1, padding: '12px', background: '#d97706', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Add to Waitlist
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

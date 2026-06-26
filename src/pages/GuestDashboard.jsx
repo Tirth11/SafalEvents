@@ -1616,9 +1616,9 @@ export default function GuestDashboard({ onLogout }) {
             background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
           }}>
-            <div style={{
+            <div className="custom-scrollbar" style={{
               background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '450px',
-              overflow: 'hidden', boxShadow: 'var(--shadow-lg)', position: 'relative', border: '1px solid var(--color-border)', color: 'var(--color-text)'
+              maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden', boxShadow: 'var(--shadow-lg)', position: 'relative', border: '1px solid var(--color-border)', color: 'var(--color-text)'
             }}>
               <button 
                  onClick={() => setSelectedTicket(null)} 

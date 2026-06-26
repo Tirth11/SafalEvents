@@ -5,7 +5,7 @@ import {
   Trash2, Mail, Download, MessageSquare, ChevronLeft, Award, HelpCircle, RefreshCw,
   Star, CreditCard, Bell, Shield, CheckSquare, FileText, Send, Clock,
   UserCheck, AlertCircle, AlertTriangle, Copy, Share2, ArrowRight, Ticket, TrendingUp,
-  MapPin, Eye, Webhook, Compass, Search, Lock, Image, Menu, Upload, Filter, Activity, Wallet
+  MapPin, Eye, Webhook, Compass, Search, Lock, Image, Menu, Upload, Filter, Activity, Wallet, CheckCircle
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -176,6 +176,7 @@ export default function HostDashboard({ onLogout }) {
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastSent, setBroadcastSent] = useState(false);
   const [arrivingNowMap, setArrivingNowMap] = useState({});
+  const [waitlistPrompt, setWaitlistPrompt] = useState(null);
 
   // New Poll form state
   const [newPollQuestion, setNewPollQuestion] = useState('');
@@ -2873,6 +2874,17 @@ export default function HostDashboard({ onLogout }) {
                         </label>
                       </div>
 
+                      <div className="flex justify-between items-center" style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 14px' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle size={14} className="text-primary" /> Automatic Check-In</strong>
+                          <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.75rem' }}>When enabled, scanning a QR code will automatically check in all RSVP'd attendees without manual confirmation.</p>
+                        </div>
+                        <label className="switch" style={{ flexShrink: 0 }}>
+                          <input type="checkbox" checked={editEventForm.autoCheckIn || false} onChange={(e) => setEditEventForm({ ...editEventForm, autoCheckIn: e.target.checked })} />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+
                       {/* Age restriction — editable post-creation (US-EVENT-013) */}
                       <div style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 14px' }}>
                         <div className="flex justify-between items-center">
@@ -3253,21 +3265,34 @@ export default function HostDashboard({ onLogout }) {
                                     {ci.total > 1 && (
                                       <div style={{ display: 'flex', gap: '0', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)', overflow: 'hidden' }}>
                                         <button onClick={() => setArrivingNowMap(p => ({ ...p, [g.id]: Math.max(1, arrivingNow - 1) }))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text-muted)' }}><Minus size={14} /></button>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '24px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{Math.min(arrivingNow, remaining)}</div>
-                                        <button onClick={() => setArrivingNowMap(p => ({ ...p, [g.id]: Math.min(remaining, arrivingNow + 1) }))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text-muted)' }}><Plus size={14} /></button>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '24px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{arrivingNow}</div>
+                                        <button onClick={() => setArrivingNowMap(p => ({ ...p, [g.id]: arrivingNow + 1 }))} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text-muted)' }}><Plus size={14} /></button>
                                       </div>
                                     )}
-                                    <Button variant="primary" onClick={() => {
-                                      const next = ci.inCount + Math.min(arrivingNow, remaining);
-                                      const stamp = new Date();
-                                      const prevLog = Array.isArray(g.checkInLog) ? g.checkInLog : [];
-                                      mockStore.updateRSVP(selectedEventId, g.id, {
-                                        checkedIn: true, checkedInCount: next, fullyCheckedIn: next >= ci.total, checkedInAt: stamp.toISOString(),
-                                        checkInLog: [...prevLog, { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: Math.min(arrivingNow, remaining) }],
-                                      }, activeScannerStaff);
-                                      setArrivingNowMap(p => ({ ...p, [g.id]: undefined }));
-                                      loadDashboardData();
-                                    }} style={{ flex: 1, minWidth: '130px', padding: '9px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                    <Button variant="primary" onClick={(e) => {
+                                        e.stopPropagation();
+                                        const venueCap = mockStore.getEventCapacityStatus(selectedEventId);
+                                        const excessWalkins = Math.max(0, arrivingNow - remaining);
+
+                                        if (excessWalkins > venueCap.remaining) {
+                                          setWaitlistPrompt({ id: g.id, eventId: selectedEventId, checked: ci.inCount, arrivingNow, remaining });
+                                        } else {
+                                          const next = ci.inCount + Math.min(arrivingNow, remaining);
+                                          const stamp = new Date();
+                                          const prevLog = Array.isArray(g.checkInLog) ? g.checkInLog : [];
+                                          if (remaining > 0) {
+                                            mockStore.updateRSVP(selectedEventId, g.id, {
+                                              checkedIn: true, checkedInCount: next, fullyCheckedIn: next >= ci.total, checkedInAt: stamp.toISOString(),
+                                              checkInLog: [...prevLog, { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: Math.min(arrivingNow, remaining) }],
+                                            }, activeScannerStaff);
+                                          }
+                                          if (excessWalkins > 0) {
+                                            mockStore.addWalkinGuests(selectedEventId, g.id, excessWalkins, activeScannerStaff || 'Unknown');
+                                          }
+                                          setArrivingNowMap(p => ({ ...p, [g.id]: undefined }));
+                                          loadDashboardData();
+                                        }
+                                      }} style={{ flex: 1, minWidth: '130px', padding: '9px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                                       <CheckCircle size={14} /> Check In {ci.total > 1 ? (arrivingNow >= remaining ? `All ${remaining}` : arrivingNow) : ''}
                                     </Button>
                                     {ci.inCount > 0 && (
@@ -4225,6 +4250,12 @@ export default function HostDashboard({ onLogout }) {
                       desc: 'Automate workflows across 5,000+ apps. Trigger actions when guests RSVP, check in, or cancel — no coding required.',
                       features: ['5,000+ app connections', 'Custom trigger workflows', 'Zero-code automation']
                     },
+                    {
+                      name: 'SafalMyBuy',
+                      logo: '/logos/safalmybuy.png',
+                      desc: 'Connect for event integrations seamlessly into your e-commerce ecosystem.',
+                      features: ['E-commerce sync', 'Merchandise integration', 'Automated sales']
+                    },
                   ]
                 }
               ].map(group => (
@@ -4822,6 +4853,50 @@ export default function HostDashboard({ onLogout }) {
         )}
 
       </div>
+
+      {/* Waitlist Prompt Modal */}
+      {waitlistPrompt && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }} onClick={() => setWaitlistPrompt(null)} />
+          <div style={{ position: 'relative', background: 'var(--color-surface)', width: '100%', maxWidth: '400px', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '28px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <AlertCircle size={28} />
+              </div>
+              <h3 style={{ margin: '0 0 12px', fontSize: '1.2rem', fontWeight: 800 }}>Event Capacity Reached</h3>
+              <p style={{ margin: '0 0 24px', fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                The additional guest(s) cannot be checked in because the event has reached its maximum capacity.
+                <br/><br/>
+                Would you like to place them on the waitlist?
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setWaitlistPrompt(null)}
+                  style={{ flex: 1, padding: '12px', background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '8px', color: 'var(--color-text)', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const { id, eventId, checked, remaining, arrivingNow } = waitlistPrompt;
+                    const walkins = arrivingNow - remaining;
+                    mockStore.updateRSVP(eventId, id, { checkedIn: true, checkedInCount: checked + remaining });
+                    mockStore.waitlistWalkins(eventId, id, walkins, 'Host');
+                    setEventMetrics(mockStore.getEventMetrics(dashboardEventId));
+                    setArrivingNowMap(p => ({ ...p, [id]: undefined }));
+                    setWaitlistPrompt(null);
+                  }}
+                  style={{ flex: 1, padding: '12px', background: '#d97706', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Add to Waitlist
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global QR Scan Floating Action Button */}
       <QRScanFAB currentUser={currentUser} />

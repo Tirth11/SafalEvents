@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Camera, X, CheckCircle, AlertTriangle, Clock, Users, Plus, Minus, QrCode,
-  History, TrendingUp, Calendar, Mail, Phone, UserCheck, ShieldCheck
+  History, TrendingUp, Calendar, Mail, Phone, UserCheck, ShieldCheck, UserPlus, AlertCircle
 } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
@@ -31,10 +31,15 @@ export default function QRScanFAB({ currentUser }) {
   const [scanInput, setScanInput]   = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [arrivingNow, setArrivingNow] = useState(1);
+  const [walkinNow, setWalkinNow] = useState(1);
+  const [showWaitlistPrompt, setShowWaitlistPrompt] = useState(false);
+  const [pendingWalkins, setPendingWalkins] = useState(0);
 
   // Permission gate — only authorized roles see the button at all
+  const isHost = currentUser?.role === 'host';
   const isStaffViewer = currentUser?.role === 'staff';
-  const hasGlobalCheckin = !isStaffViewer || (
+  
+  const hasGlobalCheckin = isHost || (
     isStaffViewer && mockStore.getStaffForEmail(currentUser?.email).some(s => {
       const p = mockStore.getPermissionsForEvent(currentUser.email, s.eventId) || {};
       return p.checkin;
@@ -102,28 +107,96 @@ export default function QRScanFAB({ currentUser }) {
 
     const total = foundRsvp.guestCount || 1;
     const checkedInCount = foundRsvp.checkedInCount != null ? foundRsvp.checkedInCount : (foundRsvp.checkedIn ? total : 0);
+    const remaining = Math.max(0, total - checkedInCount);
+
+    if (foundEvent.autoCheckIn && remaining > 0 && !foundEvent.demo) {
+      const capStatus = mockStore.getEventCapacityStatus(foundEvent.id);
+      let eligible = remaining;
+      let excess = 0;
+      
+      if (capStatus.remaining < remaining) {
+        // If capacity reached, primary guest still checked in (1), rest waitlisted
+        // Or if some capacity exists, check in that much. But always at least 1.
+        eligible = Math.max(1, capStatus.remaining);
+        if (eligible > remaining) eligible = remaining;
+        excess = remaining - eligible;
+      }
+
+      const next = checkedInCount + eligible;
+      const stamp = new Date();
+      const entry = { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: eligible };
+      const newLog = [...(foundRsvp.checkInLog || []), entry];
+      
+      const scanner = currentUser?.role === 'staff' ? `${currentUser.name} (Staff)` : (currentUser?.name || 'Host');
+
+      mockStore.updateRSVP(foundEvent.id, foundRsvp.id, {
+        checkedIn: true,
+        checkedInCount: next,
+        fullyCheckedIn: next >= total,
+        checkedInAt: stamp.toISOString(),
+        checkInLog: newLog,
+      }, scanner);
+
+      if (excess > 0) {
+        mockStore.waitlistWalkins(foundEvent.id, foundRsvp.id, excess, scanner);
+      }
+
+      setScanResult({
+        type: 'checkin-success-auto',
+        event: foundEvent,
+        rsvp: foundRsvp,
+        checkedInCount: next,
+        checkInLog: newLog,
+        history: calculateHistory(foundRsvp.email),
+        autoCheckInEligible: eligible,
+        autoCheckInWaitlisted: excess
+      });
+      setScanInput('');
+      return;
+    }
+
     setScanResult({
       type: 'checkin', event: foundEvent, rsvp: foundRsvp,
       checkedInCount, checkInLog: foundRsvp.checkInLog || [],
       history: calculateHistory(foundRsvp.email),
     });
     setScanInput('');
-    setArrivingNow(total - checkedInCount);
+    setArrivingNow(Math.max(1, remaining));
   };
 
   // ----- Record a batch of arriving attendees -----
   const recordArrival = (count) => {
     if (!scanResult) return;
-    const total = scanResult.rsvp.guestCount || 1;
+    
+    // Check capacity for walk-ins
+    const r = scanResult.rsvp;
+    const total = r ? (r.guestCount || 1) : 0;
     const current = scanResult.checkedInCount || 0;
-    const next = Math.min(total, current + count);
-    if (next === current) return;
+    const remaining = total - current;
+    
+    const capStatus = mockStore.getEventCapacityStatus(scanResult.event.id);
+    const excess = Math.max(0, count - remaining);
+    
+    if (excess > capStatus.remaining && !scanResult.demo) {
+      setPendingWalkins(count);
+      setShowWaitlistPrompt(true);
+      return; // Wait for user decision
+    }
+
+    executeCheckIn(count);
+  };
+
+  const executeCheckIn = (count, waitlistExcess = 0) => {
+    const current = scanResult.checkedInCount || 0;
+    const r = scanResult.rsvp;
+    const total = r ? (r.guestCount || 1) : 0;
+    const next = current + count;
 
     const stamp = new Date();
-    const entry = { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count: next - current };
+    const entry = { time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), iso: stamp.toISOString(), count };
     const newLog = [...(scanResult.checkInLog || []), entry];
 
-    setScanResult({ ...scanResult, checkedInCount: next, checkInLog: newLog });
+    setScanResult({ ...scanResult, checkedInCount: next, checkInLog: newLog, type: 'checkin-success' });
     setArrivingNow(Math.max(1, total - next));
 
     if (!scanResult.demo) {
@@ -135,10 +208,29 @@ export default function QRScanFAB({ currentUser }) {
         checkedInAt: stamp.toISOString(),
         checkInLog: newLog,
       }, scanner);
+
+      if (waitlistExcess > 0) {
+        mockStore.waitlistWalkins(scanResult.event.id, scanResult.rsvp.id, waitlistExcess, scanner);
+      }
     }
   };
 
-  const closeAll = () => { setIsOpen(false); setScanResult(null); setScanInput(''); setArrivingNow(1); };
+  const handleConfirmWaitlist = () => {
+    const current = scanResult.checkedInCount || 0;
+    const r = scanResult.rsvp;
+    const total = r ? (r.guestCount || 1) : 0;
+    const remaining = total - current;
+    const capStatus = mockStore.getEventCapacityStatus(scanResult.event.id);
+    
+    const eligibleCount = remaining + capStatus.remaining; // max we can check in right now
+    const checkInCount = Math.min(pendingWalkins, eligibleCount);
+    const excess = pendingWalkins - checkInCount;
+    
+    executeCheckIn(checkInCount, excess);
+    setShowWaitlistPrompt(false);
+  };
+
+  const closeAll = () => { setIsOpen(false); setScanResult(null); setScanInput(''); setArrivingNow(1); setShowWaitlistPrompt(false); };
 
   // Status helper
   const statusOf = (checked, total) => {
@@ -236,6 +328,46 @@ export default function QRScanFAB({ currentUser }) {
                 </div>
               )}
 
+              {/* ── AUTO CHECK-IN SUCCESS ── */}
+              {scanResult?.type === 'checkin-success-auto' && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#16a34a' }}>
+                  <CheckCircle size={56} style={{ margin: '0 auto 16px', color: '#16a34a' }} />
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px', color: '#15803d' }}>Check-In Successful</h3>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '4px' }}>{scanResult.rsvp.name}</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+                    Total RSVP: {scanResult.rsvp.guestCount || 1} • Checked In: {scanResult.checkedInCount}
+                  </div>
+                  
+                  {scanResult.autoCheckInWaitlisted > 0 && (
+                    <div style={{ background: '#fef3c7', padding: '16px', borderRadius: '12px', border: '1px solid #f59e0b', marginBottom: '24px', textAlign: 'left' }}>
+                      <strong style={{ color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><AlertTriangle size={16} /> Event Capacity Reached</strong>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#b45309' }}>Primary guest checked in. <strong>{scanResult.autoCheckInWaitlisted}</strong> additional guests were added to the waitlist and are waiting for host approval.</p>
+                    </div>
+                  )}
+
+                  <Button variant="primary" style={{ marginTop: '12px', padding: '12px 24px', fontSize: '1.05rem' }} onClick={() => setScanResult(null)}>Scan Next Guest</Button>
+                </div>
+              )}
+
+              {/* ── MANUAL CHECK-IN SUCCESS ── */}
+              {scanResult?.type === 'checkin-success' && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#16a34a' }}>
+                  <CheckCircle size={56} style={{ margin: '0 auto 16px', color: '#16a34a' }} />
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px', color: '#15803d' }}>
+                    {scanResult.checkedInCount >= (scanResult.rsvp.guestCount || 1) ? 'Check-In Completed' : 'Partial Check-In Recorded'}
+                  </h3>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '4px' }}>{scanResult.rsvp.name}</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+                    Guests Checked In: {scanResult.checkedInCount} of {scanResult.rsvp.guestCount || 1}
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', maxWidth: '300px', margin: '0 auto' }}>
+                    <Button variant="outline" style={{ flex: 1 }} onClick={() => { setScanResult(null); setArrivingNow(1); }}>Scan Another</Button>
+                    <Button variant="primary" style={{ flex: 1 }} onClick={closeAll}>Done</Button>
+                  </div>
+                </div>
+              )}
+
               {/* ── CHECK-IN WORKFLOW ── */}
               {scanResult?.type === 'checkin' && r && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -271,18 +403,17 @@ export default function QRScanFAB({ currentUser }) {
                       <span style={{ background: st.bg, color: st.color, padding: '5px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800 }}>{st.label}</span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '18px' }}>
-                      {[
-                        { label: 'RSVP Total',        value: total,     color: 'var(--color-text)' },
-                        { label: 'Checked-In So Far', value: checked,   color: '#16a34a' },
-                        { label: 'Remaining',         value: remaining, color: remaining > 0 ? '#d97706' : 'var(--color-text-muted)' },
-                      ].map((s, i) => (
-                        <div key={i} style={{ background: 'var(--color-surface-hover)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
-                          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-                          <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '6px' }}>{s.label}</div>
+                    {remaining > 0 ? (
+                      <div style={{ background: 'var(--color-surface-hover)', borderRadius: '12px', padding: '16px', marginBottom: '18px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.9rem' }}>
+                          <div><div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>Guest:</div><div style={{ fontWeight: 800 }}>{r.name}</div></div>
+                          <div><div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>RSVP Count:</div><div style={{ fontWeight: 800 }}>{total}</div></div>
+                          <div><div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>Already Checked In:</div><div style={{ fontWeight: 800, color: '#16a34a' }}>{checked}</div></div>
+                          <div><div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>Remaining Guests:</div><div style={{ fontWeight: 800, color: '#d97706' }}>{remaining}</div></div>
+                          <div style={{ gridColumn: 'span 2' }}><div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>Status:</div><div style={{ fontWeight: 800, color: st.color }}>Partial Check-In</div></div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ) : null}
 
                     {/* Progress bar */}
                     <div style={{ marginBottom: remaining > 0 ? '18px' : 0 }}>
@@ -297,23 +428,65 @@ export default function QRScanFAB({ currentUser }) {
                     {/* Arrival stepper */}
                     {remaining > 0 ? (
                       <div style={{ background: 'var(--color-surface-hover)', borderRadius: '12px', padding: '16px' }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '12px' }}>Additional attendees arriving now</div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '12px' }}>Attendees arriving now</div>
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0', border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--color-surface)' }}>
                             <button onClick={() => setArrivingNow(Math.max(1, arrivingNow - 1))} style={{ border: 'none', background: 'none', padding: '10px 14px', cursor: 'pointer', color: 'var(--color-text)' }}><Minus size={16} /></button>
-                            <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 800, fontSize: '1.1rem' }}>{Math.min(arrivingNow, remaining)}</span>
-                            <button onClick={() => setArrivingNow(Math.min(remaining, arrivingNow + 1))} style={{ border: 'none', background: 'none', padding: '10px 14px', cursor: 'pointer', color: 'var(--color-text)' }}><Plus size={16} /></button>
+                            <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 800, fontSize: '1.1rem' }}>{arrivingNow}</span>
+                            <button onClick={() => setArrivingNow(arrivingNow + 1)} style={{ border: 'none', background: 'none', padding: '10px 14px', cursor: 'pointer', color: 'var(--color-text)' }}><Plus size={16} /></button>
                           </div>
-                          <Button variant="primary" onClick={() => recordArrival(Math.min(arrivingNow, remaining))} style={{ flex: 1, minWidth: '140px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <CheckCircle size={16} /> Check In {arrivingNow >= remaining ? `All ${remaining}` : arrivingNow}
+                          <Button variant="primary" onClick={() => recordArrival(arrivingNow)} style={{ flex: 1, minWidth: '140px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <CheckCircle size={16} /> {arrivingNow > remaining ? `Check In All ${remaining} + ${arrivingNow - remaining} Walk-in${arrivingNow - remaining > 1 ? 's' : ''}` : `Check In ${arrivingNow >= remaining && total > 1 ? `All ${remaining}` : arrivingNow}`}
                           </Button>
                         </div>
                       </div>
                     ) : (
-                      <div style={{ background: '#16a34a12', border: '1px solid #16a34a30', borderRadius: '12px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#16a34a', fontWeight: 700 }}>
-                        <CheckCircle size={20} /> All {total} attendees checked in — Complete Attendance recorded.
+                      <div style={{ background: '#16a34a12', border: '1px solid #16a34a30', borderRadius: '12px', padding: '20px', color: '#15803d' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem', fontWeight: 800, marginBottom: '16px' }}>
+                          <CheckCircle size={24} /> Already Checked In
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.9rem' }}>
+                          <div><div style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.8 }}>Guest:</div><div style={{ fontWeight: 800 }}>{r.name}</div></div>
+                          <div><div style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.8 }}>Checked In:</div><div style={{ fontWeight: 800 }}>{checked} of {total}</div></div>
+                          <div><div style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.8 }}>Check-In Time:</div><div style={{ fontWeight: 800 }}>{scanResult.checkInLog?.length > 0 ? scanResult.checkInLog[scanResult.checkInLog.length - 1].time : '--:--'}</div></div>
+                          <div><div style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.8 }}>Status:</div><div style={{ fontWeight: 800 }}>Completed</div></div>
+                        </div>
                       </div>
                     )}
+
+                    {/* Dedicated Walk-in Block */}
+                    <div style={{ background: 'var(--color-surface-hover)', borderRadius: '12px', padding: '16px', marginTop: '16px' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <UserPlus size={14} /> Add Additional Guest (walk-in)
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '12px' }}>
+                        Check in unexpected walk-ins for this party.
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0', border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--color-surface)' }}>
+                          <button onClick={() => setWalkinNow(Math.max(1, walkinNow - 1))} style={{ border: 'none', background: 'none', padding: '10px 14px', cursor: 'pointer', color: 'var(--color-text)' }}><Minus size={16} /></button>
+                          <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 800, fontSize: '1.1rem' }}>{walkinNow}</span>
+                          <button onClick={() => setWalkinNow(walkinNow + 1)} style={{ border: 'none', background: 'none', padding: '10px 14px', cursor: 'pointer', color: 'var(--color-text)' }}><Plus size={16} /></button>
+                        </div>
+                        <Button 
+                          variant="secondary" 
+                          onClick={() => {
+                            const capStatus = mockStore.getEventCapacityStatus(scanResult.event.id);
+                            if (walkinNow > capStatus.remaining) {
+                              setPendingWalkins(walkinNow);
+                              setShowWaitlistPrompt(true);
+                            } else {
+                              mockStore.addWalkinGuests(scanResult.event.id, scanResult.rsvp.id, walkinNow, currentUser.name);
+                              handleScan(scanResult.rsvp.id);
+                              setWalkinNow(1);
+                            }
+                          }} 
+                          style={{ flex: 1, minWidth: '140px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                        >
+                          <UserPlus size={16} /> Add {walkinNow} Walk-in{walkinNow > 1 ? 's' : ''}
+                        </Button>
+                      </div>
+                    </div>
                   </Card>
 
                   {/* Current event check-in timeline */}
@@ -404,6 +577,29 @@ export default function QRScanFAB({ currentUser }) {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Waitlist Modal */}
+      {showWaitlistPrompt && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000002, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }} onClick={() => setShowWaitlistPrompt(false)} />
+          <div style={{ position: 'relative', width: '100%', maxWidth: '400px', background: 'var(--color-surface)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              <div style={{ width: '60px', height: '60px', borderRadius: '30px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <AlertCircle size={30} />
+              </div>
+              <h3 style={{ margin: '0 0 12px', fontSize: '1.25rem', fontWeight: 800 }}>Event Capacity Reached</h3>
+              <p style={{ margin: '0 0 20px', fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                The additional guest(s) cannot be checked in because the event has reached its maximum capacity.
+                <br/><br/>
+                Would you like to place them on the waitlist?
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <Button variant="secondary" onClick={() => setShowWaitlistPrompt(false)} style={{ flex: 1 }}>Cancel</Button>
+                <Button variant="primary" onClick={handleConfirmWaitlist} style={{ flex: 1, background: '#d97706', color: 'white', border: 'none' }}>Add to Waitlist</Button>
+              </div>
             </div>
           </div>
         </div>
