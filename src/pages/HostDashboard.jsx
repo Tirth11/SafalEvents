@@ -298,6 +298,8 @@ export default function HostDashboard({ onLogout }) {
     allowSelfCancellation: true,
     cancellationCutoff: 24,
     requireCancellationReason: false,
+    allowNoRsvp: true,
+    allowMaybeRsvp: false,
     guestConfirmation: true,
     reminderSchedule: '24h',
     hostAlerts: true,
@@ -580,6 +582,8 @@ export default function HostDashboard({ onLogout }) {
         allowSelfCancellation: evt.allowSelfCancellation !== undefined ? evt.allowSelfCancellation : true,
         cancellationCutoff: evt.cancellationCutoff !== undefined ? evt.cancellationCutoff : 24,
         requireCancellationReason: evt.requireCancellationReason !== undefined ? evt.requireCancellationReason : false,
+        allowNoRsvp: evt.allowNoRsvp !== undefined ? evt.allowNoRsvp : true,
+        allowMaybeRsvp: evt.allowMaybeRsvp !== undefined ? evt.allowMaybeRsvp : false,
         guestConfirmation: evt.guestConfirmation !== undefined ? evt.guestConfirmation : true,
         reminderSchedule: evt.reminderSchedule || '24h',
         hostAlerts: evt.hostAlerts !== undefined ? evt.hostAlerts : true,
@@ -2555,6 +2559,86 @@ export default function HostDashboard({ onLogout }) {
                     );
                   })()}
 
+                  {/* Declined & Maybe List */}
+                  {(guestSubTab === 'declined' || guestSubTab === 'all') && (() => {
+                    const declinedMaybe = managedEventRsvps.filter(r => r.status === 'declined' || r.status === 'maybe')
+                                               .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    if (declinedMaybe.length === 0) return null;
+                    return (
+                      <Card style={{ padding: 0, textAlign: 'left', marginTop: '24px' }} className="glass-surface">
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ color: '#ef4444' }}>✕</span> Declined &amp; <span style={{ color: 'var(--color-gold)' }}>?</span> Maybe
+                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '12px' }}>
+                              {declinedMaybe.length} guests
+                            </span>
+                          </h4>
+                          <p className="text-muted" style={{ fontSize: '0.75rem', margin: '4px 0 0 0' }}>
+                            Guests who have declined or responded maybe.
+                          </p>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="premium-table">
+                            <thead>
+                              <tr>
+                                <th>Name</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th>Reason / Answers</th>
+                                <th>Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {declinedMaybe.filter(r => {
+                                const q = guestSearch.trim().toLowerCase();
+                                if (!q) return true;
+                                return (r.name && r.name.toLowerCase().includes(q)) ||
+                                       (r.email && r.email.toLowerCase().includes(q)) ||
+                                       (r.phone && r.phone.toLowerCase().includes(q));
+                              }).map(rsvp => (
+                                <tr key={rsvp.id}>
+                                  <td style={{ fontWeight: 600 }}>
+                                    <div className="flex items-center gap-sm">
+                                      <img src={getAvatar(rsvp.name || rsvp.email)} alt={rsvp.name} className="avatar-img avatar-sm" />
+                                      {rsvp.name}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div style={{ fontSize: '0.8rem' }}>{rsvp.email}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{rsvp.phone}</div>
+                                  </td>
+                                  <td>
+                                    {rsvp.status === 'declined' ? (
+                                      <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: 700 }}>Declined</span>
+                                    ) : (
+                                      <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(245,158,11,0.1)', color: '#d97706', fontWeight: 700 }}>Maybe</span>
+                                    )}
+                                  </td>
+                                  <td style={{ fontSize: '0.8rem', maxWidth: '200px' }}>
+                                    {rsvp.status === 'declined' ? (
+                                      <div style={{ color: 'var(--color-text)', whiteSpace: 'normal' }}>
+                                        <strong>Reason:</strong> {rsvp.declineReason || '—'}
+                                      </div>
+                                    ) : (
+                                      Object.entries(rsvp.answers || {}).length > 0 ? (
+                                        <div style={{ color: 'var(--color-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                          {Object.entries(rsvp.answers).map(([q,a]) => `${q}: ${a}`).join(' | ')}
+                                        </div>
+                                      ) : '—'
+                                    )}
+                                  </td>
+                                  <td style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                    {new Date(rsvp.timestamp).toLocaleDateString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+                    );
+                  })()}
+
                   {/* Confirmed list */}
                   {(guestSubTab === 'confirmed' || guestSubTab === 'all') && (
                     <div style={{ marginTop: '24px' }}>
@@ -2881,6 +2965,28 @@ export default function HostDashboard({ onLogout }) {
                         </div>
                         <label className="switch" style={{ flexShrink: 0 }}>
                           <input type="checkbox" checked={editEventForm.autoCheckIn || false} onChange={(e) => setEditEventForm({ ...editEventForm, autoCheckIn: e.target.checked })} />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+
+                      <div className="flex justify-between items-center" style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 14px' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><X size={14} className="text-primary" /> Allow "No" (Decline) responses</strong>
+                          <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.75rem' }}>Guests can respond with "No". If disabled, guests can only select Yes or Maybe.</p>
+                        </div>
+                        <label className="switch" style={{ flexShrink: 0 }}>
+                          <input type="checkbox" checked={editEventForm.allowNoRsvp !== false} onChange={(e) => setEditEventForm({ ...editEventForm, allowNoRsvp: e.target.checked })} />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+
+                      <div className="flex justify-between items-center" style={{ background: 'var(--color-surface-hover)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '10px 14px' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><HelpCircle size={14} className="text-primary" /> Allow "Maybe" responses</strong>
+                          <p className="text-muted" style={{ margin: '2px 0 0 0', fontSize: '0.75rem' }}>Turn this on to also offer Maybe, so undecided guests show as "Maybe" in your guest list.</p>
+                        </div>
+                        <label className="switch" style={{ flexShrink: 0 }}>
+                          <input type="checkbox" checked={editEventForm.allowMaybeRsvp || false} onChange={(e) => setEditEventForm({ ...editEventForm, allowMaybeRsvp: e.target.checked })} />
                           <span className="slider"></span>
                         </label>
                       </div>

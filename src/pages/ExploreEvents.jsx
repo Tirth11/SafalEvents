@@ -21,8 +21,8 @@ export default function ExploreEvents() {
   const uniqueStates = [...new Set(allEvents.map(e => e.state).filter(Boolean))].sort();
   const uniqueLocations = [...new Set(
     allEvents
-      .filter(e => !selectedState || e.state === selectedState)
-      .map(e => e.location.split(',')[0].trim())
+      .filter(e => (!selectedState || e.state === selectedState) && e.eventMode !== 'Virtual')
+      .map(e => e.city || e.location.split(',')[0].trim())
   )].sort();
   const uniqueTypes = [...new Set(allEvents.map(e => e.eventType).filter(Boolean))].sort();
 
@@ -32,11 +32,14 @@ export default function ExploreEvents() {
       const q = searchQuery.toLowerCase();
       const matchesSearch = !q ||
         evt.title.toLowerCase().includes(q) ||
-        evt.location.toLowerCase().includes(q) ||
+        (evt.location && evt.location.toLowerCase().includes(q)) ||
+        (evt.venueName && evt.venueName.toLowerCase().includes(q)) ||
+        (evt.city && evt.city.toLowerCase().includes(q)) ||
         (evt.description && evt.description.toLowerCase().includes(q)) ||
-        (evt.eventType && evt.eventType.toLowerCase().includes(q));
+        (evt.eventType && evt.eventType.toLowerCase().includes(q)) ||
+        (evt.customEventType && evt.customEventType.toLowerCase().includes(q));
 
-      const matchesLocation = !selectedLocation || evt.location.split(',')[0].trim() === selectedLocation;
+      const matchesLocation = !selectedLocation || (evt.eventMode !== 'Virtual' && (evt.city === selectedLocation || evt.location.split(',')[0].trim() === selectedLocation));
       const matchesState = !selectedState || evt.state === selectedState;
       const matchesType = !selectedType || evt.eventType === selectedType;
 
@@ -438,7 +441,7 @@ export default function ExploreEvents() {
                             {evt.title}
                           </h3>
 
-                          {/* Location */}
+                          {/* Location & Mode */}
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -446,8 +449,21 @@ export default function ExploreEvents() {
                             fontSize: '0.85rem',
                             color: 'var(--color-text-muted)'
                           }}>
-                            <MapPin size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-                            <span>{evt.location}</span>
+                            {evt.eventMode === 'Virtual' ? (
+                              <>
+                                <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>Virtual</span>
+                              </>
+                            ) : evt.eventMode === 'Hybrid' ? (
+                              <>
+                                <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>Hybrid</span>
+                                <span>{evt.city || evt.location.split(',')[0].trim()}</span>
+                              </>
+                            ) : (
+                              <>
+                                <MapPin size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                                <span>{evt.city || evt.location.split(',')[0].trim()}</span>
+                              </>
+                            )}
                           </div>
 
                           {/* Time */}

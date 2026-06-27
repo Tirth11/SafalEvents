@@ -277,6 +277,9 @@ export default function EventPage() {
   const buildValidatedRsvp = () => {
     // A "No" response needs no party size or age check — just record the decline.
     if (rsvpForm.status === 'declined') {
+      if (!rsvpForm.declineReason?.trim()) {
+        return { ok: false, error: 'Please let the host know why you cannot attend.' };
+      }
       return {
         ok: true,
         payload: {
@@ -284,6 +287,7 @@ export default function EventPage() {
           email,
           phone,
           status: 'declined',
+          declineReason: rsvpForm.declineReason,
           guestCount: 1,
           answers: rsvpForm.answers,
           dob: '',
@@ -450,13 +454,28 @@ export default function EventPage() {
 
           <div className="page-hero-content" style={{ width: '100%' }}>
             <div className="flex gap-xs" style={{ flexWrap: 'wrap', marginBottom: '14px' }}>
+              <span className="evt-chip" style={{ background: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }}>
+                {event.eventType === 'Other' ? event.customEventType : event.eventType}
+              </span>
               <span className="evt-chip">
                 <Calendar size={15} />
                 {eventDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {event.time}
               </span>
-              <span className="evt-chip">
-                <MapPin size={15} /> {event.location}
-              </span>
+              {(event.eventMode === 'Onsite' || event.eventMode === 'Hybrid') && (
+                <span className="evt-chip">
+                  <MapPin size={15} /> {event.venueName ? `${event.venueName}, ${event.city}` : event.location}
+                </span>
+              )}
+              {event.eventMode === 'Virtual' && (
+                <span className="evt-chip" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', borderColor: '#8b5cf6' }}>
+                  Virtual Event
+                </span>
+              )}
+              {event.eventMode === 'Hybrid' && (
+                <span className="evt-chip" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderColor: '#10b981' }}>
+                  Hybrid Event
+                </span>
+              )}
               {event.ageRestricted && (
                 <span className="evt-chip" style={{ background: 'rgba(239,68,68,0.28)', borderColor: 'rgba(255,255,255,0.45)' }}>
                   <Lock size={14} /> {event.minimumAge}+ Event
@@ -548,26 +567,86 @@ export default function EventPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-sm" style={{ marginBottom: '12px' }}>
-                <span className="stat-icon-tile stat-icon-green" style={{ width: '54px', height: '54px', borderRadius: '14px' }}><MapPin size={22} /></span>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{event.location}</div>
-                  <div className="text-muted" style={{ fontSize: '0.85rem', marginTop: '2px' }}>Full address shared after RSVP</div>
-                </div>
-              </div>
+              {(event.eventMode === 'Onsite' || event.eventMode === 'Hybrid') && (
+                <>
+                  <div className="flex items-center gap-sm" style={{ marginBottom: '12px' }}>
+                    <span className="stat-icon-tile stat-icon-green" style={{ width: '54px', height: '54px', borderRadius: '14px' }}><MapPin size={22} /></span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '1rem' }}>{event.venueName || event.location}</div>
+                      <div className="text-muted" style={{ fontSize: '0.85rem', marginTop: '2px' }}>
+                        {existingRsvp ? (event.addressLine1 ? `${event.addressLine1}, ${event.city}, ${event.state}` : event.location) : 'Full address shared after RSVP'}
+                      </div>
+                    </div>
+                  </div>
+                  {event.mapLink && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <a href={event.mapLink} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)', textDecoration: 'none' }}>
+                        <MapPin size={14} /> View Location on Map
+                      </a>
+                    </div>
+                  )}
+                  {!event.mapLink && (
+                    <div style={{
+                      height: '130px', borderRadius: '16px', border: '1px dashed var(--color-border)',
+                      background: 'repeating-linear-gradient(45deg, #f1f3f5, #f1f3f5 14px, #eef1f4 14px, #eef1f4 28px)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--color-text-muted)', marginBottom: '16px'
+                    }}>
+                      <span style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
+                        <MapPin size={20} style={{ color: 'var(--color-primary)' }} />
+                      </span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Map preview</span>
+                    </div>
+                  )}
+                </>
+              )}
 
-              {/* Map placeholder */}
-              <div style={{
-                height: '130px', borderRadius: '16px', border: '1px dashed var(--color-border)',
-                background: 'repeating-linear-gradient(45deg, #f1f3f5, #f1f3f5 14px, #eef1f4 14px, #eef1f4 28px)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--color-text-muted)'
-              }}>
-                <span style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
-                  <MapPin size={20} style={{ color: 'var(--color-primary)' }} />
-                </span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Map preview</span>
-              </div>
+              {(event.eventMode === 'Virtual' || event.eventMode === 'Hybrid') && (
+                <div style={{ padding: '16px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                  <div className="flex items-center gap-sm" style={{ marginBottom: '12px' }}>
+                    <span className="stat-icon-tile" style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}><Link2 size={20} /></span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '1rem', color: '#6d28d9' }}>Virtual Meeting</div>
+                      <div className="text-muted" style={{ fontSize: '0.85rem', marginTop: '2px' }}>{event.meetingPlatform || 'Online Platform'}</div>
+                    </div>
+                  </div>
+                  {existingRsvp ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <a href={event.meetingLink} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ textAlign: 'center', display: 'block', padding: '10px', borderRadius: '8px', textDecoration: 'none' }}>
+                        Join Meeting
+                      </a>
+                      {event.meetingId && <div style={{ fontSize: '0.85rem' }}><strong>Meeting ID:</strong> {event.meetingId}</div>}
+                      {event.meetingPasscode && <div style={{ fontSize: '0.85rem' }}><strong>Passcode:</strong> {event.meetingPasscode}</div>}
+                      {event.joiningInstructions && <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{event.joiningInstructions}</div>}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '8px', padding: '8px', background: 'rgba(0,0,0,0.03)', borderRadius: '6px' }}>
+                      <Lock size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                      Meeting link will be visible after your RSVP is confirmed.
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
+
+            {/* Dress Code Card */}
+            {event.dressCode && event.dressCode !== 'No Dress Code' && (
+              <Card style={{ padding: 'var(--spacing-md)' }}>
+                <h3 style={{ ...sectionTitleStyle, marginBottom: '12px' }}>
+                  <span className="stat-icon-tile" style={{ width: '36px', height: '36px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899' }}><Sparkles size={18} /></span>
+                  Dress Code: {event.dressCode === 'Other' ? event.customDressCode : event.dressCode}
+                </h3>
+                {event.dressCodeDetails && (
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: event.dressCodeImage ? '12px' : 0, whiteSpace: 'pre-line' }}>
+                    {event.dressCodeDetails}
+                  </p>
+                )}
+                {event.dressCodeImage && (
+                  <div style={{ borderRadius: '12px', overflow: 'hidden', marginTop: '12px', border: '1px solid var(--color-border)' }}>
+                    <img src={event.dressCodeImage} alt="Dress Code Inspiration" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' }} />
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* Host Card */}
             <Card style={{ padding: 'var(--spacing-md)' }}>
@@ -891,7 +970,7 @@ export default function EventPage() {
                     {[
                       { key: 'going', label: 'Yes' },
                       ...(event.allowMaybeRsvp ? [{ key: 'maybe', label: 'Maybe' }] : []),
-                      { key: 'declined', label: 'No' },
+                      ...(event.allowNoRsvp !== false ? [{ key: 'declined', label: 'No' }] : []),
                     ].map(opt => {
                       const active = rsvpForm.status === opt.key;
                       const tone = opt.key === 'going' ? 'var(--color-primary)' : opt.key === 'maybe' ? 'var(--color-gold)' : '#ef4444';
@@ -915,6 +994,18 @@ export default function EventPage() {
                     })}
                   </div>
                 </FormField>
+
+                {rsvpForm.status === 'declined' && (
+                  <FormField label="Reason for declining *">
+                    <FormTextarea
+                      placeholder="Let the host know why you cannot attend..."
+                      value={rsvpForm.declineReason || ''}
+                      onChange={(e) => { setRsvpForm({ ...rsvpForm, declineReason: e.target.value }); setRsvpError(''); }}
+                      rows={2}
+                      required
+                    />
+                  </FormField>
+                )}
 
                 {event.ageRestricted && rsvpForm.status !== 'declined' && (
                   <FormField label="Your date of birth" hint="Used only to verify you meet the age requirement. Never shown publicly.">
@@ -1089,35 +1180,49 @@ export default function EventPage() {
 
             {drawerStep === 4 && (
               <div className="text-center flex flex-col items-center gap-md" style={{ padding: '12px 0' }}>
-                {/* Celebratory ticket */}
-                <div className="animate-fade-in" style={{ width: '100%', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', textAlign: 'left', background: 'white' }}>
-                  <div style={{ position: 'relative' }}>
-                    <img src={coverImg} alt={event.title} style={{ width: '100%', height: '130px', objectFit: 'cover', display: 'block' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,12,0.75), rgba(8,8,12,0.1))' }}></div>
-                    <div style={{ position: 'absolute', left: '16px', bottom: '12px', right: '16px', color: 'white' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.9, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <Ticket size={13} /> Admit {rsvpForm.guestCount || 1}
+                {rsvpForm.status === 'declined' ? (
+                  <>
+                    <div style={{ padding: '24px', background: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border)', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                      <span className="stat-icon-tile" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderRadius: '50%', padding: '12px' }}>
+                        <X size={28} />
                       </span>
-                      <div style={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.2, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{event.title}</div>
+                      <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>Response Saved</h4>
+                      <p className="text-muted" style={{ fontSize: '0.9rem', margin: 0 }}>You have declined the invitation for "{event.title}".</p>
                     </div>
-                  </div>
-                  <div style={{ padding: '14px 16px', borderTop: '2px dashed var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span className="stat-icon-tile stat-icon-green" style={{ borderRadius: '50%' }}><Check size={22} /></span>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{rsvpForm.name || 'Guest'}</div>
-                      <div className="text-muted flex items-center gap-xs" style={{ fontSize: '0.75rem', marginTop: '2px' }}>
-                        <Calendar size={12} /> {eventDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {event.time}
+                  </>
+                ) : (
+                  <>
+                    {/* Celebratory ticket */}
+                    <div className="animate-fade-in" style={{ width: '100%', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', textAlign: 'left', background: 'white' }}>
+                      <div style={{ position: 'relative' }}>
+                        <img src={coverImg} alt={event.title} style={{ width: '100%', height: '130px', objectFit: 'cover', display: 'block' }} />
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,12,0.75), rgba(8,8,12,0.1))' }}></div>
+                        <div style={{ position: 'absolute', left: '16px', bottom: '12px', right: '16px', color: 'white' }}>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.9, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Ticket size={13} /> Admit {rsvpForm.guestCount || 1}
+                          </span>
+                          <div style={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.2, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{event.title}</div>
+                        </div>
+                      </div>
+                      <div style={{ padding: '14px 16px', borderTop: '2px dashed var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span className="stat-icon-tile stat-icon-green" style={{ borderRadius: '50%' }}><Check size={22} /></span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{rsvpForm.name || 'Guest'}</div>
+                          <div className="text-muted flex items-center gap-xs" style={{ fontSize: '0.75rem', marginTop: '2px' }}>
+                            <Calendar size={12} /> {eventDateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {event.time}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>🎉 RSVP Confirmed!</h4>
-                  <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '6px', lineHeight: '1.4' }}>
-                    You have successfully registered for "{event.title}". An email ticket invoice and details have been sent to <strong>{email}</strong>.
-                  </p>
-                </div>
+                    <div>
+                      <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>🎉 RSVP Confirmed!</h4>
+                      <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '6px', lineHeight: '1.4' }}>
+                        You have successfully registered for "{event.title}". An email ticket invoice and details have been sent to <strong>{email}</strong>.
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 <div style={{ borderTop: '1px solid var(--color-border)', width: '100%', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Add to Calendar</p>
@@ -1312,74 +1417,93 @@ export default function EventPage() {
                     <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Time</div>
                     <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{event.time || '—'}</div>
                   </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Venue</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{event.location}</div>
-                  </div>
+                  {(event.eventMode === 'Onsite' || event.eventMode === 'Hybrid') && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Venue</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{event.venueName || event.location}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>{event.addressLine1 || event.location}</div>
+                    </div>
+                  )}
+                  {(event.eventMode === 'Virtual' || event.eventMode === 'Hybrid') && (
+                    <div style={{ gridColumn: '1 / -1', background: 'rgba(139, 92, 246, 0.05)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.1)', marginTop: '8px' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Virtual Meeting</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#6d28d9', marginBottom: '6px' }}>{event.meetingPlatform || 'Online'}</div>
+                      <a href={event.meetingLink} target="_blank" rel="noreferrer" style={{ display: 'inline-block', background: '#8b5cf6', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none' }}>Join Meeting</a>
+                      {event.meetingId && <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>ID: {event.meetingId} {event.meetingPasscode && `| Pass: ${event.meetingPasscode}`}</div>}
+                    </div>
+                  )}
+                  {event.dressCode && event.dressCode !== 'No Dress Code' && (
+                    <div style={{ gridColumn: '1 / -1', marginTop: '4px' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Dress Code</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ec4899' }}>{event.dressCode === 'Other' ? event.customDressCode : event.dressCode}</div>
+                    </div>
+                  )}
                 </div>
 
-                {/* QR Code */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0' }}>
-                    <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style={{ width: '140px', height: '140px', display: 'block' }}>
-                      {/* Top-left finder */}
-                      <rect x="6" y="6" width="44" height="44" rx="4" fill="#1F3A63"/>
-                      <rect x="12" y="12" width="32" height="32" rx="2" fill="white"/>
-                      <rect x="18" y="18" width="20" height="20" rx="1" fill="#1F3A63"/>
-                      {/* Top-right finder */}
-                      <rect x="110" y="6" width="44" height="44" rx="4" fill="#1F3A63"/>
-                      <rect x="116" y="12" width="32" height="32" rx="2" fill="white"/>
-                      <rect x="122" y="18" width="20" height="20" rx="1" fill="#1F3A63"/>
-                      {/* Bottom-left finder */}
-                      <rect x="6" y="110" width="44" height="44" rx="4" fill="#1F3A63"/>
-                      <rect x="12" y="116" width="32" height="32" rx="2" fill="white"/>
-                      <rect x="18" y="122" width="20" height="20" rx="1" fill="#1F3A63"/>
-                      {/* Data dots (centre region) */}
-                      <rect x="58" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="70" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="82" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="94" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="58" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="82" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="70" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="94" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="58" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="70" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="94" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      {/* Right column data */}
-                      <rect x="112" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="124" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="136" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="112" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="136" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="124" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="112" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="136" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      {/* Bottom-right data */}
-                      <rect x="58" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="70" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="94" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="82" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="58" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="58" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="82" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="94" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="112" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="136" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="124" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="112" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
-                      <rect x="136" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
-                    </svg>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Show this QR at the door
+                {/* QR Code (Hidden for purely virtual) */}
+                {event.eventMode !== 'Virtual' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                      <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style={{ width: '140px', height: '140px', display: 'block' }}>
+                        {/* Top-left finder */}
+                        <rect x="6" y="6" width="44" height="44" rx="4" fill="#1F3A63"/>
+                        <rect x="12" y="12" width="32" height="32" rx="2" fill="white"/>
+                        <rect x="18" y="18" width="20" height="20" rx="1" fill="#1F3A63"/>
+                        {/* Top-right finder */}
+                        <rect x="110" y="6" width="44" height="44" rx="4" fill="#1F3A63"/>
+                        <rect x="116" y="12" width="32" height="32" rx="2" fill="white"/>
+                        <rect x="122" y="18" width="20" height="20" rx="1" fill="#1F3A63"/>
+                        {/* Bottom-left finder */}
+                        <rect x="6" y="110" width="44" height="44" rx="4" fill="#1F3A63"/>
+                        <rect x="12" y="116" width="32" height="32" rx="2" fill="white"/>
+                        <rect x="18" y="122" width="20" height="20" rx="1" fill="#1F3A63"/>
+                        {/* Data dots (centre region) */}
+                        <rect x="58" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="70" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="82" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="94" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="58" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="82" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="70" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="94" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="58" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="70" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="94" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        {/* Right column data */}
+                        <rect x="112" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="124" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="136" y="56" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="112" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="136" y="68" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="124" y="80" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="112" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="136" y="92" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        {/* Bottom-right data */}
+                        <rect x="58" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="70" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="94" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="82" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="58" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="58" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="82" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="94" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="112" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="136" y="112" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="124" y="124" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="112" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                        <rect x="136" y="136" width="7" height="7" rx="1" fill="#1F3A63"/>
+                      </svg>
                     </div>
-                    <div style={{ fontSize: '0.65rem', color: '#cbd5e1', marginTop: '2px', fontFamily: 'monospace' }}>
-                      #{String(existingRsvp.email || 'guest').slice(0, 6).toUpperCase()}-{event.id}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Show this QR at the door
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: '#cbd5e1', marginTop: '2px', fontFamily: 'monospace' }}>
+                        #{String(existingRsvp.email || 'guest').slice(0, 6).toUpperCase()}-{event.id}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Download button */}
                 <button

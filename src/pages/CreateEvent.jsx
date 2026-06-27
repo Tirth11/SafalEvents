@@ -15,9 +15,29 @@ export default function CreateEvent() {
   const [formData, setFormData] = useState({
     title: '',
     eventType: 'Meetup', // Party, Meetup, Workshop, Religious, Wedding, Other
+    customEventType: '',
+    eventMode: 'Onsite', // Onsite, Virtual, Hybrid
     date: '',
     time: '',
-    location: '',
+    location: '', // legacy fallback
+    venueName: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    country: '',
+    postalCode: '',
+    mapLink: '',
+    additionalVenueInfo: '',
+    meetingPlatform: 'Zoom',
+    meetingLink: '',
+    meetingId: '',
+    meetingPasscode: '',
+    joiningInstructions: '',
+    dressCode: 'No Dress Code',
+    customDressCode: '',
+    dressCodeDetails: '',
+    dressCodeImage: '',
     description: '',
     cover: '',
     theme: 'mesh-gradient-sunset',
@@ -39,6 +59,7 @@ export default function CreateEvent() {
     allowSelfCancellation: true,
     cancellationCutoff: 24, // hours
     requireCancellationReason: false,
+    allowNoRsvp: true, // when on, guests can answer "No" (Decline)
     allowMaybeRsvp: false, // when on, guests can answer "Maybe" in addition to Yes/No
     approvalRequired: false,   // UC-01/02: hold RSVPs for host approval
     messagingEnabled: true,    // UC-09: allow guest <-> host messaging
@@ -138,7 +159,7 @@ export default function CreateEvent() {
         title: formData.title.trim() || 'My Event',
         date: formData.date || today,
         time: formData.time || '18:00',
-        location: formData.location.trim() || 'To be announced',
+        location: formData.eventMode === 'Virtual' ? 'Virtual Event' : (formData.venueName ? `${formData.venueName}, ${formData.city}` : 'To be announced'),
         description: formData.description.trim() || 'Join us for a great gathering!',
         questions: cleanQuestions,
         status: finalStatus,
@@ -272,14 +293,49 @@ export default function CreateEvent() {
               <div className="grid-2">
                 <FormField label="Event type">
                   <FormSelect value={formData.eventType} onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}>
-                    <option value="Party">Party / Social</option>
-                    <option value="Meetup">Meetup</option>
-                    <option value="Meeting">Meeting</option>
-                    <option value="Webinar">Webinar</option>
-                    <option value="Workshop">Workshop</option>
-                    <option value="Religious">Religious / Temple</option>
+                    <option value="Birthday Party">Birthday Party</option>
                     <option value="Wedding">Wedding</option>
+                    <option value="Anniversary">Anniversary</option>
+                    <option value="Engagement">Engagement</option>
+                    <option value="Baby Shower">Baby Shower</option>
+                    <option value="Housewarming">Housewarming</option>
+                    <option value="Corporate Event">Corporate Event</option>
+                    <option value="Conference">Conference</option>
+                    <option value="Seminar">Seminar</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Networking Event">Networking Event</option>
+                    <option value="Product Launch">Product Launch</option>
+                    <option value="Award Ceremony">Award Ceremony</option>
+                    <option value="Cultural Event">Cultural Event</option>
+                    <option value="Festival">Festival</option>
+                    <option value="Religious Event">Religious Event</option>
+                    <option value="Holiday Celebration">Holiday Celebration</option>
+                    <option value="Charity Event">Charity Event</option>
+                    <option value="Fundraiser">Fundraiser</option>
+                    <option value="Sports Event">Sports Event</option>
+                    <option value="Concert">Concert</option>
+                    <option value="Comedy Show">Comedy Show</option>
+                    <option value="Music Event">Music Event</option>
+                    <option value="Meetup">Meetup</option>
+                    <option value="Family Gathering">Family Gathering</option>
+                    <option value="Community Event">Community Event</option>
+                    <option value="Graduation Party">Graduation Party</option>
+                    <option value="Farewell Party">Farewell Party</option>
+                    <option value="Reunion">Reunion</option>
+                    <option value="Party">Party</option>
                     <option value="Other">Other</option>
+                  </FormSelect>
+                </FormField>
+                {formData.eventType === 'Other' && (
+                  <FormField label="Custom event type">
+                    <FormInput type="text" placeholder="e.g. Pet Adoption Drive" value={formData.customEventType} onChange={(e) => setFormData({ ...formData, customEventType: e.target.value })} required />
+                  </FormField>
+                )}
+                <FormField label="Event mode">
+                  <FormSelect value={formData.eventMode} onChange={(e) => setFormData({ ...formData, eventMode: e.target.value })}>
+                    <option value="Onsite">Onsite</option>
+                    <option value="Virtual">Virtual</option>
+                    <option value="Hybrid">Hybrid</option>
                   </FormSelect>
                 </FormField>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -291,9 +347,106 @@ export default function CreateEvent() {
                   </FormField>
                 </div>
               </div>
-              <FormField label="Venue">
-                <FormInput type="text" placeholder="Penthouse Lounge, Manhattan" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
-              </FormField>
+              {(formData.eventMode === 'Onsite' || formData.eventMode === 'Hybrid') && (
+                <div style={{ padding: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem' }}>Venue Details</h4>
+                  <FormField label="Venue Name">
+                    <FormInput type="text" placeholder="e.g. The Grand Ballroom" value={formData.venueName} onChange={(e) => setFormData({ ...formData, venueName: e.target.value })} required />
+                  </FormField>
+                  <FormField label="Address Line 1">
+                    <FormInput type="text" placeholder="Complete Address" value={formData.addressLine1} onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })} required />
+                  </FormField>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <FormField label="City">
+                      <FormInput type="text" placeholder="City" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required />
+                    </FormField>
+                    <FormField label="State">
+                      <FormInput type="text" placeholder="State" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} required />
+                    </FormField>
+                  </div>
+                  <FormField label="Location Map Link (Optional)">
+                    <FormInput type="url" placeholder="Google Maps or Apple Maps Link" value={formData.mapLink} onChange={(e) => setFormData({ ...formData, mapLink: e.target.value })} />
+                  </FormField>
+                  <FormField label="Additional Venue Info (Optional)">
+                    <FormInput type="text" placeholder="e.g. Parking Instructions, Floor, etc." value={formData.additionalVenueInfo} onChange={(e) => setFormData({ ...formData, additionalVenueInfo: e.target.value })} />
+                  </FormField>
+                </div>
+              )}
+              
+              {(formData.eventMode === 'Virtual' || formData.eventMode === 'Hybrid') && (
+                <div style={{ padding: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem' }}>Virtual Meeting Details</h4>
+                  <FormField label="Meeting Platform">
+                    <FormSelect value={formData.meetingPlatform} onChange={(e) => setFormData({ ...formData, meetingPlatform: e.target.value })}>
+                      <option value="Zoom">Zoom</option>
+                      <option value="Microsoft Teams">Microsoft Teams</option>
+                      <option value="Google Meet">Google Meet</option>
+                      <option value="Webex">Webex</option>
+                      <option value="Other">Other</option>
+                    </FormSelect>
+                  </FormField>
+                  <FormField label="Meeting Link">
+                    <FormInput type="url" placeholder="https://..." value={formData.meetingLink} onChange={(e) => setFormData({ ...formData, meetingLink: e.target.value })} required />
+                  </FormField>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <FormField label="Meeting ID (Optional)">
+                      <FormInput type="text" placeholder="Meeting ID" value={formData.meetingId} onChange={(e) => setFormData({ ...formData, meetingId: e.target.value })} />
+                    </FormField>
+                    <FormField label="Passcode (Optional)">
+                      <FormInput type="text" placeholder="Passcode" value={formData.meetingPasscode} onChange={(e) => setFormData({ ...formData, meetingPasscode: e.target.value })} />
+                    </FormField>
+                  </div>
+                  <FormField label="Joining Instructions (Optional)">
+                    <FormTextarea placeholder="e.g. Please join 10 minutes before the event starts." value={formData.joiningInstructions} onChange={(e) => setFormData({ ...formData, joiningInstructions: e.target.value })} rows={2} />
+                  </FormField>
+                </div>
+              )}
+              
+              <div style={{ padding: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem' }}>Dress Code (Optional)</h4>
+                <FormField label="Dress Code">
+                  <FormSelect value={formData.dressCode} onChange={(e) => setFormData({ ...formData, dressCode: e.target.value })}>
+                    <option value="No Dress Code">No Dress Code</option>
+                    <option value="Casual">Casual</option>
+                    <option value="Smart Casual">Smart Casual</option>
+                    <option value="Business Casual">Business Casual</option>
+                    <option value="Business Formal">Business Formal</option>
+                    <option value="Formal">Formal</option>
+                    <option value="Black Tie">Black Tie</option>
+                    <option value="Black Tie Optional">Black Tie Optional</option>
+                    <option value="Cocktail Attire">Cocktail Attire</option>
+                    <option value="Semi-Formal">Semi-Formal</option>
+                    <option value="Traditional / Ethnic Wear">Traditional / Ethnic Wear</option>
+                    <option value="Festive Wear">Festive Wear</option>
+                    <option value="Cultural Attire">Cultural Attire</option>
+                    <option value="White Party (All White)">White Party (All White)</option>
+                    <option value="Black Outfit">Black Outfit</option>
+                    <option value="Color Theme">Color Theme</option>
+                    <option value="Costume / Cosplay">Costume / Cosplay</option>
+                    <option value="Sportswear">Sportswear</option>
+                    <option value="Beach Wear">Beach Wear</option>
+                    <option value="Wedding Attire">Wedding Attire</option>
+                    <option value="Uniform">Uniform</option>
+                    <option value="Other">Other (Custom)</option>
+                  </FormSelect>
+                </FormField>
+                {formData.dressCode === 'Other' && (
+                  <FormField label="Custom Dress Code">
+                    <FormInput type="text" placeholder="e.g. Neon Party, Superhero Costume" value={formData.customDressCode} onChange={(e) => setFormData({ ...formData, customDressCode: e.target.value })} />
+                  </FormField>
+                )}
+                {formData.dressCode !== 'No Dress Code' && (
+                  <>
+                    <FormField label="Additional Instructions / What to Avoid (Optional)">
+                      <FormTextarea placeholder="e.g. Please avoid shorts and flip-flops." value={formData.dressCodeDetails} onChange={(e) => setFormData({ ...formData, dressCodeDetails: e.target.value })} rows={2} />
+                    </FormField>
+                    <FormField label="Outfit Inspiration Image URL (Optional)">
+                      <FormInput type="url" placeholder="https://..." value={formData.dressCodeImage} onChange={(e) => setFormData({ ...formData, dressCodeImage: e.target.value })} />
+                    </FormField>
+                  </>
+                )}
+              </div>
+
               <FormField label="Description">
                 <FormTextarea placeholder="Tell guests what to expect..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
               </FormField>
@@ -659,6 +812,14 @@ export default function CreateEvent() {
 
                 <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '8px', paddingTop: '8px' }}>
                   <ToggleRow
+                    title="Allow “No” (Decline) responses"
+                    desc="Guests can respond with “No”. If disabled, guests can only select Yes or Maybe."
+                    checked={formData.allowNoRsvp !== false}
+                    onChange={(e) => setFormData({ ...formData, allowNoRsvp: e.target.checked })}
+                    small
+                  />
+                  <div style={{ marginBottom: '8px' }}></div>
+                  <ToggleRow
                     title="Allow “Maybe” responses"
                     desc="Guests always choose Yes or No (Yes pre-selected). Turn this on to also offer Maybe, so undecided guests show as “Maybe” in your guest list."
                     checked={formData.allowMaybeRsvp}
@@ -666,7 +827,7 @@ export default function CreateEvent() {
                     small
                   />
                   <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-                    {['Yes', 'No', ...(formData.allowMaybeRsvp ? ['Maybe'] : [])].map(opt => (
+                    {['Yes', ...(formData.allowNoRsvp !== false ? ['No'] : []), ...(formData.allowMaybeRsvp ? ['Maybe'] : [])].map(opt => (
                       <span key={opt} style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', border: '1px solid var(--color-border)', background: opt === 'Yes' ? 'rgba(31,58,99,0.1)' : 'var(--color-surface)', color: opt === 'Yes' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
                         {opt}{opt === 'Yes' ? ' (default)' : ''}
                       </span>
